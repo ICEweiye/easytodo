@@ -1,0 +1,1289 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人规划管理</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="storage-sync.js"></script>
+</head>
+<body class="home-page">
+    <div class="app-layout">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">◉</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item active">
+                    <span class="nav-text">主页</span>
+                </a>
+                <a href="life.html" class="nav-item">
+                    <span class="nav-text">生活</span>
+                </a>
+                <a href="stats.html" class="nav-item">
+                    <span class="nav-text">统计</span>
+                </a>
+                <a href="review.html" class="nav-item">
+                    <span class="nav-text">复盘</span>
+                </a>
+                <a href="archive.html" class="nav-item">
+                    <span class="nav-text">归档</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="container home-dashboard">
+                <section class="home-grid">
+                    <div class="home-col home-col-main">
+                        <!-- 待办事项模块 -->
+                        <div class="module home-module home-todo-module">
+                            <div class="module-header">
+                                <h2 class="module-title">待办事项（日历）</h2>
+                            </div>
+                            <div id="todoCalendarPanel"></div>
+                        </div>
+
+                        <!-- 项目时间轴模块 -->
+                        <section class="module home-module home-timeline-module">
+                            <div class="module-header">
+                                <h2 class="module-title">项目时间轴</h2>
+                            </div>
+                            <div class="timeline-container">
+                                <div class="timeline-header" id="timelineHeader"></div>
+                                <div class="timeline-body" id="timelineBody"></div>
+                            </div>
+                        </section>
+
+                        <!-- OKR 仪表盘模块 -->
+                        <section class="module home-module home-okr-module">
+                            <div class="module-header">
+                                <h2 class="module-title">OKR 仪表盘</h2>
+                                <button class="add-btn" onclick="openOkrModal()">+</button>
+                            </div>
+                            <div class="okr-grid" id="okrGrid"></div>
+                        </section>
+                    </div>
+
+                    <div class="home-col home-col-side">
+                        <div class="home-review-stack">
+                            <!-- 月度回顾模块 -->
+                            <section class="module home-module home-review-module">
+                                <div class="module-header">
+                                    <h2 class="module-title">月度回顾</h2>
+                                </div>
+                                <div class="month-review-content" id="monthReviewSummary">
+                                    <p class="month-review-empty">本月暂无复盘记录</p>
+                                </div>
+                                <a class="month-review-link" href="review.html">进入复盘页</a>
+                            </section>
+
+                            <section class="module home-module home-daily-review-module">
+                                <div class="module-header">
+                                    <h2 class="module-title">每日回顾</h2>
+                                </div>
+                                <div class="daily-review-content" id="dailyReviewContent">
+                                    <p class="daily-review-empty">暂无复盘记录</p>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- 阅读清单模块 -->
+                        <section class="module home-module home-reading-module">
+                            <div class="module-header">
+                                <h2 class="module-title">阅读清单</h2>
+                                <button class="add-btn" onclick="openBookModal()">+</button>
+                            </div>
+                            <div class="reading-list" id="readingList"></div>
+                        </section>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- SVG 渐变定义 -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="gradient-brown" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#8b6f5c" />
+                <stop offset="100%" style="stop-color:#a08070" />
+            </linearGradient>
+            <linearGradient id="gradient-apricot" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#d4a88c" />
+                <stop offset="100%" style="stop-color:#e8c4a8" />
+            </linearGradient>
+            <linearGradient id="gradient-sage" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#7a9a7d" />
+                <stop offset="100%" style="stop-color:#9db4a0" />
+            </linearGradient>
+            <linearGradient id="gradient-pink" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#b88a8a" />
+                <stop offset="100%" style="stop-color:#d4a5a5" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- 项目编辑弹窗 -->
+    <div class="modal-overlay" id="projectModal">
+        <div class="modal">
+            <h3 class="modal-title">添加项目</h3>
+            <div class="form-group">
+                <label class="form-label">项目名称</label>
+                <input type="text" class="form-input" id="projectName" placeholder="输入项目名称">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">开始日期</label>
+                    <input type="date" class="form-input" id="projectStart">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">结束日期</label>
+                    <input type="date" class="form-input" id="projectEnd">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">当前进度 (%)</label>
+                <input type="number" class="form-input" id="projectProgress" min="0" max="100" value="0">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="projectDeleteBtn" style="display:none;" onclick="deleteProject(editingId)">删除</button>
+                <div style="flex:1;"></div>
+                <button class="btn btn-secondary" onclick="closeModal('projectModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveProject()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OKR 编辑弹窗 -->
+    <div class="modal-overlay" id="okrModal">
+        <div class="modal modal-large">
+            <h3 class="modal-title" id="okrModalTitle">添加目标 (O)</h3>
+            <div class="form-group">
+                <label class="form-label">目标名称</label>
+                <input type="text" class="form-input" id="okrTitle" placeholder="例如：提升专业技能">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">开始日期</label>
+                    <div class="date-picker-field">
+                        <input type="text" class="form-input form-date-text-input" id="okrStartDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <button type="button" class="date-picker-trigger" data-input-id="okrStartDate" data-native-id="okrStartDateNative" aria-label="选择开始日期">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </button>
+                        <input type="date" class="date-picker-native-proxy" id="okrStartDateNative" tabindex="-1" aria-hidden="true">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">结束日期</label>
+                    <div class="date-picker-field">
+                        <input type="text" class="form-input form-date-text-input" id="okrEndDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <button type="button" class="date-picker-trigger" data-input-id="okrEndDate" data-native-id="okrEndDateNative" aria-label="选择结束日期">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </button>
+                        <input type="date" class="date-picker-native-proxy" id="okrEndDateNative" tabindex="-1" aria-hidden="true">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="okr-duration-display">
+                    <span class="duration-label">持续时间：</span>
+                    <span class="duration-value" id="okrDuration">-- 天</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">关键结果 (KR)</label>
+                <div class="kr-editor-container" id="krEditorContainer">
+                    <!-- 动态添加的 KR 编辑器 -->
+                </div>
+                <button type="button" class="add-kr-editor-btn" onclick="addKrEditor()">
+                    <span>+ 添加关键结果</span>
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注</label>
+                <textarea class="form-input form-textarea" id="okrMemo" placeholder="记录一些想法、备注..." rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">颜色</label>
+                <div class="color-selector" id="okrColorSelector">
+                    <button type="button" class="color-btn color-brown selected" data-color="brown" title="棕色" onclick="selectOkrColor('brown')"></button>
+                    <button type="button" class="color-btn color-apricot" data-color="apricot" title="杏色" onclick="selectOkrColor('apricot')"></button>
+                    <button type="button" class="color-btn color-sage" data-color="sage" title="鼠尾草绿" onclick="selectOkrColor('sage')"></button>
+                    <button type="button" class="color-btn color-pink" data-color="pink" title="粉色" onclick="selectOkrColor('pink')"></button>
+                    <button type="button" class="color-btn color-indigo" data-color="indigo" title="靛蓝" onclick="selectOkrColor('indigo')"></button>
+                    <button type="button" class="color-btn color-teal" data-color="teal" title="青色" onclick="selectOkrColor('teal')"></button>
+                    <button type="button" class="color-btn color-coral" data-color="coral" title="珊瑚红" onclick="selectOkrColor('coral')"></button>
+                    <button type="button" class="color-btn color-amber" data-color="amber" title="琥珀色" onclick="selectOkrColor('amber')"></button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="okrDeleteBtn" style="display:none;" onclick="deleteOkr(editingId)">删除</button>
+                <div style="flex:1;"></div>
+                <button class="btn btn-secondary" onclick="closeOkrModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveOkr()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 书籍编辑弹窗 -->
+    <div class="modal-overlay" id="bookModal">
+        <div class="modal">
+            <h3 class="modal-title">添加书籍</h3>
+            <div class="form-group">
+                <label class="form-label">书名</label>
+                <input type="text" class="form-input" id="bookTitle" placeholder="输入书名">
+            </div>
+            <div class="form-group">
+                <label class="form-label">作者</label>
+                <input type="text" class="form-input" id="bookAuthor" placeholder="输入作者（可选）">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">当前页数</label>
+                    <input type="number" class="form-input" id="bookCurrent" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">总页数</label>
+                    <input type="number" class="form-input" id="bookTotal" min="1" value="100">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('bookModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveBook()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑事项弹窗 -->
+    <div class="modal-overlay" id="todoModal">
+        <div class="modal">
+            <h3 class="modal-title" id="todoModalTitle">添加事项</h3>
+            <div class="form-group">
+                <label class="form-label">事项内容</label>
+                <input type="text" class="form-input" id="todoTitle" placeholder="输入事项内容">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">截止日期（可选）</label>
+                    <input type="date" class="form-input" id="todoDueDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">优先级</label>
+                    <div class="todo-priority-box">
+                        <label class="todo-important-toggle">
+                            <input type="checkbox" id="todoImportant">
+                            <span>标记为重要事项</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联 OKR</label>
+                <div class="custom-select" id="todoOkrSelect">
+                    <div class="custom-select-trigger" onclick="toggleCustomSelect('todoOkrSelect')">
+                        <span class="custom-select-text">无关联</span>
+                        <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="custom-select-options" id="todoOkrOptions">
+                        <div class="custom-select-option selected" data-value="" onclick="selectCustomOkrOption('', '无关联', '')">无关联</div>
+                    </div>
+                </div>
+                <input type="hidden" id="todoOkr" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联关键结果</label>
+                <div class="custom-select" id="todoKrSelect">
+                    <div class="custom-select-trigger" onclick="toggleCustomSelect('todoKrSelect')">
+                        <span class="custom-select-text">无关联</span>
+                        <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="custom-select-options" id="todoKrOptions">
+                        <div class="custom-select-option selected" data-value="" onclick="selectCustomKrOption('', '无关联', '')">无关联</div>
+                    </div>
+                </div>
+                <input type="hidden" id="todoKr" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联进度</label>
+                <div class="todo-priority-box">
+                    <label class="todo-important-toggle">
+                        <input type="checkbox" id="todoSyncKrProgress">
+                        <span>事项完成后自动为关联关键结果 +1</span>
+                    </label>
+                </div>
+                <div class="todo-kr-sync-hint disabled" id="todoKrSyncHint">请先选择关联关键结果</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('todoModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveTodo()">保存</button>
+            </div>
+        </div>
+    </div>
+    <div class="todo-date-modal-overlay" id="todoDateModal" onclick="handleTodoDateOverlayClick(event)">
+        <div class="modal modal-large todo-date-modal">
+            <div class="todo-date-modal-header">
+                <h3 class="modal-title" id="todoDateModalTitle">日期事项</h3>
+                <button class="btn btn-secondary" type="button" onclick="closeTodoDateModal()">关闭</button>
+            </div>
+            <div class="todo-date-modal-toolbar">
+                <button class="btn btn-primary" type="button" onclick="openTodoModalForDate(selectedTodoDate)">+ 新增事项</button>
+            </div>
+            <div class="todo-date-modal-list" id="todoDateModalList"></div>
+        </div>
+    </div>
+<script src="app.js"></script>
+    <script>
+        let todos = Storage.get('planner_todos') || [];
+        let todoViewMonth = new Date();
+        todoViewMonth = new Date(todoViewMonth.getFullYear(), todoViewMonth.getMonth(), 1);
+        let selectedTodoDate = '';
+        const DAILY_REVIEW_PICK_KEY = 'planner_home_daily_review_pick';
+        const REVIEW_EMOTION_INTENSITY_OPTIONS = ['很高', '高', '中', '低', '很低'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const calendarPanel = document.getElementById('todoCalendarPanel');
+            if (!calendarPanel) return;
+            renderTodoList();
+            renderMonthReviewCard();
+            renderDailyReviewCard();
+            initOkrSelect();
+        });
+
+        function getTodoMonthKey(dateObj = todoViewMonth) {
+            const year = dateObj.getFullYear();
+            const month = `${dateObj.getMonth() + 1}`.padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        function getTodoDayKey(dateObj) {
+            const year = dateObj.getFullYear();
+            const month = `${dateObj.getMonth() + 1}`.padStart(2, '0');
+            const day = `${dateObj.getDate()}`.padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getReviewEntries() {
+            const currentEntries = Storage.get('planner_review_entries');
+            if (Array.isArray(currentEntries)) return currentEntries;
+            const legacyEntries = Storage.get('reviews');
+            return Array.isArray(legacyEntries) ? legacyEntries : [];
+        }
+
+        function getDailyPickedReviewId(entries) {
+            const today = getTodoDayKey(new Date());
+            const cache = Storage.get(DAILY_REVIEW_PICK_KEY);
+            const ids = new Set(entries.map(entry => String(entry.id)));
+            const cachedDate = cache && typeof cache.date === 'string' ? cache.date : '';
+            const cachedId = cache && cache.reviewId !== undefined && cache.reviewId !== null
+                ? String(cache.reviewId)
+                : '';
+
+            if (cachedDate === today && cachedId && ids.has(cachedId)) {
+                return cachedId;
+            }
+
+            const randomEntry = entries[Math.floor(Math.random() * entries.length)];
+            const pickedId = String(randomEntry.id);
+            Storage.set(DAILY_REVIEW_PICK_KEY, { date: today, reviewId: pickedId });
+            return pickedId;
+        }
+
+        function getReviewEntryPreview(entry, maxLen = 56) {
+            const rawText = String(
+                entry?.summary ||
+                entry?.tasks ||
+                entry?.keep ||
+                entry?.improve ||
+                entry?.stop ||
+                ''
+            );
+            const text = previewText(rawText, maxLen);
+            return text || '已记录复盘内容';
+        }
+
+        function previewText(value, maxLen = 52) {
+            const text = String(value || '').replace(/\s+/g, ' ').trim();
+            if (!text) return '';
+            return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
+        }
+
+        function multilineHtml(value) {
+            return escapeHtml(value).replace(/\n/g, '<br>');
+        }
+
+        function normalizeEmotionArousal(value) {
+            const text = String(value || '').trim();
+            return text === '高' || text === '低' ? text : '';
+        }
+
+        function normalizeEmotionValence(value) {
+            const text = String(value || '').trim();
+            return text === '积极' || text === '消极' ? text : '';
+        }
+
+        function normalizeEmotionIntensity(value) {
+            const text = String(value || '').trim();
+            return REVIEW_EMOTION_INTENSITY_OPTIONS.includes(text) ? text : '';
+        }
+
+        function splitEmotionText(value) {
+            return String(value || '')
+                .replace(/[“”"'`]/g, '')
+                .split(/[、，,\/]/)
+                .map(item => item.trim())
+                .filter(Boolean);
+        }
+
+        function normalizeEmotionTag(tag, fallbackArousal = '', fallbackValence = '') {
+            const mood = String(tag?.mood || '').trim();
+            if (!mood) return null;
+            const arousal = normalizeEmotionArousal(tag?.arousal) || normalizeEmotionArousal(fallbackArousal) || '低';
+            const valence = normalizeEmotionValence(tag?.valence) || normalizeEmotionValence(fallbackValence) || '积极';
+            return { mood, arousal, valence };
+        }
+
+        function normalizeEmotionTags(tags, fallbackMood = '平静', fallbackArousal = '', fallbackValence = '') {
+            const normalized = [];
+            const seen = new Set();
+            const pushTag = (rawTag) => {
+                const tag = normalizeEmotionTag(rawTag, fallbackArousal, fallbackValence);
+                if (!tag) return;
+                const key = `${tag.mood}__${tag.arousal}__${tag.valence}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                normalized.push(tag);
+            };
+
+            if (Array.isArray(tags)) {
+                tags.forEach(pushTag);
+            }
+
+            if (!normalized.length) {
+                splitEmotionText(fallbackMood).forEach(mood => {
+                    pushTag({ mood, arousal: fallbackArousal, valence: fallbackValence });
+                });
+            }
+
+            if (!normalized.length) {
+                pushTag({ mood: '平静', arousal: fallbackArousal || '低', valence: fallbackValence || '积极' });
+            }
+
+            return normalized;
+        }
+
+        function getEmotionIntensityScale(value) {
+            const intensity = normalizeEmotionIntensity(value) || '中';
+            const scales = { 很高: 1, 高: 0.82, 中: 0.64, 低: 0.46, 很低: 0.28 };
+            return scales[intensity] || scales.中;
+        }
+
+        function getEmotionIntensityPrefix(value) {
+            const intensity = normalizeEmotionIntensity(value) || '中';
+            const prefixes = {
+                很高: '非常',
+                高: '很',
+                中: '',
+                低: '一般',
+                很低: '有些许'
+            };
+            return prefixes[intensity] || '';
+        }
+
+        function buildEmotionIntensityPalette(arousal, valence, intensity) {
+            const scale = getEmotionIntensityScale(intensity);
+            const key = `${valence}-${arousal}`;
+            const toneMap = {
+                '消极-高': { hue: 4, satBase: 22, satRange: 60, lightBase: 94, lightDrop: 26, text: '#7a2222' },
+                '积极-高': { hue: 46, satBase: 28, satRange: 56, lightBase: 95, lightDrop: 24, text: '#5d4700' },
+                '消极-低': { hue: 25, satBase: 2, satRange: 14, lightBase: 96, lightDrop: 18, text: '#4f4a45' },
+                '积极-低': { hue: 132, satBase: 22, satRange: 52, lightBase: 95, lightDrop: 24, text: '#1f5d35' }
+            };
+            const tone = toneMap[key] || toneMap['积极-低'];
+
+            const sat = Math.round(tone.satBase + tone.satRange * scale);
+            const light = Math.round(tone.lightBase - tone.lightDrop * scale);
+            const borderSat = key === '消极-低' ? sat + 2 : Math.min(90, sat + 10);
+            const borderLight = Math.max(28, light - 14);
+
+            return {
+                background: `hsl(${tone.hue} ${sat}% ${light}%)`,
+                border: `hsl(${tone.hue} ${borderSat}% ${borderLight}%)`,
+                text: tone.text
+            };
+        }
+
+        function sectionHtml(label, value) {
+            if (!value) return '';
+            return `
+                <div class="review-section">
+                    <strong>${label}</strong>
+                    <p>${multilineHtml(value)}</p>
+                </div>
+            `;
+        }
+
+        function sectionPreviewHtml(label, value, maxLen = 48) {
+            if (!value) return '';
+            return `
+                <div class="review-line">
+                    <strong>${label}</strong>
+                    <p>${escapeHtml(previewText(value, maxLen))}</p>
+                </div>
+            `;
+        }
+
+        function getScoreToneKey(score) {
+            const scoreNum = Number.parseFloat(score);
+            const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
+            if (value <= 2) return 'deep-red';
+            if (value <= 4) return 'red';
+            if (value <= 6) return 'yellow';
+            return 'green';
+        }
+
+        function getScoreToneClass(score) {
+            return `score-tone-${getScoreToneKey(score)}`;
+        }
+
+        function getScoreCheerText(score) {
+            const scoreNum = Number.parseFloat(score);
+            const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
+            if (value <= 2) return '先稳住，慢慢来';
+            if (value <= 4) return '有进步，继续冲';
+            if (value <= 6) return '状态回暖中';
+            if (value <= 8) return '今天很不错';
+            return '状态拉满';
+        }
+
+        function renderDailyReviewCard() {
+            const container = document.getElementById('dailyReviewContent');
+            if (!container) return;
+
+            const entries = getReviewEntries()
+                .filter(entry => entry && entry.id)
+                .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+
+            if (entries.length === 0) {
+                container.innerHTML = '<p class="daily-review-empty">暂无复盘记录</p>';
+                return;
+            }
+
+            const pickedId = getDailyPickedReviewId(entries);
+            const picked = entries.find(entry => String(entry.id) === pickedId) || entries[0];
+            const summaryHtml = sectionPreviewHtml('总结', picked.summary, 72);
+            const todayTaskText = escapeHtml(previewText(picked.tasks || '今日事项', 24));
+            const scoreToneClass = getScoreToneClass(picked.score);
+            const cheerText = escapeHtml(getScoreCheerText(picked.score));
+            const intensity = normalizeEmotionIntensity(picked.emotionIntensity || picked.energy) || '中';
+            const emotionTags = normalizeEmotionTags(
+                picked.emotionTags,
+                picked.mood || '平静',
+                picked.emotionArousal || picked.arousal,
+                picked.emotionValence || picked.valence
+            );
+            const moodHtml = emotionTags.map(tag => {
+                const moodPalette = buildEmotionIntensityPalette(tag.arousal, tag.valence, intensity);
+                const moodText = escapeHtml(`${getEmotionIntensityPrefix(intensity)}${tag.mood}`);
+                return `<span class="review-today-mood-text" style="color:${moodPalette.border};">${moodText}</span>`;
+            }).join('、');
+            const kissHtml = [
+                sectionPreviewHtml('✅ 保持', picked.keep),
+                sectionPreviewHtml('⚠️ 改进', picked.improve),
+                sectionPreviewHtml('🚫 停止', picked.stop)
+            ].filter(Boolean).join('');
+            const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const href = `review.html?focusReviewId=${encodeURIComponent(String(picked.id))}`;
+
+            container.innerHTML = `
+                <a class="daily-review-link" href="${href}">
+                    <article class="review-card review-record-card">
+                        <div class="review-header">
+                            <div class="review-header-main">
+                                <span class="review-period">${escapeHtml(picked.date || '--')}</span>
+                                <div class="review-meta-row">
+                                    <span class="review-score-circle ${scoreToneClass}" title="评分 ${picked.score}/10">${picked.score}</span>
+                                    <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
+                                </div>
+                                <span class="review-today-note"><strong>今天</strong><span class="review-today-task-text">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                            </div>
+                        </div>
+                        <div class="review-content review-content-compact">
+                            ${summaryHtml}
+                            ${dividerHtml}
+                            ${kissHtml}
+                        </div>
+                    </article>
+                </a>
+            `;
+        }
+
+        function renderMonthReviewCard() {
+            const container = document.getElementById('monthReviewSummary');
+            if (!container) return;
+
+            const monthKey = getTodoMonthKey();
+            const entries = getReviewEntries()
+                .filter(entry => entry && typeof entry.date === 'string' && entry.date.startsWith(monthKey))
+                .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+            if (entries.length === 0) {
+                container.innerHTML = `<p class="month-review-empty">${escapeHtml(getTodoMonthLabel())} 暂无复盘记录</p>`;
+                return;
+            }
+
+            const scoreValues = entries
+                .map(entry => Number(entry.score))
+                .filter(score => Number.isFinite(score));
+
+            const avgScore = scoreValues.length
+                ? (scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length).toFixed(1)
+                : '--';
+
+            const latestEntry = entries[0];
+            const preview = getReviewEntryPreview(latestEntry, 48);
+
+            container.innerHTML = `
+                <div class="month-review-stats">
+                    <div class="month-review-stat">
+                        <span class="month-review-stat-label">本月记录</span>
+                        <strong class="month-review-stat-value">${entries.length}</strong>
+                    </div>
+                    <div class="month-review-stat">
+                        <span class="month-review-stat-label">平均评分</span>
+                        <strong class="month-review-stat-value">${avgScore}</strong>
+                    </div>
+                </div>
+                <div class="month-review-latest">
+                    <div class="month-review-latest-date">最近一次：${escapeHtml(latestEntry.date || '--')}</div>
+                    <p class="month-review-latest-text">${escapeHtml(preview)}</p>
+                </div>
+            `;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeJsString(value) {
+            return String(value || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/</g, '\\u003C')
+                .replace(/>/g, '\\u003E');
+        }
+
+        function getTodoMonthLabel() {
+            return `${todoViewMonth.getFullYear()}年${todoViewMonth.getMonth() + 1}月`;
+        }
+
+        function changeTodoMonth(step) {
+            todoViewMonth = new Date(todoViewMonth.getFullYear(), todoViewMonth.getMonth() + step, 1);
+            selectedTodoDate = '';
+            renderTodoList();
+            renderMonthReviewCard();
+        }
+
+        function selectTodoDate(dateKey) {
+            selectedTodoDate = dateKey;
+            renderTodoList();
+            openTodoDateModal(dateKey);
+        }
+
+        function clearTodoDateSelection() {
+            closeTodoDateModal();
+            selectedTodoDate = '';
+            renderTodoList();
+        }
+
+        function shouldKeepTodoDateSelection(target) {
+            if (!(target instanceof Element)) return true;
+            if (target.closest('.modal-overlay.active, .todo-date-modal-overlay.active, .modal')) return true;
+            return !!target.closest(
+                '.todo-calendar-cell, .todo-item, .todo-title, .todo-checkbox, .todo-action-btn, .todo-month-btn, .todo-month-label'
+            );
+        }
+
+        function renderTodoCalendar() {
+            const monthStart = new Date(todoViewMonth.getFullYear(), todoViewMonth.getMonth(), 1);
+            const monthEnd = new Date(todoViewMonth.getFullYear(), todoViewMonth.getMonth() + 1, 0);
+            const firstDayOffset = (monthStart.getDay() + 6) % 7;
+            const totalDays = monthEnd.getDate();
+            const todayKey = getTodoDayKey(new Date());
+            const monthKey = getTodoMonthKey();
+            const dateCounter = {};
+
+            todos.forEach(todo => {
+                if (!todo.dueDate || !todo.dueDate.startsWith(monthKey)) return;
+                if (!dateCounter[todo.dueDate]) {
+                    dateCounter[todo.dueDate] = { total: 0, completed: 0, important: 0 };
+                }
+                dateCounter[todo.dueDate].total += 1;
+                if (todo.completed) {
+                    dateCounter[todo.dueDate].completed += 1;
+                }
+                if (!todo.completed && todo.important) {
+                    dateCounter[todo.dueDate].important += 1;
+                }
+            });
+
+            const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+            const weekHeader = weekDays.map(day => `<div class="todo-weekday">${day}</div>`).join('');
+            const cells = [];
+
+            for (let i = 0; i < firstDayOffset; i += 1) {
+                cells.push('<div class="todo-calendar-cell empty" onclick="clearTodoDateSelection()"></div>');
+            }
+
+            for (let day = 1; day <= totalDays; day += 1) {
+                const dateKey = `${monthKey}-${`${day}`.padStart(2, '0')}`;
+                const countInfo = dateCounter[dateKey] || { total: 0, completed: 0, important: 0 };
+                const classes = ['todo-calendar-cell'];
+                if (countInfo.total > 0) classes.push('has-items');
+                if (countInfo.important > 0) classes.push('has-important');
+                if (dateKey === todayKey) classes.push('today');
+                if (dateKey === selectedTodoDate) classes.push('selected');
+
+                cells.push(`
+                    <button class="${classes.join(' ')}" type="button" onclick="selectTodoDate('${dateKey}')">
+                        <span class="todo-calendar-date">${day}</span>
+                        <div class="todo-calendar-meta">
+                            <span class="todo-calendar-count ${countInfo.total ? '' : 'muted'}">
+                                ${countInfo.total ? `${countInfo.completed}/${countInfo.total}` : '-'}
+                            </span>
+                            ${countInfo.important ? `<span class="todo-calendar-important">重要${countInfo.important}</span>` : ''}
+                        </div>
+                    </button>
+                `);
+            }
+
+            // 固定为 6 行日历（42 格），避免底部出现空白区域
+            const trailingEmptyCount = Math.max(0, 42 - cells.length);
+            for (let i = 0; i < trailingEmptyCount; i += 1) {
+                cells.push('<div class="todo-calendar-cell empty" onclick="clearTodoDateSelection()"></div>');
+            }
+
+            return `
+                <div class="todo-calendar-panel">
+                    <div class="todo-weekday-row">${weekHeader}</div>
+                    <div class="todo-calendar-grid">${cells.join('')}</div>
+                </div>
+            `;
+        }
+
+        function getTodoItemsByDate(dateKey) {
+            return todos
+                .filter(todo => todo.dueDate === dateKey)
+                .sort((a, b) => {
+                    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                    const reminderA = a.reminder || '23:59';
+                    const reminderB = b.reminder || '23:59';
+                    return reminderA.localeCompare(reminderB);
+                });
+        }
+
+        function openTodoModalForDate(dateKey) {
+            selectedTodoDate = dateKey;
+            closeTodoDateModal();
+            openTodoModal();
+        }
+
+        function renderTodoDateModalContent() {
+            const titleEl = document.getElementById('todoDateModalTitle');
+            const listEl = document.getElementById('todoDateModalList');
+            if (!titleEl || !listEl) return;
+
+            if (!selectedTodoDate) {
+                titleEl.textContent = '日期事项';
+                listEl.innerHTML = '<div class="todo-date-modal-empty">请先选择日期</div>';
+                return;
+            }
+
+            const dayItems = getTodoItemsByDate(selectedTodoDate);
+            titleEl.textContent = `${selectedTodoDate} 事项`;
+            listEl.innerHTML = dayItems.length
+                ? dayItems.map(todo => renderTodoItem(todo)).join('')
+                : '<div class="todo-date-modal-empty">该日期暂无事项</div>';
+        }
+
+        function openTodoDateModal(dateKey) {
+            selectedTodoDate = dateKey || selectedTodoDate;
+            renderTodoDateModalContent();
+            document.getElementById('todoDateModal').classList.add('active');
+        }
+
+        function closeTodoDateModal() {
+            const modal = document.getElementById('todoDateModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function handleTodoDateOverlayClick(event) {
+            if (event.target && event.target.id === 'todoDateModal') {
+                closeTodoDateModal();
+            }
+        }
+
+        function refreshTodoDateModalIfOpen() {
+            const modal = document.getElementById('todoDateModal');
+            if (modal && modal.classList.contains('active')) {
+                renderTodoDateModalContent();
+            }
+        }
+
+        function getTodoKanbanData() {
+            const monthKey = getTodoMonthKey();
+            const todayKey = getTodoDayKey(new Date());
+            const inCurrentMonth = (todo) => !!todo.dueDate && todo.dueDate.startsWith(monthKey);
+
+            const todayTodos = todos
+                .filter(todo => !todo.completed && todo.dueDate === todayKey)
+                .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+
+            const monthlyImportant = todos
+                .filter(todo => !todo.completed && todo.important && inCurrentMonth(todo))
+                .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+
+            return { todayTodos, monthlyImportant };
+        }
+
+        function renderTodoBoardCard(title, type, items, emptyText) {
+            const isEmpty = items.length === 0;
+            return `
+                <section class="todo-board-card ${type}${isEmpty ? ' is-empty' : ''}">
+                    <div class="todo-board-card-header">
+                        <h3 class="todo-board-card-title">${title}</h3>
+                    </div>
+                    <div class="todo-board-card-body">
+                        <div class="todo-board-card-list">
+                            ${items.length ? items.map(todo => renderTodoItem(todo)).join('') : `<div class="todo-board-card-empty">${emptyText}</div>`}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderTodoList() {
+            const container = document.getElementById('todoCalendarPanel');
+            if (!container) return;
+
+            const { todayTodos, monthlyImportant } = getTodoKanbanData();
+
+            container.innerHTML = `
+                <div class="todo-board-shell">
+                    <div class="todo-calendar-wrap">
+                        <div class="todo-month-switch todo-month-switch-inline">
+                            <button class="todo-month-btn" onclick="changeTodoMonth(-1)" aria-label="上个月">&lt;</button>
+                            <span class="todo-month-label">${getTodoMonthLabel()}</span>
+                            <button class="todo-month-btn" onclick="changeTodoMonth(1)" aria-label="下个月">&gt;</button>
+                        </div>
+                        ${renderTodoCalendar()}
+                    </div>
+                    <div class="todo-kanban-stack">
+                        ${renderTodoBoardCard('今日事项', 'today', todayTodos, '暂无事项')}
+                        ${renderTodoBoardCard('本月要事', 'priority', monthlyImportant, '暂无事项')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTodoItem(todo) {
+            const okr = todo.okrId ? data.okrs.find(o => o.id == todo.okrId) : null;
+            const kr = todo.krId && okr ? okr.krs.find(k => k.id == todo.krId) : null;
+            const todayKey = getTodoDayKey(new Date());
+            const isOverdue = !todo.completed && todo.dueDate && todo.dueDate < todayKey;
+            const safeTodoId = escapeJsString(todo.id);
+            const safeTodoTitle = escapeHtml(todo.title);
+
+            return `
+                <div class="todo-item ${todo.completed ? 'completed' : ''} ${isOverdue ? 'todo-item-overdue' : ''}">
+                    <div class="todo-checkbox ${todo.completed ? 'checked' : ''}"
+                         onclick="toggleTodo('${safeTodoId}')"></div>
+                    <div class="todo-content">
+                        <div class="todo-title" onclick="editTodo('${safeTodoId}')">${safeTodoTitle}</div>
+                        <div class="todo-meta">
+                            ${todo.dueDate ? `
+                                <span class="todo-date">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                        <line x1="16" y1="2" x2="16" y2="6"/>
+                                        <line x1="8" y1="2" x2="8" y2="6"/>
+                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                    ${formatDate(todo.dueDate)}
+                                </span>
+                            ` : ''}
+                            ${todo.important ? '<span class="todo-important-tag">重要</span>' : ''}
+                            ${okr ? `
+                                <span class="todo-okr-tag ${okr.color}">
+                                    ${escapeHtml(okr.title)}${kr ? ' / ' + escapeHtml(kr.text) : ''}
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="todo-actions">
+                        <button class="todo-action-btn" onclick="editTodo('${safeTodoId}')" title="编辑">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="todo-action-btn delete" onclick="deleteTodo('${safeTodoId}')" title="删除">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openTodoModal() {
+            closeTodoDateModal();
+            editingId = null;
+            document.getElementById('todoModalTitle').textContent = '添加事项';
+            document.getElementById('todoTitle').value = '';
+            document.getElementById('todoDueDate').value = selectedTodoDate || '';
+            document.getElementById('todoImportant').checked = false;
+            document.getElementById('todoSyncKrProgress').checked = false;
+
+            selectCustomOkrOption('', '无关联', '');
+            updateTodoKrSyncControl();
+
+            document.getElementById('todoModal').classList.add('active');
+        }
+
+        function editTodo(id) {
+            closeTodoDateModal();
+            const todo = todos.find(t => t.id == id);
+            if (!todo) return;
+
+            editingId = id;
+            document.getElementById('todoModalTitle').textContent = '编辑事项';
+            document.getElementById('todoTitle').value = todo.title;
+            document.getElementById('todoDueDate').value = todo.dueDate || '';
+            document.getElementById('todoImportant').checked = !!todo.important;
+            document.getElementById('todoSyncKrProgress').checked = !!todo.syncKrProgressOnComplete;
+
+            if (todo.okrId) {
+                const okr = data.okrs.find(o => o.id == todo.okrId);
+                if (okr) {
+                    selectCustomOkrOption(todo.okrId, okr.title, okr.color || '');
+                    if (todo.krId) {
+                        const kr = okr.krs.find(k => k.id == todo.krId);
+                        if (kr) {
+                            selectCustomKrOption(todo.krId, kr.text, okr.color || '');
+                        }
+                    }
+                } else {
+                    selectCustomOkrOption('', '无关联', '');
+                }
+            } else {
+                selectCustomOkrOption('', '无关联', '');
+            }
+            updateTodoKrSyncControl();
+
+            document.getElementById('todoModal').classList.add('active');
+        }
+
+        function saveTodo() {
+            const title = document.getElementById('todoTitle').value.trim();
+            const dueDate = document.getElementById('todoDueDate').value;
+            const important = document.getElementById('todoImportant').checked;
+            const okrId = document.getElementById('todoOkr').value;
+            const krId = document.getElementById('todoKr').value;
+            const syncKrProgressOnComplete = document.getElementById('todoSyncKrProgress').checked;
+            const shouldSyncKrProgress = !!krId && syncKrProgressOnComplete;
+
+            if (!title) {
+                alert('请输入事项内容');
+                return;
+            }
+
+            if (editingId) {
+                const todo = todos.find(t => t.id == editingId);
+                if (todo) {
+                    const relationChanged = todo.okrId !== okrId || todo.krId !== krId;
+                    const syncSettingChanged = !!todo.syncKrProgressOnComplete !== shouldSyncKrProgress;
+                    todo.title = title;
+                    todo.dueDate = dueDate;
+                    todo.important = important;
+                    todo.okrId = okrId;
+                    todo.krId = krId;
+                    todo.syncKrProgressOnComplete = shouldSyncKrProgress;
+                    if (relationChanged || syncSettingChanged) {
+                        todo.krProgressSynced = false;
+                    }
+                }
+            } else {
+                todos.push({
+                    id: generateId(),
+                    title,
+                    dueDate,
+                    important,
+                    okrId,
+                    krId,
+                    completed: false,
+                    syncKrProgressOnComplete: shouldSyncKrProgress,
+                    krProgressSynced: false,
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            Storage.set('planner_todos', todos);
+            renderTodoList();
+            refreshTodoDateModalIfOpen();
+            closeModal('todoModal');
+        }
+
+        function deleteTodo(id) {
+            if (confirm('确定删除这个事项吗？')) {
+                todos = todos.filter(t => t.id != id);
+                Storage.set('planner_todos', todos);
+                renderTodoList();
+                refreshTodoDateModalIfOpen();
+            }
+        }
+
+        function updateTodoKrSyncControl() {
+            const checkbox = document.getElementById('todoSyncKrProgress');
+            const hint = document.getElementById('todoKrSyncHint');
+            const krId = document.getElementById('todoKr').value;
+            if (!checkbox || !hint) return;
+
+            const hasKr = !!krId;
+            checkbox.disabled = !hasKr;
+
+            if (!hasKr) {
+                checkbox.checked = false;
+                hint.textContent = '请先选择关联关键结果';
+                hint.classList.add('disabled');
+                return;
+            }
+
+            hint.textContent = '勾选后，完成事项会自动为该关键结果 +1（每条事项仅记录一次）';
+            hint.classList.remove('disabled');
+        }
+
+        function maybeSyncTodoKrProgress(todo) {
+            if (!todo || !todo.okrId || !todo.krId || todo.krProgressSynced || !todo.syncKrProgressOnComplete) return;
+
+            const okr = data.okrs.find(o => o.id == todo.okrId);
+            if (!okr) return;
+
+            const kr = okr.krs.find(k => k.id == todo.krId);
+            if (!kr) return;
+
+            normalizeKr(kr);
+            if (kr.current >= kr.target) {
+                todo.krProgressSynced = true;
+                return;
+            }
+
+            kr.current = Math.min(kr.target, kr.current + 1);
+            kr.completed = kr.current >= kr.target;
+            todo.krProgressSynced = true;
+            Storage.set('planner_okrs', data.okrs);
+            renderOKRs();
+            renderTimeline();
+        }
+
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id == id);
+            if (todo) {
+                const wasCompleted = !!todo.completed;
+                todo.completed = !todo.completed;
+                if (!wasCompleted && todo.completed) {
+                    maybeSyncTodoKrProgress(todo);
+                }
+                Storage.set('planner_todos', todos);
+                renderTodoList();
+                refreshTodoDateModalIfOpen();
+            }
+        }
+
+        function initOkrSelect() {
+            updateCustomOkrOptions();
+        }
+
+        function updateCustomOkrOptions() {
+            const container = document.getElementById('todoOkrOptions');
+            if (!container) return;
+            container.innerHTML = `<div class="custom-select-option selected" data-value="" onclick="selectCustomOkrOption('', '无关联', '')">无关联</div>` +
+                data.okrs.map(okr => {
+                    const color = typeof normalizeOkrColor === 'function' ? normalizeOkrColor(okr.color) : String(okr.color || '');
+                    return `<div class="custom-select-option ${color}" data-value="${escapeHtml(okr.id)}" onclick="selectCustomOkrOption('${escapeJsString(okr.id)}', '${escapeJsString(okr.title)}', '${escapeJsString(color)}')">${escapeHtml(okr.title)}</div>`;
+                }).join('');
+        }
+
+        function updateCustomKrOptions(okrId) {
+            const container = document.getElementById('todoKrOptions');
+            const krSelect = document.getElementById('todoKr');
+            const triggerText = document.querySelector('#todoKrSelect .custom-select-text');
+            if (!container || !krSelect) return;
+
+            if (!okrId) {
+                container.innerHTML = `<div class="custom-select-option selected" data-value="" onclick="selectCustomKrOption('', '无关联', '')">无关联</div>`;
+                krSelect.value = '';
+                if (triggerText) triggerText.textContent = '无关联';
+                updateTodoKrSyncControl();
+                return;
+            }
+
+            const okr = data.okrs.find(o => o.id == okrId);
+            if (okr) {
+                const color = typeof normalizeOkrColor === 'function' ? normalizeOkrColor(okr.color) : String(okr.color || '');
+                container.innerHTML = `<div class="custom-select-option selected" data-value="" onclick="selectCustomKrOption('', '无关联', '')">无关联</div>` +
+                    okr.krs.map(kr => `<div class="custom-select-option ${color}" data-value="${escapeHtml(kr.id)}" onclick="selectCustomKrOption('${escapeJsString(kr.id)}', '${escapeJsString(kr.text)}', '${escapeJsString(color)}')">${escapeHtml(kr.text)}</div>`).join('');
+                krSelect.value = '';
+                if (triggerText) triggerText.textContent = '无关联';
+            }
+            updateTodoKrSyncControl();
+        }
+
+        function getOkrColorClassNames() {
+            if (typeof OKR_COLOR_KEYS !== 'undefined' && Array.isArray(OKR_COLOR_KEYS)) {
+                return OKR_COLOR_KEYS;
+            }
+            return ['brown', 'apricot', 'sage', 'pink', 'indigo', 'teal', 'coral', 'amber'];
+        }
+
+        function selectCustomOkrOption(value, text, colorClass) {
+            const select = document.getElementById('todoOkrSelect');
+            const hiddenInput = document.getElementById('todoOkr');
+            const triggerText = select.querySelector('.custom-select-text');
+
+            select.querySelectorAll('.custom-select-option').forEach(opt => {
+                opt.classList.remove('selected', ...getOkrColorClassNames());
+                if (opt.dataset.value == value) {
+                    opt.classList.add('selected');
+                    if (colorClass) {
+                        opt.classList.add(colorClass);
+                    }
+                }
+            });
+
+            triggerText.textContent = text;
+            hiddenInput.value = value;
+            select.classList.remove('open');
+            updateCustomKrOptions(value);
+        }
+
+        function selectCustomKrOption(value, text, colorClass) {
+            const select = document.getElementById('todoKrSelect');
+            const hiddenInput = document.getElementById('todoKr');
+            const triggerText = select.querySelector('.custom-select-text');
+
+            select.querySelectorAll('.custom-select-option').forEach(opt => {
+                opt.classList.remove('selected', ...getOkrColorClassNames());
+                if (opt.dataset.value == value) {
+                    opt.classList.add('selected');
+                    if (colorClass) {
+                        opt.classList.add(colorClass);
+                    }
+                }
+            });
+
+            triggerText.textContent = text;
+            hiddenInput.value = value;
+            select.classList.remove('open');
+            updateTodoKrSyncControl();
+        }
+
+        function toggleCustomSelect(selectId) {
+            const select = document.getElementById(selectId);
+            const isOpen = select.classList.contains('open');
+            document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
+            if (!isOpen) {
+                select.classList.add('open');
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const clickTarget = e.target instanceof Element ? e.target : null;
+
+            if (!clickTarget || !clickTarget.closest('.custom-select')) {
+                document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
+            }
+
+            if (!selectedTodoDate) return;
+            if (shouldKeepTodoDateSelection(clickTarget)) return;
+            clearTodoDateSelection();
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+            }
+        });
+
+        window.addEventListener('planner-storage-synced', () => {
+            if (typeof reloadPlannerDataFromStorage === 'function') {
+                reloadPlannerDataFromStorage();
+            }
+            todos = Storage.get('planner_todos') || [];
+            initOkrSelect();
+            renderTodoList();
+            renderMonthReviewCard();
+            renderDailyReviewCard();
+            refreshTodoDateModalIfOpen();
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key && !event.key.startsWith('planner_')) return;
+            if (typeof reloadPlannerDataFromStorage === 'function') {
+                reloadPlannerDataFromStorage();
+            }
+            todos = Storage.get('planner_todos') || [];
+            initOkrSelect();
+            renderTodoList();
+            renderMonthReviewCard();
+            renderDailyReviewCard();
+            refreshTodoDateModalIfOpen();
+        });
+    </script>
+    <script src="no-multiline.js"></script>
+</body>
+</html>
+
+

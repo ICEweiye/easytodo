@@ -1,0 +1,2 @@
+Planner server running: http://127.0.0.1:8787
+Shared storage API: http://127.0.0.1:8787/api/storage

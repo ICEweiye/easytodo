@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>归档 - 个人规划管理</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="storage-sync.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">◉</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-text">主页</span>
+                </a>
+                <a href="life.html" class="nav-item">
+                    <span class="nav-text">生活</span>
+                </a>
+                <a href="stats.html" class="nav-item">
+                    <span class="nav-text">统计</span>
+                </a>
+                <a href="review.html" class="nav-item">
+                    <span class="nav-text">复盘</span>
+                </a>
+                <a href="archive.html" class="nav-item active">
+                    <span class="nav-text">归档</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="container">
+                <header class="header">
+                    <div class="header-content">
+                        <h1 class="space-name">归档</h1>
+                        <span class="current-date" id="currentDate"></span>
+                    </div>
+                </header>
+
+                <!-- 标签页导航 -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="projects" onclick="switchTab('projects')">项目</button>
+                    <button class="tab-btn" data-tab="okrs" onclick="switchTab('okrs')">目标</button>
+                    <button class="tab-btn" data-tab="books" onclick="switchTab('books')">书籍</button>
+                </div>
+
+                <!-- 标签页内容 -->
+                <div class="tab-content">
+                    <div class="tab-panel active" id="tab-projects">
+                        <div class="module-header">
+                            <h2 class="module-title">已完成项目</h2>
+                        </div>
+                        <div class="archive-list" id="completedProjects">
+                            <div class="empty-state">暂无已完成项目</div>
+                        </div>
+                    </div>
+
+                    <div class="tab-panel" id="tab-okrs">
+                        <div class="module-header">
+                            <h2 class="module-title">已完成目标</h2>
+                        </div>
+                        <div class="archive-list" id="completedOkrs">
+                            <div class="empty-state">暂无已完成目标</div>
+                        </div>
+                    </div>
+
+                    <div class="tab-panel" id="tab-books">
+                        <div class="module-header">
+                            <h2 class="module-title">已读书籍</h2>
+                        </div>
+                        <div class="archive-list" id="completedBooks">
+                            <div class="empty-state">暂无已读书籍</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function safeJsonArray(raw) {
+            if (!raw) return [];
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                return [];
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // 更新日期
+        function updateDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+
+        // 加载归档数据
+        function loadArchive() {
+            const projects = safeJsonArray(localStorage.getItem('planner_projects'));
+            const okrs = safeJsonArray(localStorage.getItem('planner_okrs'));
+            const books = safeJsonArray(localStorage.getItem('planner_books'));
+
+            // 已完成项目（进度 100%）
+            const completedProjects = projects.filter(p => p.progress >= 100);
+            if (completedProjects.length > 0) {
+                document.getElementById('completedProjects').innerHTML = completedProjects.map(p => `
+                    <div class="archive-item">
+                        <div class="archive-icon" style="background: var(--gradient-brown);">&#10003;</div>
+                        <div class="archive-content">
+                            <div class="archive-title">${escapeHtml(p.name)}</div>
+                            <div class="archive-meta">${formatDate(p.start)} - ${formatDate(p.end)} · 已完成</div>
+                        </div>
+                        <div class="archive-badge">100%</div>
+                    </div>
+                `).join('');
+            }
+
+            // 已完成 OKR（所有 KR 都完成）
+            const completedOkrs = okrs.filter(o => Array.isArray(o.krs) && o.krs.length > 0 && o.krs.every(kr => kr.completed));
+            if (completedOkrs.length > 0) {
+                document.getElementById('completedOkrs').innerHTML = completedOkrs.map(o => `
+                    <div class="archive-item">
+                        <div class="archive-icon" style="background: var(--gradient-sage);">&#10003;</div>
+                        <div class="archive-content">
+                            <div class="archive-title">${escapeHtml(o.title)}</div>
+                            <div class="archive-meta">${escapeHtml(o.startDate && o.endDate ? `${formatDate(o.startDate)} - ${formatDate(o.endDate)}` : (o.period || '已完成目标'))} · ${o.krs.length} 个关键结果全部完成</div>
+                        </div>
+                        <div class="archive-badge">100%</div>
+                    </div>
+                `).join('');
+            }
+
+            // 已读书籍
+            const completedBooks = books.filter(b => b.current >= b.total);
+            if (completedBooks.length > 0) {
+                document.getElementById('completedBooks').innerHTML = completedBooks.map(b => `
+                    <div class="archive-item">
+                        <div class="archive-icon" style="background: var(--gradient-apricot);">&#10003;</div>
+                        <div class="archive-content">
+                            <div class="archive-title">${escapeHtml(b.title)}</div>
+                            <div class="archive-meta">${escapeHtml(b.author || '未知作者')} · ${b.total} 页</div>
+                        </div>
+                        <div class="archive-badge">已读</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            loadArchive();
+        });
+
+        window.addEventListener('planner-storage-synced', () => {
+            loadArchive();
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key && !event.key.startsWith('planner_')) return;
+            loadArchive();
+        });
+
+        // 侧边栏折叠功能
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // 页面加载时恢复状态
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+        }
+
+        // 标签页切换功能
+        function switchTab(tabName) {
+            // 移除所有活动状态
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            
+            // 添加当前活动状态
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+    </script>
+
+    <style>
+        .archive-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .archive-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--warm-gray-50);
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .archive-item:hover {
+            background: var(--warm-gray-100);
+        }
+
+        .archive-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .archive-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .archive-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--warm-gray-900);
+            margin-bottom: 2px;
+        }
+
+        .archive-meta {
+            font-size: 12px;
+            color: var(--warm-gray-500);
+        }
+
+        .archive-badge {
+            padding: 4px 10px;
+            background: white;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--warm-gray-700);
+        }
+    </style>
+    <script src="no-multiline.js"></script>
+</body>
+</html>
+
+
+

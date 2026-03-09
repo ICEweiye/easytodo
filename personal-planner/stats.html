@@ -1,0 +1,1595 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计 - 个人规划管理</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="storage-sync.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">◉</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-text">主页</span>
+                </a>
+                <a href="life.html" class="nav-item">
+                    <span class="nav-text">生活</span>
+                </a>
+                <a href="stats.html" class="nav-item active">
+                    <span class="nav-text">统计</span>
+                </a>
+                <a href="review.html" class="nav-item">
+                    <span class="nav-text">复盘</span>
+                </a>
+                <a href="archive.html" class="nav-item">
+                    <span class="nav-text">归档</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="container">
+                <header class="header">
+                    <div class="header-content">
+                        <h1 class="space-name">数据统计</h1>
+                        <span class="current-date" id="currentDate"></span>
+                    </div>
+                </header>
+
+                <!-- 周财务统计 -->
+                <section class="module">
+                    <div class="module-header">
+                        <h2 class="module-title">财务统计</h2>
+                        <div class="finance-switch">
+                            <button class="finance-switch-btn active" data-period="week" onclick="switchExpensePeriod('week')">周度</button>
+                            <button class="finance-switch-btn" data-period="month" onclick="switchExpensePeriod('month')">月度</button>
+                        </div>
+                    </div>
+                    <div class="expense-entry" id="financeEntry">
+                        <div class="expense-entry-row">
+                            <input type="number" class="form-input" id="weeklyExpenseInput" min="0" step="0.01" placeholder="本周总开销">
+                            <input type="number" class="form-input" id="weeklyIncomeInput" min="0" step="0.01" placeholder="本周总收入">
+                            <input type="number" class="form-input" id="weeklyInvestmentInput" min="0" step="0.01" placeholder="本周总投资">
+                            <button class="btn btn-primary" type="button" onclick="saveWeeklyExpense()">记录</button>
+                        </div>
+                    </div>
+                    <div class="expense-entry reconcile-entry" id="reconcileEntry" hidden>
+                        <div class="reconcile-entry-row">
+                            <input type="text" class="form-input reconcile-display" id="reconcileStatAmount" value="统计金额 ¥0" readonly>
+                            <input type="number" class="form-input" id="reconcileActualInput" step="0.01" placeholder="实际金额">
+                            <input type="text" class="form-input reconcile-display" id="reconcileDiffAmount" value="平账差额 ¥0" readonly>
+                            <button class="btn btn-secondary" type="button" onclick="saveReconcileActual()">平账</button>
+                        </div>
+                    </div>
+                    <div class="finance-assets-row">
+                        <div class="finance-summary-item finance-asset-item" id="totalAssetsCard" onclick="startTotalAssetsEdit()">
+                            <div class="finance-asset-title">
+                                <span class="finance-summary-icon is-assets" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="8"></circle>
+                                        <circle cx="12" cy="12" r="4.5"></circle>
+                                        <path d="M10 10.5h4"></path>
+                                        <path d="M10 13.5h4"></path>
+                                    </svg>
+                                </span>
+                                <div class="finance-summary-label">总资产</div>
+                            </div>
+                            <div class="finance-asset-value-wrap">
+                                <span class="finance-asset-currency">¥</span>
+                                <input type="number" class="form-input finance-asset-input" id="totalAssetsInput" step="0.01" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="finance-summary">
+                        <div class="finance-summary-item">
+                            <div class="finance-summary-left">
+                                <span class="finance-summary-icon is-expense" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M4 7h16"></path>
+                                        <path d="M7 4v3"></path>
+                                        <path d="M17 4v3"></path>
+                                        <rect x="5" y="10" width="14" height="10" rx="1"></rect>
+                                        <path d="M9 14h6"></path>
+                                    </svg>
+                                </span>
+                                <div class="finance-summary-main">
+                                    <div class="finance-summary-label">总开销</div>
+                                    <div class="finance-summary-value expense" id="expenseTotal">¥0</div>
+                                </div>
+                            </div>
+                            <div class="finance-trends">
+                                <div class="finance-trend-line">同比 <span class="finance-trend-value" id="expenseYoY">--</span></div>
+                                <div class="finance-trend-line">环比 <span class="finance-trend-value" id="expenseMoM">--</span></div>
+                            </div>
+                        </div>
+                        <div class="finance-summary-item">
+                            <div class="finance-summary-left">
+                                <span class="finance-summary-icon is-income" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M12 19V5"></path>
+                                        <path d="M5 12l7-7 7 7"></path>
+                                    </svg>
+                                </span>
+                                <div class="finance-summary-main">
+                                    <div class="finance-summary-label">总收入</div>
+                                    <div class="finance-summary-value income" id="incomeTotal">¥0</div>
+                                </div>
+                            </div>
+                            <div class="finance-trends">
+                                <div class="finance-trend-line">同比 <span class="finance-trend-value" id="incomeYoY">--</span></div>
+                                <div class="finance-trend-line">环比 <span class="finance-trend-value" id="incomeMoM">--</span></div>
+                            </div>
+                        </div>
+                        <div class="finance-summary-item">
+                            <div class="finance-summary-left">
+                                <span class="finance-summary-icon is-investment" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M4 16l5-5 4 4 7-7"></path>
+                                        <path d="M14 8h6v6"></path>
+                                    </svg>
+                                </span>
+                                <div class="finance-summary-main">
+                                    <div class="finance-summary-label">总投资</div>
+                                    <div class="finance-summary-value investment" id="investmentTotal">¥0</div>
+                                </div>
+                            </div>
+                            <div class="finance-trends">
+                                <div class="finance-trend-line">同比 <span class="finance-trend-value" id="investmentYoY">--</span></div>
+                                <div class="finance-trend-line">环比 <span class="finance-trend-value" id="investmentMoM">--</span></div>
+                            </div>
+                        </div>
+                        <div class="finance-summary-item">
+                            <div class="finance-summary-left">
+                                <span class="finance-summary-icon is-balance" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M12 3v14"></path>
+                                        <path d="M7 6h10"></path>
+                                        <path d="M5 6l-2 4h4l-2-4z"></path>
+                                        <path d="M19 6l-2 4h4l-2-4z"></path>
+                                        <path d="M8 17h8"></path>
+                                    </svg>
+                                </span>
+                                <div class="finance-summary-main">
+                                    <div class="finance-summary-label">净结余</div>
+                                    <div class="finance-summary-value" id="netBalance">¥0</div>
+                                </div>
+                            </div>
+                            <div class="finance-trends">
+                                <div class="finance-trend-line">同比 <span class="finance-trend-value" id="balanceYoY">--</span></div>
+                                <div class="finance-trend-line">环比 <span class="finance-trend-value" id="balanceMoM">--</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="finance-chart-wrap is-collapsed" id="expenseChartWrap">
+                        <div class="finance-chart" id="expenseChart"></div>
+                        <div class="finance-empty is-invisible" id="expenseEmpty">暂无月度财务记录。</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let expensePeriod = 'week';
+        let currentNetBalance = 0;
+
+        // 更新日期
+        function updateDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+
+        function formatCurrency(num) {
+            return `¥${Math.round(num).toLocaleString('zh-CN')}`;
+        }
+
+        function getCurrentMonthKey(date = new Date()) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function getReconcileStorageKey() {
+            return `planner_reconcile_actual_${new Date().getFullYear()}`;
+        }
+
+        function getReconcileAdjustmentStorageKey() {
+            return 'planner_month_reconcile_adjustments';
+        }
+
+        function getReconcileDisplayStorageKey() {
+            return 'planner_month_reconcile_display';
+        }
+
+        function safeJsonValue(raw, fallback) {
+            if (!raw) return fallback;
+            try {
+                return JSON.parse(raw);
+            } catch (err) {
+                return fallback;
+            }
+        }
+
+        function getReconcileDisplayRecords() {
+            const raw = safeJsonValue(localStorage.getItem(getReconcileDisplayStorageKey()), {});
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+
+            const result = {};
+            Object.keys(raw).forEach(key => {
+                const item = raw[key];
+                if (!item || typeof item !== 'object') return;
+                const statAmount = Number(item.statAmount);
+                const actualAmount = Number(item.actualAmount);
+                const diffAmount = Number(item.diffAmount);
+                if (!Number.isFinite(statAmount) || !Number.isFinite(actualAmount) || !Number.isFinite(diffAmount)) return;
+                result[key] = { statAmount, actualAmount, diffAmount };
+            });
+            return result;
+        }
+
+        function setReconcileDisplayRecord(monthKey, record) {
+            const records = getReconcileDisplayRecords();
+            records[monthKey] = {
+                statAmount: Number(record.statAmount) || 0,
+                actualAmount: Number(record.actualAmount) || 0,
+                diffAmount: Number(record.diffAmount) || 0
+            };
+            localStorage.setItem(getReconcileDisplayStorageKey(), JSON.stringify(records));
+        }
+
+        function getReconcileAdjustments() {
+            const raw = safeJsonValue(localStorage.getItem(getReconcileAdjustmentStorageKey()), {});
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+
+            const result = {};
+            Object.keys(raw).forEach(key => {
+                const value = Number(raw[key]);
+                if (Number.isFinite(value)) {
+                    result[key] = value;
+                }
+            });
+            return result;
+        }
+
+        function setReconcileAdjustment(monthKey, delta) {
+            const adjustments = getReconcileAdjustments();
+            if (Math.abs(delta) < 0.000001) {
+                delete adjustments[monthKey];
+            } else {
+                adjustments[monthKey] = delta;
+            }
+            localStorage.setItem(getReconcileAdjustmentStorageKey(), JSON.stringify(adjustments));
+        }
+
+        function getReconcileActualAmount() {
+            const raw = localStorage.getItem(getReconcileStorageKey());
+            if (raw === null) return 0;
+            const value = Number(raw);
+            return Number.isFinite(value) ? value : 0;
+        }
+
+        function setReconcileActualAmount(value) {
+            localStorage.setItem(getReconcileStorageKey(), String(value));
+        }
+
+        function updateReconcileDiff(statAmount) {
+            const inputEl = document.getElementById('reconcileActualInput');
+            const diffEl = document.getElementById('reconcileDiffAmount');
+            if (!inputEl || !diffEl) return;
+
+            const raw = inputEl.value.trim();
+            const actual = raw === '' ? 0 : Number(raw);
+            const safeActual = Number.isFinite(actual) ? actual : 0;
+            const diff = safeActual - statAmount;
+
+            diffEl.value = `平账差额 ${formatCurrency(diff)}`;
+            diffEl.classList.toggle('balance-positive', diff > 0);
+            diffEl.classList.toggle('balance-negative', diff < 0);
+        }
+
+        function renderReconcileEntry() {
+            const entryEl = document.getElementById('reconcileEntry');
+            const statEl = document.getElementById('reconcileStatAmount');
+            const inputEl = document.getElementById('reconcileActualInput');
+            const diffEl = document.getElementById('reconcileDiffAmount');
+            if (!entryEl || !statEl || !inputEl) return;
+
+            const isMonth = expensePeriod === 'month';
+            entryEl.hidden = !isMonth;
+            if (!isMonth) return;
+
+            const monthKey = getCurrentMonthKey(new Date());
+            const displayRecord = getReconcileDisplayRecords()[monthKey];
+
+            if (displayRecord) {
+                statEl.value = `统计金额 ${formatCurrency(displayRecord.statAmount)}`;
+                if (document.activeElement !== inputEl) {
+                    inputEl.value = String(displayRecord.actualAmount);
+                }
+                if (diffEl) {
+                    diffEl.value = `平账差额 ${formatCurrency(displayRecord.diffAmount)}`;
+                    diffEl.classList.toggle('balance-positive', displayRecord.diffAmount > 0);
+                    diffEl.classList.toggle('balance-negative', displayRecord.diffAmount < 0);
+                }
+                return;
+            }
+
+            statEl.value = `统计金额 ${formatCurrency(currentNetBalance)}`;
+            if (document.activeElement !== inputEl) {
+                inputEl.value = String(getReconcileActualAmount());
+            }
+            updateReconcileDiff(currentNetBalance);
+        }
+
+        function saveReconcileActual() {
+            const inputEl = document.getElementById('reconcileActualInput');
+            if (!inputEl) return;
+
+            const raw = inputEl.value.trim();
+            if (raw === '') {
+                setReconcileActualAmount(0);
+                inputEl.value = '0';
+                updateReconcileDiff(currentNetBalance);
+                return;
+            }
+
+            const value = Number(raw);
+            if (!Number.isFinite(value)) {
+                alert('请输入有效金额');
+                inputEl.focus();
+                return;
+            }
+
+            setReconcileActualAmount(value);
+            const monthKey = getCurrentMonthKey(new Date());
+            const adjustments = getReconcileAdjustments();
+            const currentDelta = Number(adjustments[monthKey]) || 0;
+            const statAmount = currentNetBalance;
+            const diff = value - statAmount;
+            const nextDelta = currentDelta - diff;
+            setReconcileDisplayRecord(monthKey, {
+                statAmount,
+                actualAmount: value,
+                diffAmount: diff
+            });
+            setReconcileAdjustment(monthKey, nextDelta);
+            renderExpenseStats();
+        }
+
+        function initReconcileEntry() {
+            const inputEl = document.getElementById('reconcileActualInput');
+            if (!inputEl) return;
+
+            inputEl.value = String(getReconcileActualAmount());
+
+            inputEl.addEventListener('input', () => {
+                const monthKey = getCurrentMonthKey(new Date());
+                const displayRecord = getReconcileDisplayRecords()[monthKey];
+                const baseStatAmount = displayRecord ? displayRecord.statAmount : currentNetBalance;
+                updateReconcileDiff(baseStatAmount);
+            });
+
+            inputEl.addEventListener('keydown', event => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    saveReconcileActual();
+                    inputEl.blur();
+                }
+            });
+        }
+
+        function getTotalAssetsBase() {
+            const rawBase = localStorage.getItem('planner_total_assets_base');
+            const rawLegacy = localStorage.getItem('planner_total_assets');
+            const raw = rawBase !== null ? rawBase : rawLegacy;
+            if (raw === null) return 0;
+            try {
+                const parsed = JSON.parse(raw);
+                const value = Number(parsed);
+                return Number.isFinite(value) ? value : 0;
+            } catch {
+                const value = Number(raw);
+                return Number.isFinite(value) ? value : 0;
+            }
+        }
+
+        function setTotalAssetsBase(value) {
+            localStorage.setItem('planner_total_assets_base', JSON.stringify(value));
+        }
+
+        function getTotalAssets() {
+            return getTotalAssetsBase() + currentNetBalance;
+        }
+
+        function renderTotalAssets() {
+            const inputEl = document.getElementById('totalAssetsInput');
+            if (!inputEl) return;
+            inputEl.value = String(getTotalAssets());
+            syncTotalAssetsInputWidth();
+        }
+
+        function syncTotalAssetsInputWidth() {
+            const inputEl = document.getElementById('totalAssetsInput');
+            if (!inputEl) return;
+
+            const text = (inputEl.value || inputEl.placeholder || '0').trim();
+            const length = Math.max(1, text.length);
+            const widthCh = Math.min(14, length + 0.6);
+            inputEl.style.width = `${widthCh}ch`;
+        }
+
+        function startTotalAssetsEdit() {
+            const cardEl = document.getElementById('totalAssetsCard');
+            const inputEl = document.getElementById('totalAssetsInput');
+            if (!cardEl || !inputEl) return;
+
+            cardEl.classList.add('is-editing');
+            syncTotalAssetsInputWidth();
+            inputEl.focus();
+            inputEl.select();
+        }
+
+        function saveTotalAssetsFromInput() {
+            const cardEl = document.getElementById('totalAssetsCard');
+            const inputEl = document.getElementById('totalAssetsInput');
+            if (!cardEl || !inputEl) return;
+
+            const rawValue = inputEl.value.trim();
+            if (rawValue === '') {
+                renderTotalAssets();
+                cardEl.classList.remove('is-editing');
+                return;
+            }
+
+            const parsedValue = Number(rawValue);
+            if (Number.isFinite(parsedValue)) {
+                setTotalAssetsBase(parsedValue - currentNetBalance);
+            }
+            renderTotalAssets();
+            cardEl.classList.remove('is-editing');
+        }
+
+        function initTotalAssetsEditor() {
+            const cardEl = document.getElementById('totalAssetsCard');
+            const inputEl = document.getElementById('totalAssetsInput');
+            if (!cardEl || !inputEl) return;
+
+            inputEl.addEventListener('click', event => {
+                event.stopPropagation();
+            });
+
+            inputEl.addEventListener('focus', () => {
+                cardEl.classList.add('is-editing');
+                syncTotalAssetsInputWidth();
+            });
+
+            inputEl.addEventListener('input', () => {
+                syncTotalAssetsInputWidth();
+            });
+
+            inputEl.addEventListener('keydown', event => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    inputEl.blur();
+                    return;
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    renderTotalAssets();
+                    cardEl.classList.remove('is-editing');
+                    inputEl.blur();
+                }
+            });
+
+            inputEl.addEventListener('blur', () => {
+                saveTotalAssetsFromInput();
+            });
+
+            syncTotalAssetsInputWidth();
+        }
+
+        function getISOWeekInfo(date) {
+            const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const day = utcDate.getUTCDay() || 7;
+            utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
+            const weekYear = utcDate.getUTCFullYear();
+            const yearStart = new Date(Date.UTC(weekYear, 0, 1));
+            const week = Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+            return { year: weekYear, week };
+        }
+
+        function getWeekKey(date) {
+            const { year, week } = getISOWeekInfo(date);
+            return `${year}-W${String(week).padStart(2, '0')}`;
+        }
+
+        function getDateFromWeekKey(weekKey) {
+            const matched = /^(\d{4})-W(\d{1,2})$/.exec(weekKey || '');
+            if (!matched) return null;
+
+            const weekYear = Number(matched[1]);
+            const week = Number(matched[2]);
+            if (!Number.isInteger(weekYear) || !Number.isInteger(week) || week < 1 || week > 53) return null;
+
+            // ISO week: week 1 contains Jan 4th; Monday is first day.
+            const jan4 = new Date(Date.UTC(weekYear, 0, 4));
+            const jan4Day = jan4.getUTCDay() || 7;
+            const week1Monday = new Date(jan4);
+            week1Monday.setUTCDate(jan4.getUTCDate() - jan4Day + 1);
+
+            const targetMonday = new Date(week1Monday);
+            targetMonday.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+            return new Date(targetMonday.getUTCFullYear(), targetMonday.getUTCMonth(), targetMonday.getUTCDate());
+        }
+
+        function getMonthKey(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function createMetric(expense = 0, income = 0, investment = 0) {
+            return {
+                expense,
+                income,
+                investment,
+                netBalance: income - expense - investment
+            };
+        }
+
+        function getWeeklyMetricMap(records) {
+            const map = new Map();
+            records.forEach(record => {
+                const key = record.weekKey;
+                if (!map.has(key)) {
+                    map.set(key, { expense: 0, income: 0, investment: 0 });
+                }
+                const bucket = map.get(key);
+                bucket.expense += record.expense;
+                bucket.income += record.income;
+                bucket.investment += record.investment;
+            });
+            return map;
+        }
+
+        function getMonthlyMetricMap(records) {
+            const map = new Map();
+            records.forEach(record => {
+                const date = getDateFromWeekKey(record.weekKey) || new Date(record.createdAt);
+                if (Number.isNaN(date.getTime())) return;
+
+                const key = getMonthKey(date);
+                if (!map.has(key)) {
+                    map.set(key, { expense: 0, income: 0, investment: 0 });
+                }
+                const bucket = map.get(key);
+                bucket.expense += record.expense;
+                bucket.income += record.income;
+                bucket.investment += record.investment;
+            });
+
+            const adjustments = getReconcileAdjustments();
+            Object.keys(adjustments).forEach(key => {
+                if (!map.has(key)) {
+                    map.set(key, { expense: 0, income: 0, investment: 0 });
+                }
+                map.get(key).expense += Number(adjustments[key]) || 0;
+            });
+
+            return map;
+        }
+
+        function getMetricFromMap(map, key) {
+            const value = map.get(key);
+            if (!value) return createMetric();
+            return createMetric(value.expense, value.income, value.investment);
+        }
+
+        function calcChangeRate(current, base) {
+            if (!Number.isFinite(current) || !Number.isFinite(base)) return null;
+            if (Math.abs(base) < 0.000001) {
+                if (Math.abs(current) < 0.000001) return 0;
+                return null;
+            }
+            return ((current - base) / Math.abs(base)) * 100;
+        }
+
+        function setTrendValue(id, rate) {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            el.classList.remove('up', 'down', 'flat', 'na');
+            if (rate === null) {
+                el.textContent = '--';
+                el.classList.add('na');
+                return;
+            }
+
+            if (Math.abs(rate) < 0.05) {
+                el.textContent = '0.0%';
+                el.classList.add('flat');
+                return;
+            }
+
+            const sign = rate > 0 ? '+' : '';
+            el.textContent = `${sign}${rate.toFixed(1)}%`;
+            el.classList.add(rate > 0 ? 'up' : 'down');
+        }
+
+        function renderFinanceTrends(records, now) {
+            let currentMetric = createMetric();
+            let yoyMetric = createMetric();
+            let momMetric = createMetric();
+
+            if (expensePeriod === 'week') {
+                const weekMap = getWeeklyMetricMap(records);
+                const currentKey = getWeekKey(now);
+
+                const prevDate = new Date(now);
+                prevDate.setDate(prevDate.getDate() - 7);
+                const prevKey = getWeekKey(prevDate);
+
+                const yoyDate = new Date(now);
+                yoyDate.setDate(yoyDate.getDate() - 364);
+                const yoyKey = getWeekKey(yoyDate);
+
+                currentMetric = getMetricFromMap(weekMap, currentKey);
+                yoyMetric = getMetricFromMap(weekMap, yoyKey);
+                momMetric = getMetricFromMap(weekMap, prevKey);
+            } else {
+                const monthMap = getMonthlyMetricMap(records);
+                const currentKey = getMonthKey(now);
+                const prevKey = getMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+                const yoyKey = getMonthKey(new Date(now.getFullYear() - 1, now.getMonth(), 1));
+
+                currentMetric = getMetricFromMap(monthMap, currentKey);
+                yoyMetric = getMetricFromMap(monthMap, yoyKey);
+                momMetric = getMetricFromMap(monthMap, prevKey);
+            }
+
+            setTrendValue('expenseYoY', calcChangeRate(currentMetric.expense, yoyMetric.expense));
+            setTrendValue('expenseMoM', calcChangeRate(currentMetric.expense, momMetric.expense));
+            setTrendValue('incomeYoY', calcChangeRate(currentMetric.income, yoyMetric.income));
+            setTrendValue('incomeMoM', calcChangeRate(currentMetric.income, momMetric.income));
+            setTrendValue('investmentYoY', calcChangeRate(currentMetric.investment, yoyMetric.investment));
+            setTrendValue('investmentMoM', calcChangeRate(currentMetric.investment, momMetric.investment));
+            setTrendValue('balanceYoY', calcChangeRate(currentMetric.netBalance, yoyMetric.netBalance));
+            setTrendValue('balanceMoM', calcChangeRate(currentMetric.netBalance, momMetric.netBalance));
+        }
+
+        function getWeeklyExpenseRecords() {
+            const raw = safeJsonValue(localStorage.getItem('planner_weekly_expenses'), []);
+            if (!Array.isArray(raw)) return [];
+
+            return raw
+                .map(item => {
+                    const createdAt = item.createdAt || new Date().toISOString();
+                    const date = new Date(createdAt);
+                    const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+                    const expense = Math.max(0, Number(item.expense ?? item.amount) || 0);
+                    const income = Math.max(0, Number(item.income) || 0);
+                    const investment = Math.max(0, Number(item.investment) || 0);
+                    return {
+                        id: item.id || `${Date.now()}-${Math.random()}`,
+                        weekKey: item.weekKey || getWeekKey(safeDate),
+                        amount: expense,
+                        expense,
+                        income,
+                        investment,
+                        createdAt: safeDate.toISOString()
+                    };
+                })
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        }
+
+        function getRecentWeekBuckets(records) {
+            const recent = records.slice(-12);
+            return recent.map((item, idx) => ({
+                label: `${idx + 1}`,
+                expense: item.expense,
+                income: item.income,
+                investment: item.investment
+            }));
+        }
+
+        function getMonthBuckets(records, now) {
+            const currentYear = now.getFullYear();
+            const adjustments = getReconcileAdjustments();
+            const buckets = Array.from({ length: 12 }, (_, idx) => ({
+                label: `${idx + 1}月`,
+                expense: 0,
+                income: 0,
+                investment: 0
+            }));
+
+            records.forEach(record => {
+                const date = getDateFromWeekKey(record.weekKey) || new Date(record.createdAt);
+                if (Number.isNaN(date.getTime()) || date.getFullYear() !== currentYear) return;
+                buckets[date.getMonth()].expense += record.expense;
+                buckets[date.getMonth()].income += record.income;
+                buckets[date.getMonth()].investment += record.investment;
+            });
+
+            buckets.forEach((bucket, idx) => {
+                const monthKey = `${currentYear}-${String(idx + 1).padStart(2, '0')}`;
+                const delta = Number(adjustments[monthKey]) || 0;
+                bucket.expense += delta;
+            });
+
+            return buckets.map(item => ({
+                ...item,
+                tip: `${item.label}开销: ${formatCurrency(item.expense)} / 收入: ${formatCurrency(item.income)} / 投资: ${formatCurrency(item.investment)}`
+            }));
+        }
+
+        function saveWeeklyExpense() {
+            const expenseInputEl = document.getElementById('weeklyExpenseInput');
+            const incomeInputEl = document.getElementById('weeklyIncomeInput');
+            const investmentInputEl = document.getElementById('weeklyInvestmentInput');
+
+            const expenseRaw = expenseInputEl.value.trim();
+            const incomeRaw = incomeInputEl.value.trim();
+            const investmentRaw = investmentInputEl.value.trim();
+
+            const parseValue = raw => {
+                if (raw === '') return undefined;
+                const value = Number(raw);
+                if (!Number.isFinite(value) || value < 0) return null;
+                return value;
+            };
+
+            const expenseInput = parseValue(expenseRaw);
+            const incomeInput = parseValue(incomeRaw);
+            const investmentInput = parseValue(investmentRaw);
+
+            if ([expenseInput, incomeInput, investmentInput].includes(null)) {
+                alert('请输入大于等于 0 的金额');
+                return;
+            }
+
+            if (expenseInput === undefined && incomeInput === undefined && investmentInput === undefined) {
+                alert('请至少填写一项金额');
+                return;
+            }
+
+            const now = new Date();
+            const weekKey = getWeekKey(now);
+            const records = getWeeklyExpenseRecords();
+            const index = records.findIndex(record => record.weekKey === weekKey);
+
+            const current = index >= 0 ? records[index] : null;
+            const expense = expenseInput !== undefined ? expenseInput : (current?.expense || 0);
+            const income = incomeInput !== undefined ? incomeInput : (current?.income || 0);
+            const investment = investmentInput !== undefined ? investmentInput : (current?.investment || 0);
+
+            if (index >= 0) {
+                records[index] = {
+                    ...current,
+                    amount: expense,
+                    expense,
+                    income,
+                    investment,
+                    createdAt: now.toISOString()
+                };
+            } else {
+                records.push({
+                    id: Date.now(),
+                    weekKey,
+                    amount: expense,
+                    expense,
+                    income,
+                    investment,
+                    createdAt: now.toISOString()
+                });
+            }
+
+            records.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            localStorage.setItem('planner_weekly_expenses', JSON.stringify(records));
+            expenseInputEl.value = '';
+            incomeInputEl.value = '';
+            investmentInputEl.value = '';
+            renderExpenseStats();
+        }
+
+        function buildMonthOverlayChartHtml(buckets, chartWidth = 0) {
+            const width = 720;
+            const height = 186;
+            const svgHeight = 186;
+            const paddingLeft = 56;
+            const paddingRight = 18;
+            const paddingTop = 14;
+            const paddingBottom = 34;
+            const plotWidth = width - paddingLeft - paddingRight;
+            const plotHeight = height - paddingTop - paddingBottom;
+            const slotWidth = buckets.length > 0 ? plotWidth / buckets.length : 0;
+            const barWidth = Math.max(8, Math.min(24, slotWidth > 0 ? slotWidth * 0.55 : 16));
+            const scaleX = chartWidth > 0 ? chartWidth / width : 1;
+            const scaleY = svgHeight / height;
+            const labelPaddingLeft = (paddingLeft * scaleX).toFixed(2);
+            const labelPaddingRight = (paddingRight * scaleX).toFixed(2);
+            const pointRadius = 2;
+            const pointRx = Math.max(0.85, pointRadius * (scaleY / Math.max(scaleX, 0.0001)));
+            const pointRy = pointRadius;
+            const balanceValues = buckets.map(item => item.income - item.expense - item.investment);
+
+            const maxDataValue = Math.max(
+                ...buckets.flatMap((item, idx) => [item.expense, item.income, item.investment, Math.max(balanceValues[idx], 0)]),
+                1
+            );
+            const minDataValue = Math.min(0, ...balanceValues);
+            const valueRange = Math.max(maxDataValue - minDataValue, 1);
+            const valueToY = value => paddingTop + ((maxDataValue - value) / valueRange) * plotHeight;
+            const baselineY = valueToY(0);
+            const tickCount = 5;
+            const rawTicks = Array.from({ length: tickCount }, (_, idx) => maxDataValue - (valueRange * idx) / (tickCount - 1));
+            if (minDataValue < 0 && maxDataValue > 0) {
+                rawTicks.push(0);
+            }
+            const yTicks = [...new Set(rawTicks.map(value => Math.round(value * 100) / 100))].sort((a, b) => b - a);
+            const formatAxisCurrency = value => {
+                const rounded = Math.round(value);
+                const absText = Math.abs(rounded).toLocaleString('zh-CN');
+                return `${rounded < 0 ? '-' : ''}¥${absText}`;
+            };
+
+            const makePoints = key => buckets.map((item, idx) => {
+                const x = paddingLeft + slotWidth * (idx + 0.5);
+                const value = item[key] || 0;
+                const y = valueToY(value);
+                return { x, y, value };
+            });
+
+            const expensePoints = makePoints('expense');
+            const incomePoints = makePoints('income');
+            const investmentPoints = makePoints('investment');
+
+            const toLinePoints = points => points.map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' ');
+            const expenseLinePoints = toLinePoints(expensePoints);
+            const incomeLinePoints = toLinePoints(incomePoints);
+            const investmentLinePoints = toLinePoints(investmentPoints);
+
+            const expenseAreaPath = expensePoints.length > 0
+                ? `M ${expensePoints[0].x.toFixed(2)} ${baselineY.toFixed(2)} L ${expenseLinePoints} L ${expensePoints[expensePoints.length - 1].x.toFixed(2)} ${baselineY.toFixed(2)} Z`
+                : '';
+
+            return `
+                <div class="expense-month-combined">
+                    <div class="finance-month-legend">
+                        <div class="finance-month-legend-item">
+                            <span class="finance-month-legend-dot is-expense"></span>
+                            开销
+                        </div>
+                        <div class="finance-month-legend-item">
+                            <span class="finance-month-legend-dot is-income"></span>
+                            收入
+                        </div>
+                        <div class="finance-month-legend-item">
+                            <span class="finance-month-legend-dot is-investment"></span>
+                            投资
+                        </div>
+                    </div>
+                    <svg class="expense-month-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                        ${yTicks.map(value => {
+                            const y = valueToY(value);
+                            const isZero = Math.abs(value) < 0.000001;
+                            return `
+                                ${isZero ? '' : `<line class="expense-month-grid-line" x1="${paddingLeft}" y1="${y.toFixed(2)}" x2="${width - paddingRight}" y2="${y.toFixed(2)}"></line>`}
+                                <text class="expense-month-axis-label" x="${paddingLeft - 8}" y="${y.toFixed(2)}">${formatAxisCurrency(value)}</text>
+                            `;
+                        }).join('')}
+                        <line class="expense-month-baseline" x1="${paddingLeft}" y1="${baselineY}" x2="${width - paddingRight}" y2="${baselineY}"></line>
+                        ${expensePoints.map((point, idx) => {
+                            const balance = balanceValues[idx];
+                            const isPositive = balance >= 0;
+                            const valueY = valueToY(balance);
+                            const barY = isPositive ? valueY : baselineY;
+                            const barHeight = Math.abs(valueY - baselineY);
+                            const monthTip = `${buckets[idx].label}结余: ${formatCurrency(balance)} / 开销: ${formatCurrency(buckets[idx].expense)} / 收入: ${formatCurrency(buckets[idx].income)} / 投资: ${formatCurrency(buckets[idx].investment)}`;
+                            return `
+                                <rect class="expense-month-bar ${isPositive ? 'is-positive' : 'is-negative'}" x="${(point.x - barWidth / 2).toFixed(2)}" y="${barY.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${barHeight.toFixed(2)}">
+                                    <title>${monthTip}</title>
+                                </rect>
+                            `;
+                        }).join('')}
+                        ${expenseAreaPath ? `<path class="expense-month-area" d="${expenseAreaPath}"></path>` : ''}
+                        ${expenseLinePoints ? `<polyline class="expense-month-line is-expense" points="${expenseLinePoints}"></polyline>` : ''}
+                        ${incomeLinePoints ? `<polyline class="expense-month-line is-income" points="${incomeLinePoints}"></polyline>` : ''}
+                        ${investmentLinePoints ? `<polyline class="expense-month-line is-investment" points="${investmentLinePoints}"></polyline>` : ''}
+                        ${expensePoints.map((point, idx) => `
+                            <ellipse class="expense-month-point is-expense" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" rx="${pointRx.toFixed(2)}" ry="${pointRy.toFixed(2)}">
+                                <title>${buckets[idx].label}开销: ${formatCurrency(buckets[idx].expense)}</title>
+                            </ellipse>
+                        `).join('')}
+                        ${incomePoints.map((point, idx) => `
+                            <ellipse class="expense-month-point is-income" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" rx="${pointRx.toFixed(2)}" ry="${pointRy.toFixed(2)}">
+                                <title>${buckets[idx].label}收入: ${formatCurrency(buckets[idx].income)}</title>
+                            </ellipse>
+                        `).join('')}
+                        ${investmentPoints.map((point, idx) => `
+                            <ellipse class="expense-month-point is-investment" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" rx="${pointRx.toFixed(2)}" ry="${pointRy.toFixed(2)}">
+                                <title>${buckets[idx].label}投资: ${formatCurrency(buckets[idx].investment)}</title>
+                            </ellipse>
+                        `).join('')}
+                    </svg>
+                    <div class="expense-month-labels" style="grid-template-columns: repeat(${buckets.length}, minmax(0, 1fr)); padding: 0 ${labelPaddingRight}px 0 ${labelPaddingLeft}px;">
+                        ${buckets.map(item => `<div class="expense-month-label">${item.label}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderExpenseStats() {
+            const now = new Date();
+            const records = getWeeklyExpenseRecords();
+            const financeEntryEl = document.getElementById('financeEntry');
+            const reconcileEntryEl = document.getElementById('reconcileEntry');
+            const chartWrapEl = document.getElementById('expenseChartWrap');
+            const chartEl = document.getElementById('expenseChart');
+            const emptyEl = document.getElementById('expenseEmpty');
+
+            if (financeEntryEl) {
+                financeEntryEl.hidden = expensePeriod === 'month';
+            }
+            if (reconcileEntryEl) {
+                reconcileEntryEl.hidden = expensePeriod !== 'month';
+            }
+
+            const weekBuckets = getRecentWeekBuckets(records);
+            const monthBuckets = getMonthBuckets(records, now);
+            const buckets = expensePeriod === 'week' ? weekBuckets : monthBuckets;
+
+            const totalExpense = buckets.reduce((sum, item) => sum + item.expense, 0);
+            const totalIncome = buckets.reduce((sum, item) => sum + item.income, 0);
+            const totalInvestment = buckets.reduce((sum, item) => sum + item.investment, 0);
+            const netBalance = totalIncome - totalExpense - totalInvestment;
+            currentNetBalance = netBalance;
+
+            document.getElementById('expenseTotal').textContent = formatCurrency(totalExpense);
+            document.getElementById('incomeTotal').textContent = formatCurrency(totalIncome);
+            document.getElementById('investmentTotal').textContent = formatCurrency(totalInvestment);
+            const netBalanceEl = document.getElementById('netBalance');
+            netBalanceEl.textContent = formatCurrency(netBalance);
+            netBalanceEl.classList.toggle('balance-positive', netBalance > 0);
+            netBalanceEl.classList.toggle('balance-negative', netBalance < 0);
+            renderFinanceTrends(records, now);
+            renderTotalAssets();
+            renderReconcileEntry();
+
+            if (expensePeriod === 'week') {
+                chartWrapEl.classList.add('is-collapsed');
+                emptyEl.classList.add('is-invisible');
+                chartEl.innerHTML = '';
+                return;
+            }
+
+            chartWrapEl.classList.remove('is-collapsed');
+            const hasData = monthBuckets.some(item => item.expense > 0 || item.income > 0 || item.investment > 0);
+            emptyEl.classList.toggle('is-invisible', hasData);
+            const chartWidth = chartEl.clientWidth || 0;
+            chartEl.innerHTML = buildMonthOverlayChartHtml(monthBuckets, chartWidth);
+        }
+
+        function switchExpensePeriod(period) {
+            const prevPeriod = expensePeriod;
+            if (prevPeriod === period) return;
+            expensePeriod = period;
+            document.querySelectorAll('.finance-switch-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+            renderExpenseStats();
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            renderTotalAssets();
+            initTotalAssetsEditor();
+            initReconcileEntry();
+            renderExpenseStats();
+        });
+
+        window.addEventListener('planner-storage-synced', () => {
+            renderTotalAssets();
+            renderExpenseStats();
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key && !event.key.startsWith('planner_')) return;
+            renderTotalAssets();
+            renderExpenseStats();
+        });
+
+        // 侧边栏折叠功能
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // 页面加载时恢复状态
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+        }
+    </script>
+
+    <style>
+        .main-content,
+        .container,
+        .module {
+            min-width: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .stat-card {
+            background: var(--warm-gray-50);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--warm-gray-900);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--warm-gray-500);
+        }
+
+        .finance-switch {
+            display: inline-flex;
+            gap: 8px;
+            background: var(--warm-gray-100);
+            padding: 4px;
+            border-radius: 999px;
+        }
+
+        .finance-switch-btn {
+            border: 0;
+            background: transparent;
+            color: var(--warm-gray-600);
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+
+        .finance-switch-btn.active {
+            background: #fff;
+            color: var(--warm-gray-900);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .expense-entry {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .expense-entry-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .expense-entry-row .form-input {
+            width: 100%;
+            min-width: 0;
+            max-width: none;
+        }
+
+        .expense-entry-row .btn {
+            white-space: nowrap;
+        }
+
+        #weeklyExpenseInput,
+        #weeklyIncomeInput,
+        #weeklyInvestmentInput,
+        #totalAssetsInput,
+        #reconcileActualInput {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        #weeklyExpenseInput::-webkit-outer-spin-button,
+        #weeklyExpenseInput::-webkit-inner-spin-button,
+        #weeklyIncomeInput::-webkit-outer-spin-button,
+        #weeklyIncomeInput::-webkit-inner-spin-button,
+        #weeklyInvestmentInput::-webkit-outer-spin-button,
+        #weeklyInvestmentInput::-webkit-inner-spin-button,
+        #totalAssetsInput::-webkit-outer-spin-button,
+        #totalAssetsInput::-webkit-inner-spin-button,
+        #reconcileActualInput::-webkit-outer-spin-button,
+        #reconcileActualInput::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .reconcile-entry-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .reconcile-entry-row .form-input {
+            width: 100%;
+            min-width: 0;
+            max-width: none;
+        }
+
+        .reconcile-display {
+            cursor: default;
+            background: var(--warm-gray-50);
+            color: var(--warm-gray-700);
+        }
+
+        .reconcile-display.balance-positive {
+            color: #2f9e44;
+        }
+
+        .reconcile-display.balance-negative {
+            color: #c92a2a;
+        }
+
+        .reconcile-display:focus {
+            outline: none;
+            box-shadow: none;
+            border-color: var(--warm-gray-200);
+        }
+
+        .expense-entry-hint {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--warm-gray-500);
+        }
+
+        .finance-assets-row {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .finance-asset-item {
+            cursor: text;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .finance-asset-item:hover {
+            background: var(--warm-gray-50);
+            box-shadow: none;
+        }
+
+        .finance-asset-item.is-editing {
+            background: #fff;
+            box-shadow: 0 0 0 1px var(--primary-brown) inset;
+        }
+
+        .finance-asset-title {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 0 auto;
+        }
+
+        .finance-asset-value-wrap {
+            margin-top: -10px;
+            display: inline-flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 1px;
+            width: fit-content;
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            transform: translateX(5px);
+        }
+
+        .finance-asset-currency {
+            font-size: 24px;
+            font-weight: 600;
+            color: #c8a74a;
+            line-height: 1.2;
+        }
+
+        .finance-asset-input {
+            width: 1ch;
+            min-width: 0;
+            max-width: 100%;
+            border: none;
+            background: transparent;
+            padding: 0;
+            text-align: left;
+            font-size: 28px;
+            font-weight: 600;
+            color: #c8a74a;
+            line-height: 1.2;
+        }
+
+        .finance-asset-input::placeholder {
+            color: rgba(200, 167, 74, 0.65);
+        }
+
+        .finance-asset-input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .finance-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .finance-summary-item {
+            background: var(--warm-gray-50);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .finance-summary-main {
+            min-width: 0;
+        }
+
+        .finance-summary-left {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .finance-summary-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--warm-gray-500);
+        }
+
+        .finance-summary-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .finance-summary-icon.is-expense {
+            color: #c92a2a;
+        }
+
+        .finance-summary-icon.is-income {
+            color: #2f9e44;
+        }
+
+        .finance-summary-icon.is-investment {
+            color: #1c7ed6;
+        }
+
+        .finance-summary-icon.is-balance {
+            color: var(--warm-gray-700);
+        }
+
+        .finance-summary-icon.is-assets {
+            color: #c8a74a;
+        }
+
+        .finance-trends {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .finance-trend-line {
+            font-size: 11px;
+            color: var(--warm-gray-500);
+            line-height: 1.2;
+        }
+
+        .finance-trend-value {
+            margin-left: 4px;
+            font-weight: 600;
+            color: var(--warm-gray-700);
+        }
+
+        .finance-trend-value.up {
+            color: #2f9e44;
+        }
+
+        .finance-trend-value.down {
+            color: #c92a2a;
+        }
+
+        .finance-trend-value.flat {
+            color: var(--warm-gray-700);
+        }
+
+        .finance-trend-value.na {
+            color: var(--warm-gray-400);
+        }
+
+        .finance-summary-label {
+            color: var(--warm-gray-500);
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .finance-summary-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--warm-gray-900);
+        }
+
+        .finance-summary-value.income {
+            color: #2f9e44;
+        }
+
+        .finance-summary-value.investment {
+            color: #1c7ed6;
+        }
+
+        .finance-summary-value.expense {
+            color: #c92a2a;
+        }
+
+        .finance-summary-value.balance-positive {
+            color: #2f9e44;
+        }
+
+        .finance-summary-value.balance-negative {
+            color: #c92a2a;
+        }
+
+        .finance-chart-wrap {
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+            overflow-x: hidden;
+            max-height: 340px;
+            opacity: 1;
+            transform-origin: top;
+            transition: opacity 0.2s ease;
+        }
+
+        .finance-chart {
+            min-height: 0;
+            height: auto;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .finance-chart-wrap.is-collapsed {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .expense-month-combined {
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 8px;
+            background: transparent;
+            border-radius: 0;
+            border: 0;
+            padding: 0;
+        }
+
+        .expense-month-svg {
+            width: 100%;
+            height: 186px;
+            display: block;
+        }
+
+        .expense-month-baseline {
+            stroke: var(--warm-gray-200);
+            stroke-width: 1;
+        }
+
+        .expense-month-grid-line {
+            stroke: var(--warm-gray-100);
+            stroke-width: 1;
+        }
+
+        .expense-month-axis-label {
+            fill: var(--warm-gray-500);
+            font-size: 10px;
+            text-anchor: end;
+            dominant-baseline: middle;
+        }
+
+        .expense-month-bar {
+            fill: rgba(47, 158, 68, 0.4);
+        }
+
+        .expense-month-bar.is-positive {
+            fill: rgba(47, 158, 68, 0.45);
+        }
+
+        .expense-month-bar.is-negative {
+            fill: rgba(201, 42, 42, 0.4);
+        }
+
+        .expense-month-area {
+            fill: none;
+        }
+
+        .expense-month-line {
+            fill: none;
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .expense-month-line.is-expense {
+            stroke: #c92a2a;
+        }
+
+        .expense-month-line.is-income {
+            stroke: #2f9e44;
+        }
+
+        .expense-month-line.is-investment {
+            stroke: #1c7ed6;
+        }
+
+        .expense-month-point.is-expense {
+            fill: #c92a2a;
+        }
+
+        .expense-month-point.is-income {
+            fill: #2f9e44;
+        }
+
+        .expense-month-point.is-investment {
+            fill: #1c7ed6;
+        }
+
+        .finance-month-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            align-items: center;
+            min-height: 18px;
+        }
+
+        .finance-month-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--warm-gray-600);
+        }
+
+        .finance-month-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            display: inline-block;
+        }
+
+        .finance-month-legend-dot.is-expense {
+            background: #c92a2a;
+        }
+
+        .finance-month-legend-dot.is-income {
+            background: #2f9e44;
+        }
+
+        .finance-month-legend-dot.is-investment {
+            background: #1c7ed6;
+        }
+
+        .expense-month-labels {
+            display: grid;
+            gap: 0;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: -18px;
+        }
+
+        .expense-month-label {
+            text-align: center;
+            font-size: 11px;
+            color: var(--warm-gray-500);
+            line-height: 1;
+        }
+
+        .finance-empty {
+            color: var(--warm-gray-500);
+            font-size: 13px;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+
+        .finance-empty.is-invisible {
+            visibility: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .finance-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .finance-summary-item {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .finance-summary-left {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .finance-trends {
+                margin-left: 0;
+                align-items: center;
+            }
+
+            .expense-entry-row {
+                grid-template-columns: 1fr;
+            }
+
+            .reconcile-entry-row {
+                grid-template-columns: 1fr;
+            }
+
+            .expense-entry-row .form-input {
+                max-width: 100%;
+            }
+
+            .expense-entry-row .btn,
+            .reconcile-entry-row .btn {
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="no-multiline.js"></script>
+</body>
+</html>
+
+
+

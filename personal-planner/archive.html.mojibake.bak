@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>褰掓。 - 涓汉瑙勫垝绠＄悊</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="storage-sync.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 宸︿晶瀵艰埅鏍?-->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">鈼?/div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-text">涓婚〉</span>
+                </a>
+                <a href="life.html" class="nav-item">
+                    <span class="nav-text">鐢熸椿</span>
+                </a>
+                <a href="stats.html" class="nav-item">
+                    <span class="nav-text">缁熻</span>
+                </a>
+                <a href="review.html" class="nav-item">
+                    <span class="nav-text">澶嶇洏</span>
+                </a>
+                <a href="archive.html" class="nav-item active">
+                    <span class="nav-text">褰掓。</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 涓诲唴瀹瑰尯 -->
+        <main class="main-content">
+            <div class="container">
+                <header class="header">
+                    <div class="header-content">
+                        <h1 class="space-name">褰掓。</h1>
+                        <span class="current-date" id="currentDate"></span>
+                    </div>
+                </header>
+
+                <!-- 鏍囩椤靛鑸?-->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="projects" onclick="switchTab('projects')">椤圭洰</button>
+                    <button class="tab-btn" data-tab="okrs" onclick="switchTab('okrs')">鐩爣</button>
+                    <button class="tab-btn" data-tab="books" onclick="switchTab('books')">涔︾睄</button>
+                </div>
+
+                <!-- 鏍囩椤靛唴瀹?-->
+                <div class="tab-content">
+                    <div class="tab-panel active" id="tab-projects">
+                        <div class="module-header">
+                            <h2 class="module-title">宸插畬鎴愰」鐩?/h2>
+                        </div>
+                        <div class="archive-list" id="completedProjects">
+                            <div class="empty-state">鏆傛棤宸插畬鎴愰」鐩?/div>
+                        </div>
+                    </div>
+
+                    <div class="tab-panel" id="tab-okrs">
+                        <div class="module-header">
+                            <h2 class="module-title">宸插畬鎴愮洰鏍?/h2>
+                        </div>
+                        <div class="archive-list" id="completedOkrs">
+                            <div class="empty-state">鏆傛棤宸插畬鎴愮洰鏍?/div>
+                        </div>
+                    </div>
+
+                    <div class="tab-panel" id="tab-books">
+                        <div class="module-header">
+                            <h2 class="module-title">宸茶涔︾睄</h2>
+                        </div>
+                        <div class="archive-list" id="completedBooks">
+                            <div class="empty-state">鏆傛棤宸茶涔︾睄</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 鏇存柊鏃ユ湡
+        function updateDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+
+        // 鍔犺浇褰掓。鏁版嵁
+        function loadArchive() {
+            const projects = JSON.parse(localStorage.getItem('planner_projects') || '[]');
+            const okrs = JSON.parse(localStorage.getItem('planner_okrs') || '[]');
+            const books = JSON.parse(localStorage.getItem('planner_books') || '[]');
+
+            // 宸插畬鎴愰」鐩紙杩涘害100%鎴栧凡杩囨湡锛?            const completedProjects = projects.filter(p => p.progress >= 100);
+            if (completedProjects.length > 0) {
+                document.getElementById('completedProjects').innerHTML = completedProjects.map(p => `
+                    <div class="archive-item">
+                        <div class="archive-icon" style="background: var(--gradient-brown);">鉁?/div>
+                        <div class="archive-content">
+                            <div class="archive-title">${p.name}</div>
+                            <div class="archive-meta">${formatDate(p.start)} - ${formatDate(p.end)} 路 宸插畬鎴?/div>
+                        </div>
+                        <div class="archive-badge">100%</div>
+                    </div>
+                `).join('');
+            }
+
+            // 宸插畬鎴?OKR锛堟墍鏈?KR 閮藉畬鎴愶級
+            const completedOkrs = okrs.filter(o => o.krs.length > 0 && o.krs.every(kr => kr.completed));
+            if (completedOkrs.length > 0) {
+                document.getElementById('completedOkrs').innerHTML = completedOkrs.map(o => `
+                    <div class="archive-item">
+                        <div class="archive-icon" style="background: var(--gradient-sage);">鉁?/div>
+                        <div class="archive-content">
+                            <div class="archive-title">${o.title}</div>
+                            <div class="archive-meta">${o.period} 路 ${o.krs.length} 涓叧閿粨鏋滃叏閮ㄥ畬鎴?/div>
+                        </div>
+                        <div class="archive-badge">100%</div>
+                    </div>
+                `).join('');
+            }
+
+            // 宸茶涔︾睄
+            const completedBooks = books.filter(b => b.current >= b.total);
+            if (completedBooks.length > 0) {
+                document.getElementById('completedBooks').innerHTML = completedBooks.map(b => `
+                    <div class="archive-item">
+                        <div class="archive-icon" style="background: var(--gradient-apricot);">鉁?/div>
+                        <div class="archive-content">
+                            <div class="archive-title">${b.title}</div>
+                            <div class="archive-meta">${b.author || '鏈煡浣滆€?} 路 ${b.total} 椤?/div>
+                        </div>
+                        <div class="archive-badge">宸茶</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getMonth() + 1}鏈?{date.getDate()}鏃;
+        }
+
+        // 鍒濆鍖?        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            loadArchive();
+        });
+
+        // 渚ц竟鏍忔姌鍙犲姛鑳?        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // 椤甸潰鍔犺浇鏃舵仮澶嶇姸鎬?        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+        }
+
+        // 鏍囩椤靛垏鎹㈠姛鑳?        function switchTab(tabName) {
+            // 绉婚櫎鎵€鏈夋椿鍔ㄧ姸鎬?            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            
+            // 娣诲姞褰撳墠娲诲姩鐘舵€?            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+    </script>
+
+    <style>
+        .archive-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .archive-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--warm-gray-50);
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .archive-item:hover {
+            background: var(--warm-gray-100);
+        }
+
+        .archive-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .archive-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .archive-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--warm-gray-900);
+            margin-bottom: 2px;
+        }
+
+        .archive-meta {
+            font-size: 12px;
+            color: var(--warm-gray-500);
+        }
+
+        .archive-badge {
+            padding: 4px 10px;
+            background: white;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--warm-gray-700);
+        }
+    </style>
+    <script src="no-multiline.js"></script>
+</body>
+</html>
+
+

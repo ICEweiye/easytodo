@@ -1,0 +1,1705 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复盘 - 个人规划管理</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="storage-sync.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">◉</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-text">主页</span>
+                </a>
+                <a href="life.html" class="nav-item">
+                    <span class="nav-text">生活</span>
+                </a>
+                <a href="stats.html" class="nav-item">
+                    <span class="nav-text">统计</span>
+                </a>
+                <a href="review.html" class="nav-item active">
+                    <span class="nav-text">复盘</span>
+                </a>
+                <a href="archive.html" class="nav-item">
+                    <span class="nav-text">归档</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <header class="header">
+                    <div class="header-content">
+                        <h1 class="space-name">复盘</h1>
+                        <span class="current-date" id="currentDate"></span>
+                    </div>
+                </header>
+
+                <div class="review-top-row" id="reviewTopRow">
+                    <section class="review-heat-panel" id="reviewHeatPanel">
+                        <div class="review-heat-content" id="reviewHeatContent">
+                            <div class="review-heat-meta" id="reviewHeatMeta"></div>
+                            <div class="review-heatmap-stage">
+                                <div class="review-heatmap" id="reviewHeatmap"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="module review-kiss-panel" id="kissPanel">
+                        <div class="module-header">
+                            <h2 class="module-title">KISS 模型复盘</h2>
+                            <button class="add-btn" onclick="openReviewModal()" title="新增复盘">+</button>
+                        </div>
+                        <div class="kiss-toolbar" id="kissToolbar"></div>
+                        <div class="kiss-grid" id="kissGrid"></div>
+                    </section>
+                </div>
+
+                <section class="module">
+                    <div class="module-header">
+                        <h2 class="module-title">复盘记录</h2>
+                    </div>
+                    <div class="review-list" id="reviewList"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal modal-large review-modal">
+            <h3 class="modal-title" id="reviewModalTitle">新增复盘记录</h3>
+            <div class="form-row review-basic-row">
+                <div class="form-group">
+                    <label class="form-label">复盘日期</label>
+                    <input type="date" class="form-input" id="reviewDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">今日评分</label>
+                    <select class="form-input" id="reviewScore">
+                        <option value="1">1 分</option>
+                        <option value="2">2 分</option>
+                        <option value="3">3 分</option>
+                        <option value="4">4 分</option>
+                        <option value="5">5 分</option>
+                        <option value="6">6 分</option>
+                        <option value="7" selected>7 分</option>
+                        <option value="8">8 分</option>
+                        <option value="9">9 分</option>
+                        <option value="10">10 分</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">标签分类</label>
+                    <select class="form-input review-category-select" id="reviewCategory" onchange="syncReviewCategorySelectStyle()">
+                        <option value="life">生活</option>
+                        <option value="work" selected>工作</option>
+                        <option value="study">学习</option>
+                        <option value="important">重要</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">总结</label>
+                <textarea class="form-input form-textarea review-textarea" id="reviewSummary" placeholder="先写下今天最核心的结论"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">今日事项</label>
+                <textarea class="form-input form-textarea review-textarea" id="reviewTasks" placeholder="记录今天完成或推进的关键事项"></textarea>
+            </div>
+            <div class="form-row review-emotion-row">
+                <div class="form-group review-emotion-group">
+                    <label class="form-label">情绪</label>
+                    <div class="review-emotion-picker-line">
+                        <input type="text" class="form-input" id="reviewMood" placeholder="请选择情绪" readonly onclick="openReviewEmotionModal()">
+                        <select class="form-input review-emotion-intensity-select" id="reviewEnergy" onchange="syncReviewEmotionIntensityStyle()">
+                            <option value="很高">很高</option>
+                            <option value="高">高</option>
+                            <option value="中" selected>中</option>
+                            <option value="低">低</option>
+                            <option value="很低">很低</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="reviewEmotionArousal" value="低">
+                    <input type="hidden" id="reviewEmotionValence" value="积极">
+                    <input type="hidden" id="reviewEmotionTags" value="[]">
+                </div>
+            </div>
+            <div class="form-row review-kiss-row">
+                <div class="form-group">
+                    <label class="form-label">Keep（需要保持）</label>
+                    <textarea class="form-input form-textarea review-textarea" id="reviewKeep" placeholder="继续保持的做法、状态或习惯"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Improve（需要改进）</label>
+                    <textarea class="form-input form-textarea review-textarea" id="reviewImprove" placeholder="存在问题与优化方向"></textarea>
+                </div>
+            </div>
+            <div class="form-row review-kiss-row">
+                <div class="form-group">
+                    <label class="form-label">Stop（需要停止）</label>
+                    <textarea class="form-input form-textarea review-textarea" id="reviewStop" placeholder="应停止的低效行为、错误方式"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Start（需要行动）</label>
+                    <input type="hidden" id="reviewStart" value="">
+                    <button type="button" class="review-start-add-box" onclick="openReviewTodoModal()" aria-label="添加事项">
+                        <span>+</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="reviewDeleteBtn" style="display:none;" onclick="deleteReview(editingReviewId)">删除</button>
+                <div style="flex:1;"></div>
+                <button class="btn btn-secondary" onclick="closeReviewModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveReview()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="reviewEmotionModal">
+        <div class="modal modal-large review-emotion-modal">
+            <h3 class="modal-title">选择情绪</h3>
+            <div class="review-emotion-subtitle">根据偏积极/偏消极和高/低唤醒选择最贴近的情绪</div>
+            <div class="review-emotion-scroll">
+                <div class="review-emotion-group-list" id="reviewEmotionGroupList"></div>
+                <div class="review-emotion-custom">
+                    <label class="form-label">以上没有契合自己的情绪</label>
+                    <div class="review-emotion-custom-row">
+                        <input type="text" class="form-input" id="reviewCustomEmotionInput" placeholder="输入自定义情绪">
+                        <select class="form-input" id="reviewCustomEmotionValence">
+                            <option value="积极">偏积极</option>
+                            <option value="消极">偏消极</option>
+                        </select>
+                        <select class="form-input" id="reviewCustomEmotionArousal">
+                            <option value="高">高唤醒</option>
+                            <option value="低" selected>低唤醒</option>
+                        </select>
+                        <button type="button" class="btn btn-primary" onclick="applyCustomReviewEmotion()">使用该情绪</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeReviewEmotionModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="reviewTodoModal">
+        <div class="modal">
+            <h3 class="modal-title" id="reviewTodoModalTitle">添加事项</h3>
+            <div class="form-group">
+                <label class="form-label">事项内容</label>
+                <input type="text" class="form-input" id="reviewTodoModalTitleInput" placeholder="输入事项内容">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">截止日期（可选）</label>
+                    <input type="date" class="form-input" id="reviewTodoModalDueDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">优先级</label>
+                    <div class="todo-priority-box">
+                        <label class="todo-important-toggle">
+                            <input type="checkbox" id="reviewTodoModalImportant">
+                            <span>标记为重要事项</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联 OKR</label>
+                <div class="custom-select" id="reviewTodoModalOkrSelect">
+                    <div class="custom-select-trigger" onclick="toggleReviewTodoSelect('reviewTodoModalOkrSelect')">
+                        <span class="custom-select-text">无关联</span>
+                        <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="custom-select-options" id="reviewTodoModalOkrOptions">
+                        <div class="custom-select-option selected" data-value="" onclick="selectReviewTodoOkrOption('', '无关联', '')">无关联</div>
+                    </div>
+                </div>
+                <input type="hidden" id="reviewTodoModalOkr" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联关键结果</label>
+                <div class="custom-select" id="reviewTodoModalKrSelect">
+                    <div class="custom-select-trigger" onclick="toggleReviewTodoSelect('reviewTodoModalKrSelect')">
+                        <span class="custom-select-text">无关联</span>
+                        <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="custom-select-options" id="reviewTodoModalKrOptions">
+                        <div class="custom-select-option selected" data-value="" onclick="selectReviewTodoKrOption('', '无关联', '')">无关联</div>
+                    </div>
+                </div>
+                <input type="hidden" id="reviewTodoModalKr" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">关联进度</label>
+                <div class="todo-priority-box">
+                    <label class="todo-important-toggle">
+                        <input type="checkbox" id="reviewTodoModalSyncKrProgress">
+                        <span>事项完成后自动为关联关键结果 +1</span>
+                    </label>
+                </div>
+                <div class="todo-kr-sync-hint disabled" id="reviewTodoModalKrSyncHint">请先选择关联关键结果</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeReviewTodoModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveReviewTodoFromModal()">保存事项</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const StorageUtil = {
+            get(key) {
+                const raw = localStorage.getItem(key);
+                if (!raw) return null;
+                try {
+                    return JSON.parse(raw);
+                } catch (err) {
+                    console.error('读取本地数据失败:', key, err);
+                    return null;
+                }
+            },
+            set(key, value) {
+                localStorage.setItem(key, JSON.stringify(value));
+            }
+        };
+
+        const REVIEW_STORAGE_KEY = 'planner_review_entries';
+        const LEGACY_REVIEW_KEY = 'reviews';
+        const TODO_STORAGE_KEY = 'planner_todos';
+        const OKR_STORAGE_KEY = 'planner_okrs';
+        const REVIEW_OKR_COLOR_CLASSES = ['brown', 'apricot', 'sage', 'pink', 'indigo', 'teal', 'coral', 'amber'];
+        const KISS_FIELDS = [
+            { key: 'keep', label: '保持', className: 'keep', icon: '✅' },
+            { key: 'improve', label: '改进', className: 'improve', icon: '⚠️' },
+            { key: 'stop', label: '停止', className: 'stop', icon: '🚫' },
+            { key: 'start', label: '行动', className: 'start', icon: '💪' }
+        ];
+        const KISS_TABS = [
+            ...KISS_FIELDS
+        ];
+        const REVIEW_CATEGORY_OPTIONS = ['life', 'work', 'study', 'important'];
+        const REVIEW_CATEGORY_META = {
+            life: { key: 'life', label: '生活', className: 'category-life' },
+            work: { key: 'work', label: '工作', className: 'category-work' },
+            study: { key: 'study', label: '学习', className: 'category-study' },
+            important: { key: 'important', label: '重要', className: 'category-important' }
+        };
+        const REVIEW_EMOTION_GROUPS = [
+            {
+                valence: '消极',
+                arousal: '高',
+                emotions: ['愤怒', '恐惧', '痛恨', '慌乱', '羞耻', '害羞', '厌恶', '焦虑', '内疚', '害怕', '委屈', '嫉妒', '后悔', '紧张', '烦躁', '鄙视', '尴尬', '不舍']
+            },
+            {
+                valence: '积极',
+                arousal: '高',
+                emotions: ['激动', '爱慕', '兴奋', '好奇', '喜悦', '骄傲', '活力', '愉悦', '期待', '崇拜', '惊讶', '羡慕']
+            },
+            {
+                valence: '消极',
+                arousal: '低',
+                emotions: ['悲伤', '低落', '无助', '麻木', '挫败', '失望', '沮丧', '孤独', '耗竭', '无聊', '无奈', '疑惑', '迷茫', '疲惫', '遗憾', '惋惜']
+            },
+            {
+                valence: '积极',
+                arousal: '低',
+                emotions: ['安心', '同情', '欣慰', '感动', '怀念', '满足', '欣赏', '信任', '幸福', '感恩', '平静', '悠闲', '放松']
+            }
+        ];
+        const REVIEW_EMOTION_INTENSITY_OPTIONS = ['很高', '高', '中', '低', '很低'];
+
+        let reviewEntries = [];
+        let editingReviewId = null;
+        let currentKissTab = 'keep';
+        let reviewLinkedTodoIds = [];
+        let pendingFocusReviewId = '';
+        let heatmapScaleRaf = null;
+        const HEATMAP_NARROW_BREAKPOINT = 920;
+
+        function generateId() {
+            return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        }
+
+        function todayKey() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = `${now.getMonth() + 1}`.padStart(2, '0');
+            const d = `${now.getDate()}`.padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function toDateKey(value) {
+            if (!value) return todayKey();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return todayKey();
+            const y = date.getFullYear();
+            const m = `${date.getMonth() + 1}`.padStart(2, '0');
+            const d = `${date.getDate()}`.padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function normalizeReviewCategory(value) {
+            const key = String(value || '').trim();
+            return REVIEW_CATEGORY_OPTIONS.includes(key) ? key : 'work';
+        }
+
+        function getReviewCategoryMeta(value) {
+            const key = normalizeReviewCategory(value);
+            return REVIEW_CATEGORY_META[key] || REVIEW_CATEGORY_META.work;
+        }
+
+        function syncReviewCategorySelectStyle() {
+            const select = document.getElementById('reviewCategory');
+            if (!select) return;
+
+            const key = normalizeReviewCategory(select.value);
+            select.value = key;
+            select.classList.remove('category-life', 'category-work', 'category-study', 'category-important');
+            select.classList.add(`category-${key}`);
+        }
+
+        function normalizeEmotionArousal(value) {
+            const text = String(value || '').trim();
+            return text === '高' || text === '低' ? text : '';
+        }
+
+        function normalizeEmotionValence(value) {
+            const text = String(value || '').trim();
+            return text === '积极' || text === '消极' ? text : '';
+        }
+
+        function normalizeEmotionIntensity(value) {
+            const text = String(value || '').trim();
+            return REVIEW_EMOTION_INTENSITY_OPTIONS.includes(text) ? text : '';
+        }
+
+        function splitEmotionText(value) {
+            return String(value || '')
+                .replace(/[“”"'`]/g, '')
+                .split(/[、，,\/]/)
+                .map(item => item.trim())
+                .filter(Boolean);
+        }
+
+        function getEmotionGroupByMood(mood) {
+            const text = String(mood || '').trim();
+            if (!text) return null;
+            return REVIEW_EMOTION_GROUPS.find(group => group.emotions.includes(text)) || null;
+        }
+
+        function resolveEmotionMeta(mood, arousal = '', valence = '') {
+            const normalizedArousal = normalizeEmotionArousal(arousal);
+            const normalizedValence = normalizeEmotionValence(valence);
+            if (normalizedArousal && normalizedValence) {
+                return { arousal: normalizedArousal, valence: normalizedValence };
+            }
+
+            const presetGroup = getEmotionGroupByMood(mood);
+            if (presetGroup) {
+                return { arousal: presetGroup.arousal, valence: presetGroup.valence };
+            }
+
+            return {
+                arousal: normalizedArousal || '低',
+                valence: normalizedValence || '积极'
+            };
+        }
+
+        function normalizeEmotionTag(tag) {
+            const mood = String(tag?.mood || '').trim();
+            if (!mood) return null;
+            const meta = resolveEmotionMeta(mood, tag?.arousal, tag?.valence);
+            return {
+                mood,
+                arousal: meta.arousal,
+                valence: meta.valence
+            };
+        }
+
+        function normalizeEmotionTags(tags, fallbackMood = '平静', fallbackArousal = '', fallbackValence = '') {
+            const normalized = [];
+            const seen = new Set();
+            const pushTag = (rawTag) => {
+                const tag = normalizeEmotionTag(rawTag);
+                if (!tag) return;
+                const key = `${tag.mood}__${tag.arousal}__${tag.valence}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                normalized.push(tag);
+            };
+
+            if (Array.isArray(tags)) {
+                tags.forEach(pushTag);
+            }
+
+            if (!normalized.length) {
+                const moods = splitEmotionText(fallbackMood);
+                moods.forEach(mood => pushTag({
+                    mood,
+                    arousal: fallbackArousal,
+                    valence: fallbackValence
+                }));
+            }
+
+            if (!normalized.length) {
+                pushTag({
+                    mood: '平静',
+                    arousal: fallbackArousal || '低',
+                    valence: fallbackValence || '积极'
+                });
+            }
+
+            return normalized;
+        }
+
+        function getReviewEmotionTagsFromInput() {
+            const moodInput = document.getElementById('reviewMood');
+            const tagsInput = document.getElementById('reviewEmotionTags');
+            const arousalInput = document.getElementById('reviewEmotionArousal');
+            const valenceInput = document.getElementById('reviewEmotionValence');
+            if (!moodInput || !tagsInput || !arousalInput || !valenceInput) return [];
+
+            let parsedTags = [];
+            const raw = String(tagsInput.value || '').trim();
+            if (raw) {
+                try {
+                    const candidate = JSON.parse(raw);
+                    if (Array.isArray(candidate)) {
+                        parsedTags = candidate;
+                    }
+                } catch (err) {
+                    parsedTags = [];
+                }
+            }
+
+            return normalizeEmotionTags(
+                parsedTags,
+                moodInput.value,
+                arousalInput.value,
+                valenceInput.value
+            );
+        }
+
+        function setReviewEmotionTags(tags, primaryTag = null) {
+            const moodInput = document.getElementById('reviewMood');
+            const tagsInput = document.getElementById('reviewEmotionTags');
+            const arousalInput = document.getElementById('reviewEmotionArousal');
+            const valenceInput = document.getElementById('reviewEmotionValence');
+            if (!moodInput || !tagsInput || !arousalInput || !valenceInput) return;
+
+            const normalized = normalizeEmotionTags(tags, moodInput.value, arousalInput.value, valenceInput.value);
+            const preferred = normalizeEmotionTag(primaryTag);
+            const primary = preferred || normalized[normalized.length - 1];
+
+            moodInput.value = normalized.map(tag => tag.mood).join('、');
+            tagsInput.value = JSON.stringify(normalized);
+            arousalInput.value = primary.arousal;
+            valenceInput.value = primary.valence;
+            syncReviewEmotionIntensityStyle();
+        }
+
+        function getEmotionIntensityScale(value) {
+            const intensity = normalizeEmotionIntensity(value) || '中';
+            const scales = { 很高: 1, 高: 0.82, 中: 0.64, 低: 0.46, 很低: 0.28 };
+            return scales[intensity] || scales.中;
+        }
+
+        function getEmotionIntensityPrefix(value) {
+            const intensity = normalizeEmotionIntensity(value) || '中';
+            const prefixes = {
+                很高: '非常',
+                高: '很',
+                中: '',
+                低: '一般',
+                很低: '有些许'
+            };
+            return prefixes[intensity] || '';
+        }
+
+        function buildEmotionIntensityPalette(arousal, valence, intensity) {
+            const scale = getEmotionIntensityScale(intensity);
+            const key = `${valence}-${arousal}`;
+            const toneMap = {
+                '消极-高': { hue: 4, satBase: 22, satRange: 60, lightBase: 94, lightDrop: 26, text: '#7a2222' },
+                '积极-高': { hue: 46, satBase: 28, satRange: 56, lightBase: 95, lightDrop: 24, text: '#5d4700' },
+                '消极-低': { hue: 25, satBase: 2, satRange: 14, lightBase: 96, lightDrop: 18, text: '#4f4a45' },
+                '积极-低': { hue: 132, satBase: 22, satRange: 52, lightBase: 95, lightDrop: 24, text: '#1f5d35' }
+            };
+            const tone = toneMap[key] || toneMap['积极-低'];
+
+            const sat = Math.round(tone.satBase + tone.satRange * scale);
+            const light = Math.round(tone.lightBase - tone.lightDrop * scale);
+            const borderSat = key === '消极-低' ? sat + 2 : Math.min(90, sat + 10);
+            const borderLight = Math.max(28, light - 14);
+
+            return {
+                background: `hsl(${tone.hue} ${sat}% ${light}%)`,
+                border: `hsl(${tone.hue} ${borderSat}% ${borderLight}%)`,
+                text: tone.text
+            };
+        }
+
+        function syncReviewEmotionIntensityStyle() {
+            const intensitySelect = document.getElementById('reviewEnergy');
+            const arousalInput = document.getElementById('reviewEmotionArousal');
+            const valenceInput = document.getElementById('reviewEmotionValence');
+            if (!intensitySelect || !arousalInput || !valenceInput) return;
+
+            const intensity = normalizeEmotionIntensity(intensitySelect.value) || '中';
+            const arousal = normalizeEmotionArousal(arousalInput.value) || '低';
+            const valence = normalizeEmotionValence(valenceInput.value) || '积极';
+            const palette = buildEmotionIntensityPalette(arousal, valence, intensity);
+
+            intensitySelect.value = intensity;
+            intensitySelect.style.background = palette.background;
+            intensitySelect.style.borderColor = palette.border;
+            intensitySelect.style.color = palette.text;
+            intensitySelect.style.fontWeight = '600';
+        }
+
+        function setReviewEmotionIntensity(value = '中') {
+            const intensitySelect = document.getElementById('reviewEnergy');
+            if (!intensitySelect) return;
+            intensitySelect.value = normalizeEmotionIntensity(value) || '中';
+            syncReviewEmotionIntensityStyle();
+        }
+
+        function setReviewEmotionSelection(mood, arousal = '', valence = '') {
+            const moodText = String(mood || '').trim() || '平静';
+            setReviewEmotionTags(
+                [{ mood: moodText, arousal, valence }],
+                { mood: moodText, arousal, valence }
+            );
+        }
+
+        function renderReviewEmotionPicker() {
+            const container = document.getElementById('reviewEmotionGroupList');
+            if (!container) return;
+
+            const selectedTags = getReviewEmotionTagsFromInput();
+
+            container.innerHTML = REVIEW_EMOTION_GROUPS.map(group => {
+                const chipsHtml = group.emotions.map(emotion => {
+                    const isActive = selectedTags.some(tag => (
+                        tag.mood === emotion
+                        && tag.arousal === group.arousal
+                        && tag.valence === group.valence
+                    ));
+                    return `
+                        <button
+                            type="button"
+                            class="review-emotion-chip${isActive ? ' active' : ''}"
+                            onclick="selectReviewEmotionPreset('${escapeJsString(emotion)}', '${group.arousal}', '${group.valence}')"
+                        >${escapeHtml(emotion)}</button>
+                    `;
+                }).join('');
+
+                return `
+                    <section class="review-emotion-section">
+                        <h4 class="review-emotion-section-title">偏${group.valence}、${group.arousal}唤醒的情绪</h4>
+                        <div class="review-emotion-chip-grid">${chipsHtml}</div>
+                    </section>
+                `;
+            }).join('');
+        }
+
+        function openReviewEmotionModal() {
+            const tags = getReviewEmotionTagsFromInput();
+            const primary = tags[tags.length - 1] || { mood: '平静', arousal: '低', valence: '积极' };
+            setReviewEmotionTags(tags, primary);
+
+            const customInput = document.getElementById('reviewCustomEmotionInput');
+            const customValence = document.getElementById('reviewCustomEmotionValence');
+            const customArousal = document.getElementById('reviewCustomEmotionArousal');
+            if (customInput) customInput.value = '';
+            if (customValence) customValence.value = primary.valence;
+            if (customArousal) customArousal.value = primary.arousal;
+
+            renderReviewEmotionPicker();
+            document.getElementById('reviewEmotionModal').classList.add('active');
+        }
+
+        function closeReviewEmotionModal() {
+            document.getElementById('reviewEmotionModal').classList.remove('active');
+        }
+
+        function selectReviewEmotionPreset(mood, arousal, valence) {
+            const tags = getReviewEmotionTagsFromInput();
+            const nextTags = [...tags];
+            const idx = nextTags.findIndex(tag => (
+                tag.mood === mood
+                && tag.arousal === arousal
+                && tag.valence === valence
+            ));
+
+            if (idx >= 0) {
+                nextTags.splice(idx, 1);
+            } else {
+                nextTags.push({ mood, arousal, valence });
+            }
+
+            setReviewEmotionTags(
+                nextTags,
+                { mood, arousal, valence }
+            );
+            renderReviewEmotionPicker();
+        }
+
+        function applyCustomReviewEmotion() {
+            const input = document.getElementById('reviewCustomEmotionInput');
+            const valenceSelect = document.getElementById('reviewCustomEmotionValence');
+            const arousalSelect = document.getElementById('reviewCustomEmotionArousal');
+            if (!input || !valenceSelect || !arousalSelect) return;
+
+            const mood = input.value.trim();
+            if (!mood) {
+                alert('请输入自定义情绪');
+                input.focus();
+                return;
+            }
+
+            const valence = normalizeEmotionValence(valenceSelect.value) || '积极';
+            const arousal = normalizeEmotionArousal(arousalSelect.value) || '低';
+            const tags = getReviewEmotionTagsFromInput();
+            setReviewEmotionTags(
+                [...tags, { mood, arousal, valence }],
+                { mood, arousal, valence }
+            );
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            renderReviewEmotionPicker();
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function multilineHtml(value) {
+            return escapeHtml(value).replace(/\n/g, '<br>');
+        }
+
+        function previewText(value, maxLen = 52) {
+            const text = String(value || '').replace(/\s+/g, ' ').trim();
+            if (!text) return '';
+            return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
+        }
+
+        function isSameId(left, right) {
+            if (left === undefined || left === null || right === undefined || right === null) return false;
+            return String(left) === String(right);
+        }
+
+        function normalizeIdList(list) {
+            if (!Array.isArray(list)) return [];
+            const seen = new Set();
+            const ids = [];
+            list.forEach(item => {
+                const id = String(item || '').trim();
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                ids.push(id);
+            });
+            return ids;
+        }
+
+        function escapeJsString(value) {
+            return String(value || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'");
+        }
+
+        function getPendingFocusReviewIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const id = String(params.get('focusReviewId') || '').trim();
+            return id;
+        }
+
+        function clearFocusReviewIdFromUrl() {
+            const url = new URL(window.location.href);
+            if (!url.searchParams.has('focusReviewId')) return;
+            url.searchParams.delete('focusReviewId');
+            const nextQuery = url.searchParams.toString();
+            history.replaceState(null, '', `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}`);
+        }
+
+        function tryFocusPendingReviewCard() {
+            if (!pendingFocusReviewId) return;
+            const cards = Array.from(document.querySelectorAll('.review-record-card'));
+            const target = cards.find(card => card.dataset.reviewId === pendingFocusReviewId);
+            if (!target) return;
+
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('review-record-focus');
+            target.setAttribute('tabindex', '-1');
+            target.focus({ preventScroll: true });
+            setTimeout(() => {
+                target.classList.remove('review-record-focus');
+                target.removeAttribute('tabindex');
+            }, 2200);
+
+            pendingFocusReviewId = '';
+            clearFocusReviewIdFromUrl();
+        }
+
+        function getStoredTodos() {
+            const todos = StorageUtil.get(TODO_STORAGE_KEY);
+            return Array.isArray(todos) ? todos : [];
+        }
+
+        function saveStoredTodos(todos) {
+            StorageUtil.set(TODO_STORAGE_KEY, todos);
+        }
+
+        function getStoredOkrs() {
+            const okrs = StorageUtil.get(OKR_STORAGE_KEY);
+            return Array.isArray(okrs) ? okrs : [];
+        }
+
+        function getLinkedTodoIdsForEntry(entry) {
+            const ids = normalizeIdList(entry?.startTodoIds);
+            if (!entry?.id) return ids;
+            getStoredTodos().forEach(todo => {
+                if (isSameId(todo.reviewEntryId, entry.id)) {
+                    ids.push(String(todo.id));
+                }
+            });
+            return normalizeIdList(ids);
+        }
+
+        function getValidLinkedTodoIds(ids = reviewLinkedTodoIds) {
+            const todoIds = new Set(getStoredTodos().map(todo => String(todo.id || '')));
+            return normalizeIdList(ids).filter(id => todoIds.has(id));
+        }
+
+        function getTodoTitlesByIds(ids) {
+            const todos = getStoredTodos();
+            return normalizeIdList(ids).map(todoId => {
+                const todo = todos.find(item => isSameId(item.id, todoId));
+                return todo ? String(todo.title || '').trim() : '';
+            }).filter(Boolean);
+        }
+
+        function syncTodoReviewLinks(reviewId, previousIds = [], nextIds = []) {
+            const todos = getStoredTodos();
+            if (!todos.length) return;
+
+            const previousSet = new Set(normalizeIdList(previousIds));
+            const nextSet = new Set(normalizeIdList(nextIds));
+            let changed = false;
+
+            todos.forEach(todo => {
+                const todoId = String(todo.id || '');
+                if (!todoId) return;
+
+                if (previousSet.has(todoId) && !nextSet.has(todoId) && isSameId(todo.reviewEntryId, reviewId)) {
+                    todo.reviewEntryId = '';
+                    changed = true;
+                }
+
+                if (nextSet.has(todoId) && !isSameId(todo.reviewEntryId, reviewId)) {
+                    todo.reviewEntryId = reviewId;
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                saveStoredTodos(todos);
+            }
+        }
+
+        function normalizeKrForSync(kr) {
+            const targetNum = parseInt(kr.target, 10);
+            const target = Number.isFinite(targetNum) && targetNum > 0 ? targetNum : 1;
+            const currentNum = parseInt(kr.current, 10);
+            const current = Number.isFinite(currentNum)
+                ? Math.max(0, Math.min(target, currentNum))
+                : (kr.completed ? target : 0);
+
+            kr.target = target;
+            kr.current = current;
+            kr.completed = current >= target;
+            return kr;
+        }
+
+        function maybeSyncTodoKrProgress(todo) {
+            if (!todo || !todo.okrId || !todo.krId || todo.krProgressSynced || !todo.syncKrProgressOnComplete) return;
+
+            const okrs = getStoredOkrs();
+            const okr = okrs.find(item => isSameId(item.id, todo.okrId));
+            if (!okr || !Array.isArray(okr.krs)) return;
+
+            const kr = okr.krs.find(item => isSameId(item.id, todo.krId));
+            if (!kr) return;
+
+            normalizeKrForSync(kr);
+            if (kr.current < kr.target) {
+                kr.current += 1;
+                kr.completed = kr.current >= kr.target;
+            }
+
+            todo.krProgressSynced = true;
+            StorageUtil.set(OKR_STORAGE_KEY, okrs);
+        }
+
+        function updateReviewTodoModalSyncControl() {
+            const checkbox = document.getElementById('reviewTodoModalSyncKrProgress');
+            const hint = document.getElementById('reviewTodoModalKrSyncHint');
+            const krId = document.getElementById('reviewTodoModalKr')?.value || '';
+            if (!checkbox || !hint) return;
+
+            const hasKr = !!krId;
+            checkbox.disabled = !hasKr;
+            if (!hasKr) {
+                checkbox.checked = false;
+                hint.textContent = '请先选择关联关键结果';
+                hint.classList.add('disabled');
+                return;
+            }
+
+            hint.textContent = '勾选后，完成事项会自动为该关键结果 +1（每条事项仅记录一次）';
+            hint.classList.remove('disabled');
+        }
+
+        function updateReviewTodoModalOkrOptions(selectedOkrId = '') {
+            const container = document.getElementById('reviewTodoModalOkrOptions');
+            if (!container) return;
+
+            const optionsHtml = [
+                `<div class="custom-select-option selected" data-value="" onclick="selectReviewTodoOkrOption('', '无关联', '')">无关联</div>`
+            ];
+            getStoredOkrs().forEach(okr => {
+                optionsHtml.push(`
+                    <div class="custom-select-option ${escapeHtml(okr.color || '')}"
+                         data-value="${escapeHtml(okr.id)}"
+                         onclick="selectReviewTodoOkrOption('${escapeJsString(okr.id)}', '${escapeJsString(okr.title || '未命名目标')}', '${escapeJsString(okr.color || '')}')">
+                        ${escapeHtml(okr.title || '未命名目标')}
+                    </div>
+                `);
+            });
+            container.innerHTML = optionsHtml.join('');
+
+            if (selectedOkrId) {
+                const okr = getStoredOkrs().find(item => isSameId(item.id, selectedOkrId));
+                if (okr) {
+                    selectReviewTodoOkrOption(String(okr.id), okr.title || '未命名目标', okr.color || '');
+                    return;
+                }
+            }
+            selectReviewTodoOkrOption('', '无关联', '');
+        }
+
+        function updateReviewTodoModalKrOptions(okrId, selectedKrId = '') {
+            const container = document.getElementById('reviewTodoModalKrOptions');
+            const hiddenInput = document.getElementById('reviewTodoModalKr');
+            const triggerText = document.querySelector('#reviewTodoModalKrSelect .custom-select-text');
+            if (!container || !hiddenInput || !triggerText) return;
+
+            if (!okrId) {
+                container.innerHTML = `<div class="custom-select-option selected" data-value="" onclick="selectReviewTodoKrOption('', '无关联', '')">无关联</div>`;
+                hiddenInput.value = '';
+                triggerText.textContent = '无关联';
+                updateReviewTodoModalSyncControl();
+                return;
+            }
+
+            const okr = getStoredOkrs().find(item => isSameId(item.id, okrId));
+            const krs = Array.isArray(okr?.krs) ? okr.krs : [];
+            container.innerHTML = `<div class="custom-select-option selected" data-value="" onclick="selectReviewTodoKrOption('', '无关联', '')">无关联</div>` +
+                krs.map(kr => `
+                    <div class="custom-select-option ${escapeHtml(okr.color || '')}"
+                         data-value="${escapeHtml(kr.id)}"
+                         onclick="selectReviewTodoKrOption('${escapeJsString(kr.id)}', '${escapeJsString(kr.text || '未命名关键结果')}', '${escapeJsString(okr.color || '')}')">
+                        ${escapeHtml(kr.text || '未命名关键结果')}
+                    </div>
+                `).join('');
+
+            if (selectedKrId) {
+                const kr = krs.find(item => isSameId(item.id, selectedKrId));
+                if (kr) {
+                    selectReviewTodoKrOption(String(kr.id), kr.text || '未命名关键结果', okr.color || '');
+                    return;
+                }
+            }
+            selectReviewTodoKrOption('', '无关联', '');
+        }
+
+        function selectReviewTodoOkrOption(value, text, colorClass) {
+            const select = document.getElementById('reviewTodoModalOkrSelect');
+            const hiddenInput = document.getElementById('reviewTodoModalOkr');
+            const triggerText = select?.querySelector('.custom-select-text');
+            if (!select || !hiddenInput || !triggerText) return;
+
+            select.querySelectorAll('.custom-select-option').forEach(option => {
+                option.classList.remove('selected', ...REVIEW_OKR_COLOR_CLASSES);
+                if (String(option.dataset.value || '') === String(value || '')) {
+                    option.classList.add('selected');
+                    if (colorClass) option.classList.add(colorClass);
+                }
+            });
+
+            hiddenInput.value = String(value || '');
+            triggerText.textContent = text || '无关联';
+            select.classList.remove('open');
+            updateReviewTodoModalKrOptions(hiddenInput.value, '');
+        }
+
+        function selectReviewTodoKrOption(value, text, colorClass) {
+            const select = document.getElementById('reviewTodoModalKrSelect');
+            const hiddenInput = document.getElementById('reviewTodoModalKr');
+            const triggerText = select?.querySelector('.custom-select-text');
+            if (!select || !hiddenInput || !triggerText) return;
+
+            select.querySelectorAll('.custom-select-option').forEach(option => {
+                option.classList.remove('selected', ...REVIEW_OKR_COLOR_CLASSES);
+                if (String(option.dataset.value || '') === String(value || '')) {
+                    option.classList.add('selected');
+                    if (colorClass) option.classList.add(colorClass);
+                }
+            });
+
+            hiddenInput.value = String(value || '');
+            triggerText.textContent = text || '无关联';
+            select.classList.remove('open');
+            updateReviewTodoModalSyncControl();
+        }
+
+        function toggleReviewTodoSelect(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            const isOpen = select.classList.contains('open');
+            document.querySelectorAll('#reviewTodoModal .custom-select').forEach(node => node.classList.remove('open'));
+            if (!isOpen) {
+                select.classList.add('open');
+            }
+        }
+
+        function openReviewTodoModal() {
+            const dueDate = document.getElementById('reviewDate')?.value || todayKey();
+
+            document.getElementById('reviewTodoModalTitleInput').value = '';
+            document.getElementById('reviewTodoModalDueDate').value = dueDate;
+            document.getElementById('reviewTodoModalImportant').checked = false;
+            document.getElementById('reviewTodoModalSyncKrProgress').checked = false;
+
+            updateReviewTodoModalOkrOptions('');
+            updateReviewTodoModalSyncControl();
+            document.getElementById('reviewTodoModal').classList.add('active');
+            document.getElementById('reviewTodoModalTitleInput').focus();
+        }
+
+        function closeReviewTodoModal() {
+            document.getElementById('reviewTodoModal').classList.remove('active');
+            document.querySelectorAll('#reviewTodoModal .custom-select').forEach(node => node.classList.remove('open'));
+        }
+
+        function saveReviewTodoFromModal() {
+            const title = document.getElementById('reviewTodoModalTitleInput').value.trim();
+            const dueDate = document.getElementById('reviewTodoModalDueDate').value;
+            const important = document.getElementById('reviewTodoModalImportant').checked;
+            const okrId = document.getElementById('reviewTodoModalOkr').value;
+            const krId = document.getElementById('reviewTodoModalKr').value;
+            const syncKrProgressOnComplete = document.getElementById('reviewTodoModalSyncKrProgress').checked;
+            const shouldSyncKrProgress = !!krId && syncKrProgressOnComplete;
+
+            if (!title) {
+                alert('请输入事项内容');
+                return;
+            }
+
+            const todos = getStoredTodos();
+            const todoId = generateId();
+            todos.push({
+                id: todoId,
+                title,
+                dueDate: dueDate ? toDateKey(dueDate) : '',
+                important,
+                okrId,
+                krId,
+                completed: false,
+                syncKrProgressOnComplete: shouldSyncKrProgress,
+                krProgressSynced: false,
+                reviewEntryId: editingReviewId || '',
+                createdAt: new Date().toISOString()
+            });
+            saveStoredTodos(todos);
+
+            reviewLinkedTodoIds = normalizeIdList([...reviewLinkedTodoIds, String(todoId)]);
+
+            const startInput = document.getElementById('reviewStart');
+            if (startInput) {
+                const current = startInput.value.trim();
+                const lines = current ? current.split('\n').map(line => line.trim()).filter(Boolean) : [];
+                if (!lines.includes(title)) {
+                    startInput.value = current ? `${current}\n${title}` : title;
+                }
+            }
+
+            closeReviewTodoModal();
+        }
+
+        function normalizeEntry(entry) {
+            const scoreNum = parseInt(entry.score, 10);
+            const score = Number.isFinite(scoreNum) ? Math.max(1, Math.min(10, scoreNum)) : 7;
+            const startTodoIds = normalizeIdList(entry.startTodoIds || entry.linkedTodoIds || []);
+            const fallbackMood = String(entry.mood || '平静').trim() || '平静';
+            const intensity = normalizeEmotionIntensity(entry.emotionIntensity || entry.energy) || '中';
+            const emotionTags = normalizeEmotionTags(
+                entry.emotionTags,
+                fallbackMood,
+                entry.emotionArousal || entry.arousal,
+                entry.emotionValence || entry.valence
+            );
+            const primaryTag = emotionTags[emotionTags.length - 1] || { mood: '平静', arousal: '低', valence: '积极' };
+            return {
+                id: entry.id || generateId(),
+                date: toDateKey(entry.date || entry.createdAt),
+                score,
+                category: normalizeReviewCategory(entry.category),
+                tasks: String(entry.tasks || '').trim(),
+                mood: emotionTags.map(tag => tag.mood).join('、'),
+                energy: intensity,
+                emotionIntensity: intensity,
+                emotionTags,
+                emotionArousal: primaryTag.arousal,
+                emotionValence: primaryTag.valence,
+                keep: String(entry.keep || '').trim(),
+                improve: String(entry.improve || '').trim(),
+                stop: String(entry.stop || '').trim(),
+                start: String(entry.start || '').trim(),
+                startTodoIds,
+                summary: String(entry.summary || '').trim(),
+                createdAt: entry.createdAt || new Date().toISOString(),
+                updatedAt: entry.updatedAt || new Date().toISOString()
+            };
+        }
+
+        function sortEntries(entries) {
+            entries.sort((a, b) => {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+            });
+        }
+
+        function migrateLegacyReviews() {
+            const legacy = StorageUtil.get(LEGACY_REVIEW_KEY);
+            if (!legacy || typeof legacy !== 'object') return [];
+
+            const migrated = [];
+            ['week', 'month', 'quarter'].forEach(type => {
+                const list = Array.isArray(legacy[type]) ? legacy[type] : [];
+                list.forEach(item => {
+                    migrated.push(normalizeEntry({
+                        id: item.id || generateId(),
+                        date: item.createdAt || todayKey(),
+                        tasks: item.done || '',
+                        mood: '平静',
+                        energy: '中',
+                        keep: item.good || '',
+                        improve: item.improve || '',
+                        stop: '',
+                        start: item.plan || '',
+                        summary: item.done || item.period || '',
+                        score: 7,
+                        createdAt: item.createdAt || new Date().toISOString(),
+                        updatedAt: item.createdAt || new Date().toISOString()
+                    }));
+                });
+            });
+
+            sortEntries(migrated);
+            if (migrated.length > 0) {
+                StorageUtil.set(REVIEW_STORAGE_KEY, migrated);
+            }
+            return migrated;
+        }
+
+        function loadEntries() {
+            const stored = StorageUtil.get(REVIEW_STORAGE_KEY);
+            if (Array.isArray(stored)) {
+                reviewEntries = stored.map(normalizeEntry);
+                sortEntries(reviewEntries);
+                StorageUtil.set(REVIEW_STORAGE_KEY, reviewEntries);
+                return;
+            }
+            reviewEntries = migrateLegacyReviews();
+        }
+
+        function persistEntries() {
+            sortEntries(reviewEntries);
+            StorageUtil.set(REVIEW_STORAGE_KEY, reviewEntries);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            scheduleHeatmapScale();
+        }
+
+        function updateCurrentDate() {
+            const dateEl = document.getElementById('currentDate');
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            dateEl.textContent = now.toLocaleDateString('zh-CN', options);
+        }
+
+        function openReviewModal(id = null) {
+            closeReviewTodoModal();
+            closeReviewEmotionModal();
+            editingReviewId = id;
+            const titleEl = document.getElementById('reviewModalTitle');
+            const deleteBtn = document.getElementById('reviewDeleteBtn');
+
+            if (!id) {
+                reviewLinkedTodoIds = [];
+                titleEl.textContent = '新增复盘记录';
+                deleteBtn.style.display = 'none';
+                document.getElementById('reviewDate').value = todayKey();
+                document.getElementById('reviewScore').value = '7';
+                document.getElementById('reviewCategory').value = 'work';
+                document.getElementById('reviewTasks').value = '';
+                setReviewEmotionIntensity('中');
+                setReviewEmotionTags([{ mood: '平静', arousal: '低', valence: '积极' }]);
+                document.getElementById('reviewKeep').value = '';
+                document.getElementById('reviewImprove').value = '';
+                document.getElementById('reviewStop').value = '';
+                document.getElementById('reviewStart').value = '';
+                document.getElementById('reviewSummary').value = '';
+            } else {
+                const entry = reviewEntries.find(item => item.id == id);
+                if (!entry) return;
+                reviewLinkedTodoIds = getLinkedTodoIdsForEntry(entry);
+
+                titleEl.textContent = '编辑复盘记录';
+                deleteBtn.style.display = 'block';
+                document.getElementById('reviewDate').value = entry.date;
+                document.getElementById('reviewScore').value = String(entry.score || 7);
+                document.getElementById('reviewCategory').value = normalizeReviewCategory(entry.category);
+                document.getElementById('reviewTasks').value = entry.tasks || '';
+                setReviewEmotionIntensity(entry.emotionIntensity || entry.energy || '中');
+                setReviewEmotionTags(normalizeEmotionTags(
+                    entry.emotionTags,
+                    entry.mood || '平静',
+                    entry.emotionArousal || entry.arousal || '',
+                    entry.emotionValence || entry.valence || ''
+                ));
+                document.getElementById('reviewKeep').value = entry.keep || '';
+                document.getElementById('reviewImprove').value = entry.improve || '';
+                document.getElementById('reviewStop').value = entry.stop || '';
+                document.getElementById('reviewStart').value = entry.start || '';
+                document.getElementById('reviewSummary').value = entry.summary || '';
+            }
+
+            syncReviewCategorySelectStyle();
+
+            document.getElementById('reviewModal').classList.add('active');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+            closeReviewEmotionModal();
+            closeReviewTodoModal();
+            editingReviewId = null;
+            reviewLinkedTodoIds = [];
+        }
+
+        function saveReview() {
+            const date = document.getElementById('reviewDate').value || todayKey();
+            const score = parseInt(document.getElementById('reviewScore').value, 10) || 7;
+            const category = normalizeReviewCategory(document.getElementById('reviewCategory').value);
+            const tasks = document.getElementById('reviewTasks').value.trim();
+            const emotionArousal = normalizeEmotionArousal(document.getElementById('reviewEmotionArousal').value);
+            const emotionValence = normalizeEmotionValence(document.getElementById('reviewEmotionValence').value);
+            const emotionIntensity = normalizeEmotionIntensity(document.getElementById('reviewEnergy').value) || '中';
+            const emotionTags = normalizeEmotionTags(
+                getReviewEmotionTagsFromInput(),
+                document.getElementById('reviewMood').value,
+                emotionArousal,
+                emotionValence
+            );
+            const mood = emotionTags.map(tag => tag.mood).join('、');
+            const primaryEmotionTag = normalizeEmotionTag({
+                mood: emotionTags[emotionTags.length - 1]?.mood || mood || '平静',
+                arousal: emotionArousal,
+                valence: emotionValence
+            }) || emotionTags[emotionTags.length - 1] || { arousal: '低', valence: '积极' };
+            const energy = emotionIntensity;
+            const keep = document.getElementById('reviewKeep').value.trim();
+            const improve = document.getElementById('reviewImprove').value.trim();
+            const stop = document.getElementById('reviewStop').value.trim();
+            const start = document.getElementById('reviewStart').value.trim();
+            const summary = document.getElementById('reviewSummary').value.trim();
+            const linkedTodoIds = getValidLinkedTodoIds(reviewLinkedTodoIds);
+            const startValue = start || getTodoTitlesByIds(linkedTodoIds).join('\n');
+            setReviewEmotionIntensity(emotionIntensity);
+            setReviewEmotionTags(emotionTags, primaryEmotionTag);
+
+            if (!tasks && !keep && !improve && !stop && !startValue && !summary && linkedTodoIds.length === 0) {
+                alert('请至少填写一项复盘内容');
+                return;
+            }
+
+            if (editingReviewId) {
+                const idx = reviewEntries.findIndex(item => item.id == editingReviewId);
+                if (idx === -1) return;
+                const previousLinkedIds = normalizeIdList(reviewEntries[idx].startTodoIds);
+
+                reviewEntries[idx] = normalizeEntry({
+                    ...reviewEntries[idx],
+                    date,
+                    score,
+                    category,
+                    tasks,
+                    mood,
+                    energy,
+                    emotionIntensity,
+                    emotionTags,
+                    emotionArousal: primaryEmotionTag.arousal,
+                    emotionValence: primaryEmotionTag.valence,
+                    keep,
+                    improve,
+                    stop,
+                    start: startValue,
+                    startTodoIds: linkedTodoIds,
+                    summary,
+                    updatedAt: new Date().toISOString()
+                });
+                syncTodoReviewLinks(reviewEntries[idx].id, previousLinkedIds, linkedTodoIds);
+            } else {
+                const newReviewId = generateId();
+                reviewEntries.push(normalizeEntry({
+                    id: newReviewId,
+                    date,
+                    score,
+                    category,
+                    tasks,
+                    mood,
+                    energy,
+                    emotionIntensity,
+                    emotionTags,
+                    emotionArousal: primaryEmotionTag.arousal,
+                    emotionValence: primaryEmotionTag.valence,
+                    keep,
+                    improve,
+                    stop,
+                    start: startValue,
+                    startTodoIds: linkedTodoIds,
+                    summary,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }));
+                syncTodoReviewLinks(newReviewId, [], linkedTodoIds);
+            }
+
+            persistEntries();
+            renderAll();
+            closeReviewModal();
+        }
+
+        function deleteReview(id) {
+            const targetId = id || editingReviewId;
+            if (!targetId) return;
+            if (!confirm('确定删除这条复盘记录吗？')) return;
+
+            const targetEntry = reviewEntries.find(item => item.id == targetId);
+            if (targetEntry) {
+                const linkedIds = getLinkedTodoIdsForEntry(targetEntry);
+                syncTodoReviewLinks(targetEntry.id, linkedIds, []);
+            }
+
+            reviewEntries = reviewEntries.filter(item => item.id != targetId);
+            persistEntries();
+            renderAll();
+            closeReviewModal();
+        }
+
+        function setKissTab(tabKey) {
+            currentKissTab = tabKey;
+            renderKissBoard();
+        }
+
+        function getKissItems(tabKey) {
+            const sortedEntries = [...reviewEntries].sort((a, b) => {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+            });
+
+            const items = [];
+            const targetField = KISS_FIELDS.find(field => field.key === tabKey);
+
+            sortedEntries.forEach(entry => {
+                if (!targetField) return;
+                const value = entry[targetField.key];
+                if (!value) return;
+                items.push({
+                    id: entry.id,
+                    date: entry.date,
+                    category: normalizeReviewCategory(entry.category),
+                    label: targetField.label,
+                    icon: targetField.icon,
+                    className: targetField.className,
+                    text: value
+                });
+            });
+
+            return items;
+        }
+
+        function renderKissBoard() {
+            const container = document.getElementById('kissGrid');
+            const toolbar = document.getElementById('kissToolbar');
+            if (!container || !toolbar) return;
+
+            toolbar.innerHTML = KISS_TABS.map(tab => `
+                <button class="kiss-tab-btn ${currentKissTab === tab.key ? 'active' : ''}" type="button"
+                        onclick="setKissTab('${tab.key}')">
+                    <span class="kiss-tab-icon">${tab.icon || ''}</span>
+                    <span>${tab.label}</span>
+                </button>
+            `).join('');
+
+            const items = getKissItems(currentKissTab);
+            if (items.length === 0) {
+                container.innerHTML = '<div class="kiss-empty">当前分类暂无内容</div>';
+                scheduleHeatmapScale();
+                return;
+            }
+
+            const cardsHtml = items.map(item => {
+                const categoryMeta = getReviewCategoryMeta(item.category);
+                return `
+                <button class="kiss-card" type="button" onclick="openReviewModal('${item.id}')">
+                    <div class="kiss-card-head">
+                        <div class="kiss-card-date">@${item.date}</div>
+                        <span class="review-category-badge ${categoryMeta.className}">${categoryMeta.label}</span>
+                    </div>
+                    <div class="kiss-card-text">${escapeHtml(previewText(item.text, 120))}</div>
+                </button>
+            `;
+            }).join('');
+            container.innerHTML = cardsHtml;
+            scheduleHeatmapScale();
+        }
+
+        function scheduleHeatmapScale() {
+            if (heatmapScaleRaf !== null) {
+                cancelAnimationFrame(heatmapScaleRaf);
+            }
+            heatmapScaleRaf = requestAnimationFrame(() => {
+                heatmapScaleRaf = null;
+                syncHeatmapScale();
+            });
+        }
+
+        function isHeatmapNarrowViewport() {
+            return window.innerWidth <= HEATMAP_NARROW_BREAKPOINT;
+        }
+
+        function syncHeatmapScale() {
+            const heatmap = document.getElementById('reviewHeatmap');
+            const heatMeta = document.getElementById('reviewHeatMeta');
+            const stage = document.querySelector('.review-heatmap-stage');
+            const kissPanel = document.getElementById('kissPanel');
+            const heatPanel = document.querySelector('.review-heat-panel');
+            if (!heatmap || !stage || !kissPanel || !heatPanel) return;
+
+            if (isHeatmapNarrowViewport()) {
+                heatmap.style.setProperty('--heatmap-scale', '1');
+                return;
+            }
+
+            const style = getComputedStyle(heatmap);
+            const cellSize = Number.parseFloat(style.getPropertyValue('--heat-cell-size')) || 14;
+            const gapSize = Number.parseFloat(style.getPropertyValue('--heat-gap-size')) || 6;
+            const cols = Number.parseInt(style.getPropertyValue('--heat-cols'), 10) || 7;
+            const rows = Number.parseInt(style.getPropertyValue('--heat-rows'), 10) || 6;
+
+            const baseWidth = cols * cellSize + (cols - 1) * gapSize;
+            const baseHeight = rows * cellSize + (rows - 1) * gapSize;
+            const stageRect = stage.getBoundingClientRect();
+            const kissRect = kissPanel.getBoundingClientRect();
+            if (!stageRect.width || !kissRect.height || !baseWidth || !baseHeight) return;
+
+            const panelStyles = getComputedStyle(heatPanel);
+            const panelGap = Number.parseFloat(panelStyles.rowGap || panelStyles.gap) || 0;
+            const metaHeight = heatMeta ? heatMeta.getBoundingClientRect().height : 0;
+            const availableHeight = Math.max(0, kissRect.height - metaHeight - panelGap);
+            if (!availableHeight) return;
+
+            const scaleByHeight = availableHeight / baseHeight;
+            const scaleByWidth = stageRect.width / baseWidth;
+            const shrinkFactor = 0.88;
+            const scale = Math.max(0.1, Math.min(scaleByHeight, scaleByWidth) * shrinkFactor);
+            heatmap.style.setProperty('--heatmap-scale', scale.toFixed(4));
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('reviewHeatmap');
+            const metaEl = document.getElementById('reviewHeatMeta');
+            if (!container) return;
+
+            const dayMap = {};
+            reviewEntries.forEach(entry => {
+                const key = toDateKey(entry.date);
+                if (!dayMap[key]) {
+                    dayMap[key] = { count: 0, scoreTotal: 0 };
+                }
+                dayMap[key].count += 1;
+                dayMap[key].scoreTotal += Number.parseInt(entry.score, 10) || 0;
+            });
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const monthStart = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstWeekday = (monthStart.getDay() + 6) % 7;
+            const monthPrefix = `${year}-${`${month + 1}`.padStart(2, '0')}`;
+            const monthCount = reviewEntries.reduce((count, entry) => (
+                String(entry.date || '').startsWith(monthPrefix) ? count + 1 : count
+            ), 0);
+
+            if (metaEl) {
+                metaEl.textContent = `${year}年${month + 1}月复盘 ${monthCount} 次`;
+            }
+
+            const cells = [];
+            for (let i = 0; i < 42; i += 1) {
+                const day = i - firstWeekday + 1;
+                const inMonth = day >= 1 && day <= daysInMonth;
+                let toneKey = 'none';
+                let title = '';
+
+                if (inMonth) {
+                    const key = toDateKey(new Date(year, month, day));
+                    const stats = dayMap[key] || { count: 0, scoreTotal: 0 };
+                    const count = stats.count || 0;
+                    if (count > 0) {
+                        const avgScore = stats.scoreTotal / count;
+                        toneKey = getScoreToneKey(avgScore);
+                        title = `${key} | ${count} 条复盘 | 均分 ${avgScore.toFixed(1)}`;
+                    } else {
+                        title = `${key} | 0 条复盘`;
+                    }
+                }
+
+                const outside = inMonth ? '' : ' heat-outside';
+                cells.push(`<span class="heat-cell heat-score-${toneKey}${outside}" title="${title}"></span>`);
+            }
+
+            container.innerHTML = cells.join('');
+            scheduleHeatmapScale();
+        }
+
+        function sectionHtml(label, value) {
+            if (!value) return '';
+            return `
+                <div class="review-section">
+                    <strong>${label}</strong>
+                    <p>${multilineHtml(value)}</p>
+                </div>
+            `;
+        }
+
+        function sectionPreviewHtml(label, value, maxLen = 48) {
+            if (!value) return '';
+            return `
+                <div class="review-line">
+                    <strong>${label}</strong>
+                    <p>${escapeHtml(previewText(value, maxLen))}</p>
+                </div>
+            `;
+        }
+
+        function getScoreToneKey(score) {
+            const scoreNum = Number.parseFloat(score);
+            const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
+            if (value <= 2) return 'deep-red';
+            if (value <= 4) return 'red';
+            if (value <= 6) return 'yellow';
+            return 'green';
+        }
+
+        function getScoreToneClass(score) {
+            return `score-tone-${getScoreToneKey(score)}`;
+        }
+
+        function getScoreCheerText(score) {
+            const scoreNum = Number.parseFloat(score);
+            const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
+            if (value <= 2) return '先稳住，慢慢来';
+            if (value <= 4) return '有进步，继续冲';
+            if (value <= 6) return '状态回暖中';
+            if (value <= 8) return '今天很不错';
+            return '状态拉满';
+        }
+
+        function renderReviewList() {
+            const container = document.getElementById('reviewList');
+            if (!container) return;
+
+            if (reviewEntries.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无复盘记录，点击上方 + 开始记录</div>';
+                return;
+            }
+
+            container.innerHTML = reviewEntries.map(entry => {
+                const safeEntryId = escapeJsString(entry.id);
+                const safeEntryIdAttr = escapeHtml(String(entry.id || ''));
+                const summaryHtml = sectionHtml('总结', entry.summary);
+                const todayTaskText = escapeHtml(previewText(entry.tasks || '今日事项', 24));
+                const scoreToneClass = getScoreToneClass(entry.score);
+                const cheerText = escapeHtml(getScoreCheerText(entry.score));
+                const intensity = normalizeEmotionIntensity(entry.emotionIntensity || entry.energy) || '中';
+                const emotionTags = normalizeEmotionTags(
+                    entry.emotionTags,
+                    entry.mood || '平静',
+                    entry.emotionArousal || entry.arousal,
+                    entry.emotionValence || entry.valence
+                );
+                const moodHtml = emotionTags.map(tag => {
+                    const moodPalette = buildEmotionIntensityPalette(tag.arousal, tag.valence, intensity);
+                    const moodText = escapeHtml(`${getEmotionIntensityPrefix(intensity)}${tag.mood}`);
+                    return `<span class="review-today-mood-text" style="color:${moodPalette.border};">${moodText}</span>`;
+                }).join('、');
+                const kissHtml = [
+                    sectionPreviewHtml('✅ 保持', entry.keep),
+                    sectionPreviewHtml('⚠️ 改进', entry.improve),
+                    sectionPreviewHtml('🚫 停止', entry.stop)
+                ].filter(Boolean).join('');
+                const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+                return `
+                <article class="review-card review-record-card" data-review-id="${safeEntryIdAttr}" onclick="openReviewModal('${safeEntryId}')">
+                    <div class="review-header">
+                        <div class="review-header-main">
+                            <span class="review-period">${entry.date}</span>
+                            <div class="review-meta-row">
+                                <span class="review-score-circle ${scoreToneClass}" title="评分 ${entry.score}/10">${entry.score}</span>
+                                <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
+                            </div>
+                            <span class="review-today-note"><strong>今天</strong><span class="review-today-task-text">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                        </div>
+                        <button class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
+                    </div>
+                    <div class="review-content review-content-compact">
+                        ${summaryHtml}
+                        ${dividerHtml}
+                        ${kissHtml}
+                    </div>
+                </article>
+            `;
+            }).join('');
+        }
+
+        function renderAll() {
+            renderKissBoard();
+            renderHeatmap();
+            renderReviewList();
+            scheduleHeatmapScale();
+            tryFocusPendingReviewCard();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                sidebar.classList.add('collapsed');
+            }
+
+            pendingFocusReviewId = getPendingFocusReviewIdFromUrl();
+            updateCurrentDate();
+            loadEntries();
+            renderAll();
+            window.addEventListener('resize', scheduleHeatmapScale);
+            document.getElementById('reviewDate').value = todayKey();
+            document.getElementById('reviewCategory').value = 'work';
+            syncReviewCategorySelectStyle();
+            setReviewEmotionIntensity('中');
+            setReviewEmotionSelection('平静', '低', '积极');
+            updateReviewTodoModalOkrOptions('');
+
+            const reviewTodoModalTitleInput = document.getElementById('reviewTodoModalTitleInput');
+            if (reviewTodoModalTitleInput) {
+                reviewTodoModalTitleInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveReviewTodoFromModal();
+                    }
+                });
+            }
+
+            const customEmotionInput = document.getElementById('reviewCustomEmotionInput');
+            if (customEmotionInput) {
+                customEmotionInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        applyCustomReviewEmotion();
+                    }
+                });
+            }
+
+            const reviewEmotionModal = document.getElementById('reviewEmotionModal');
+            if (reviewEmotionModal) {
+                reviewEmotionModal.addEventListener('click', (event) => {
+                    if (event.target === reviewEmotionModal) {
+                        closeReviewEmotionModal();
+                    }
+                });
+            }
+
+            document.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof Element)) return;
+                if (target.closest('#reviewTodoModal .custom-select')) return;
+                document.querySelectorAll('#reviewTodoModal .custom-select').forEach(node => node.classList.remove('open'));
+            });
+        });
+
+        window.addEventListener('planner-storage-synced', () => {
+            loadEntries();
+            renderAll();
+            updateReviewTodoModalOkrOptions(document.getElementById('reviewTodoModalOkr')?.value || '');
+        });
+
+        window.addEventListener('storage', (event) => {
+            const key = event.key || '';
+            if (key && key !== 'reviews' && !key.startsWith('planner_')) return;
+            loadEntries();
+            renderAll();
+            updateReviewTodoModalOkrOptions(document.getElementById('reviewTodoModalOkr')?.value || '');
+        });
+
+    </script>
+    <script src="no-multiline.js"></script>
+</body>
+</html>
+
+
