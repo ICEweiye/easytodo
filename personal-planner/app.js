@@ -421,81 +421,141 @@ function updateDate() {
 function renderTimeline() {
     const header = document.getElementById('timelineHeader');
     const body = document.getElementById('timelineBody');
+    const container = header ? header.closest('.timeline-container') : null;
+    if (!header || !body || !container) return;
 
-    // 璁＄畻鏃堕棿鑼冨洿锛氳繃鍘讳竴涓湀 + 鏈潵涓や釜鏈?
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    // 璁＄畻杩囧幓涓€涓湀鐨勮捣濮嬫棩鏈燂紙涓婁釜鏈?鍙凤級
-    const oneMonthAgo = new Date(currentYear, currentMonth - 1, 1);
-    // 璁＄畻鏈潵涓や釜鏈堢殑缁撴潫鏃ユ湡锛堜笅涓嬩釜鏈堟湯锛?
-    const twoMonthsLater = new Date(currentYear, currentMonth + 3, 0);
-    
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const FIXED_TODAY_OFFSET = 37.5;
+    const VISIBLE_MONTH_CELLS = 4;
+
     // 收集时间轴条目（与 OKR 仪表盘保持一致，仅显示 OKR）
     const timelineItems = [];
 
-    // 娣诲姞OKR锛堝鏋滄湁鏃ユ湡锛?
     data.okrs.forEach(okr => {
         if (okr.startDate && okr.endDate) {
-            const okrStart = new Date(okr.startDate);
-            const okrEnd = new Date(okr.endDate);
-            if (okrEnd >= oneMonthAgo && okrStart <= twoMonthsLater) {
-                // 计算OKR进度
-                let totalWeight = 0;
-                let completedWeight = 0;
-                okr.krs.forEach(kr => {
-                    normalizeKr(kr);
-                    const weight = kr.weight || (100 / okr.krs.length);
-                    totalWeight += weight;
-                    completedWeight += weight * getKrProgress(kr);
-                });
-                const progress = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
-                
-                timelineItems.push({
-                    type: 'okr',
-                    id: okr.id,
-                    name: okr.title,
-                    start: okr.startDate,
-                    end: okr.endDate,
-                    color: normalizeOkrColor(okr.color),
-                    progress: progress,
-                    isOkr: true
-                });
-            }
+            const okrStart = new Date(`${okr.startDate}T00:00:00`);
+            const okrEnd = new Date(`${okr.endDate}T00:00:00`);
+            if (!Number.isFinite(okrStart.getTime()) || !Number.isFinite(okrEnd.getTime())) return;
+
+            let totalWeight = 0;
+            let completedWeight = 0;
+            okr.krs.forEach(kr => {
+                normalizeKr(kr);
+                const weight = kr.weight || (100 / okr.krs.length);
+                totalWeight += weight;
+                completedWeight += weight * getKrProgress(kr);
+            });
+            const progress = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+
+            timelineItems.push({
+                type: 'okr',
+                id: okr.id,
+                name: okr.title,
+                start: okr.startDate,
+                end: okr.endDate,
+                color: normalizeOkrColor(okr.color),
+                progress: progress,
+                isOkr: true
+            });
         }
     });
-    
-    // 按开始时间排序
-    timelineItems.sort((a, b) => new Date(a.start) - new Date(b.start));
 
-    // 固定显示范围：当前月前一个月 到 当前月后两个月
-    const minDate = new Date(oneMonthAgo.getFullYear(), oneMonthAgo.getMonth(), 1);
-    const maxDate = new Date(twoMonthsLater.getFullYear(), twoMonthsLater.getMonth(), twoMonthsLater.getDate());
-
-    // 娓叉煋鏈堜唤澶撮儴 - 纭繚姣忎釜鏈堜唤瀵瑰簲涓€涓綉鏍?
-    const months = [];
-    const current = new Date(minDate);
-    while (current <= maxDate) {
-        months.push(new Date(current));
-        current.setMonth(current.getMonth() + 1);
-    }
-
-    header.innerHTML = months.map(m => '<div class="timeline-month">' + (m.getMonth() + 1) + '月</div>').join('');
+    timelineItems.sort((a, b) => {
+        const left = parseYmdToDate(a.start) || new Date(a.start);
+        const right = parseYmdToDate(b.start) || new Date(b.start);
+        return left - right;
+    });
 
     if (timelineItems.length === 0) {
+        header.innerHTML = '';
+        const marker = container.querySelector('.timeline-today-marker');
+        if (marker) marker.remove();
         body.innerHTML = '<div class="empty-state">暂无 OKR 时间轴，点击右上角 + 添加 OKR</div>';
         return;
     }
 
-    // 璁＄畻鎬诲ぉ鏁帮紙浠?minDate 鍒?maxDate锛?
-    const minDateTime = minDate.getTime();
-    const maxDateTime = maxDate.getTime();
-    const totalMilliseconds = maxDateTime - minDateTime;
+    const monthCellCount = Math.max(1, VISIBLE_MONTH_CELLS);
+    const todayOffset = FIXED_TODAY_OFFSET;
+    const toMonthIndex = (date) => (date.getFullYear() * 12) + date.getMonth();
+    const getDateMonthProgress = (date, options = {}) => {
+        const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate() || 30;
+        const secondsOfDay = (date.getHours() * 3600) + (date.getMinutes() * 60) + date.getSeconds();
+        const millisPart = date.getMilliseconds() / 1000;
+        const dayBase = Math.max(0, date.getDate() - 1);
+        if (options.includeEndBoundary) {
+            return Math.min(1, date.getDate() / daysInMonth);
+        }
+        if (options.includeTimeProgress) {
+            const dayProgress = (secondsOfDay + millisPart) / 86400;
+            return Math.min(1, (dayBase + dayProgress) / daysInMonth);
+        }
+        return dayBase / daysInMonth;
+    };
 
-    body.innerHTML = timelineItems.map(item => {
-        const start = new Date(item.start);
-        const end = new Date(item.end);
+    // 以“今天 00:00”作为锚点，避免日内时间导致今日线在任务条中偏移过大
+    const anchorMonthFloat = toMonthIndex(todayDate) + getDateMonthProgress(todayDate);
+    const getMonthFloatOffset = (monthFloat) => {
+        return todayOffset + (((monthFloat - anchorMonthFloat) / monthCellCount) * 100);
+    };
+
+    const minVisibleMonthFloat = anchorMonthFloat - ((todayOffset / 100) * monthCellCount);
+    const maxVisibleMonthFloat = anchorMonthFloat + (((100 - todayOffset) / 100) * monthCellCount);
+
+    const monthStartMin = Math.floor(minVisibleMonthFloat) - 1;
+    const monthStartMax = Math.ceil(maxVisibleMonthFloat) + 1;
+    const monthBoundaryAnchors = [];
+    for (let monthIndex = monthStartMin; monthIndex <= monthStartMax; monthIndex += 1) {
+        const boundaryPosition = parseFloat(getMonthFloatOffset(monthIndex).toFixed(2));
+        if (boundaryPosition < -20 || boundaryPosition > 120) continue;
+        monthBoundaryAnchors.push({ monthIndex, boundaryPosition });
+    }
+
+    const toMonthLabel = (monthIndex) => {
+        const month = ((monthIndex % 12) + 12) % 12;
+        return `${month + 1}月`;
+    };
+
+    const monthLabelHtml = monthBoundaryAnchors
+        .map(({ monthIndex }) => {
+            const labelPosition = parseFloat(getMonthFloatOffset(monthIndex + 0.5).toFixed(2));
+            if (labelPosition <= 0 || labelPosition >= 100) return '';
+            return `<span class="timeline-month-label" style="left: ${labelPosition}%;">${toMonthLabel(monthIndex)}</span>`;
+        })
+        .filter(Boolean)
+        .join('');
+
+    header.innerHTML = `<div class="timeline-header-axis">${monthLabelHtml}</div>`;
+
+    const monthDividerHtml = monthBoundaryAnchors
+        .filter(({ boundaryPosition }) => boundaryPosition > 0 && boundaryPosition < 100)
+        .map(({ boundaryPosition }) => `<span class="timeline-month-divider" style="left: ${boundaryPosition}%;" aria-hidden="true"></span>`)
+        .join('');
+
+    const getMonthRawOffset = (dateValue, options = {}) => {
+        const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+        if (Number.isNaN(date.getTime())) return 0;
+        let monthProgress = getDateMonthProgress(date, options);
+        if (options.snapToMonthBoundary) {
+            const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate() || 30;
+            if (date.getDate() === 1) {
+                monthProgress = 0;
+            } else if (date.getDate() === daysInMonth) {
+                monthProgress = 1;
+            }
+        }
+        const monthFloat = toMonthIndex(date) + monthProgress;
+        return getMonthFloatOffset(monthFloat);
+    };
+
+    const getMonthScaledOffset = (dateValue, options = {}) => {
+        const offset = getMonthRawOffset(dateValue, options);
+        return Math.max(0, Math.min(100, parseFloat(offset.toFixed(2))));
+    };
+
+    const rowsHtml = timelineItems.map(item => {
+        const start = parseYmdToDate(item.start) || new Date(item.start);
+        const end = parseYmdToDate(item.end) || new Date(item.end);
         const safeId = escapePlannerJsString(item.id);
         const safeName = escapePlannerHtml(item.name);
         const safeDateText = escapePlannerHtml(`${formatDate(item.start)} - ${formatDate(item.end)}`);
@@ -503,28 +563,38 @@ function renderTimeline() {
         // 鍒ゆ柇椤圭洰鐘舵€侊細鏄惁宸插紑濮?
         const isStarted = start <= now;
         
-        // 计算项目在时间轴上的位置
-        const startTime = start.getTime();
-        const endTime = end.getTime();
-        
-        // 璁＄畻浣嶇疆鐧惧垎姣?
-        let startOffset = ((startTime - minDateTime) / totalMilliseconds) * 100;
-        let endOffset = ((endTime - minDateTime) / totalMilliseconds) * 100;
+        // 计算项目在时间轴上的位置（与月份标签、分隔线共用坐标系）
+        const startOffsetRaw = getMonthRawOffset(start, { snapToMonthBoundary: true });
+        const endOffsetRaw = getMonthRawOffset(end, { snapToMonthBoundary: true });
+        if (endOffsetRaw <= 0 || startOffsetRaw >= 100) {
+            return '';
+        }
+
+        let startOffset = getMonthScaledOffset(start, { snapToMonthBoundary: true });
+        let endOffset = getMonthScaledOffset(end, { snapToMonthBoundary: true });
         
         // 寮哄埗绾︽潫鍦?0-100 鑼冨洿鍐?
         startOffset = Math.max(0, Math.min(100, parseFloat(startOffset.toFixed(2))));
         endOffset = Math.max(0, Math.min(100, parseFloat(endOffset.toFixed(2))));
         
-        // 纭繚瀹藉害鑷冲皯涓?2%锛屼笖涓嶈秴杩囧鍣ㄨ竟鐣?
+        // 按起止时间精确反映宽度；同日任务给极小可见宽度
         let duration = endOffset - startOffset;
-        duration = Math.max(2, Math.min(duration, 100 - startOffset));
+        duration = Math.max(0, Math.min(duration, 100 - startOffset));
+        if (duration === 0) {
+            duration = Math.min(0.35, 100 - startOffset);
+        }
         duration = parseFloat(duration.toFixed(2));
         
         const safeProgress = Math.max(0, Math.min(100, parseInt(item.progress, 10) || 0));
         const labelProgress = Math.max(8, safeProgress);
+        const showLabelOnRight = safeProgress <= 20 || duration <= 12;
+        const progressTextClass = showLabelOnRight ? 'progress-text progress-text-right' : 'progress-text';
         const progressTextHtml = safeProgress > 0
-            ? `<span class="progress-text" style="left: ${labelProgress}%;">${safeProgress}%</span>`
+            ? `<span class="${progressTextClass}" style="left: ${labelProgress}%;">${safeProgress}%</span>`
             : '';
+        const progressFillStyle = safeProgress > 0
+            ? `width: ${safeProgress}%;`
+            : 'width: 0;';
         const clickAction = isStarted
             ? (item.isOkr ? `editOkr('${safeId}')` : `editProjectProgress('${safeId}')`)
             : (item.isOkr ? `editOkr('${safeId}')` : `editProject('${safeId}')`);
@@ -532,7 +602,7 @@ function renderTimeline() {
             <div class="project-bar timeline-base-${item.color} ${item.isOkr ? 'okr-bar' : ''}"
                  style="left: ${startOffset}%; width: ${duration}%;"
                  onclick="${clickAction}">
-                <div class="progress-fill progress-${item.color}" style="width: ${safeProgress}%"></div>
+                <div class="progress-fill progress-${item.color}" style="${progressFillStyle}"></div>
                 ${progressTextHtml}
             </div>
         `;
@@ -546,11 +616,45 @@ function renderTimeline() {
                     <div class="project-date">${safeDateText}</div>
                 </div>
                 <div class="timeline-bar-area">
+${monthDividerHtml}
 ${barHtml}
                 </div>
             </div>
         `;
-    }).join('');
+    }).filter(Boolean).join('');
+
+    if (!rowsHtml) {
+        const marker = container.querySelector('.timeline-today-marker');
+        if (marker) marker.remove();
+        body.innerHTML = '<div class="empty-state">当前窗口暂无可见 OKR 时间轴</div>';
+        return;
+    }
+
+    body.innerHTML = rowsHtml;
+
+    let marker = container.querySelector('.timeline-today-marker');
+    if (!marker) {
+        marker = document.createElement('div');
+        marker.className = 'timeline-today-marker';
+        marker.setAttribute('aria-hidden', 'true');
+        marker.innerHTML = '<span class="timeline-today-marker-line"></span><span class="timeline-today-label">今日</span>';
+        container.appendChild(marker);
+    }
+    const firstBarArea = body.querySelector('.timeline-bar-area');
+    if (firstBarArea) {
+        const containerRect = container.getBoundingClientRect();
+        const barRect = firstBarArea.getBoundingClientRect();
+        const markerLeft = Math.max(0, barRect.left - containerRect.left);
+        const markerWidth = Math.max(0, barRect.width);
+        marker.style.left = `${markerLeft.toFixed(2)}px`;
+        marker.style.width = `${markerWidth.toFixed(2)}px`;
+        marker.style.right = 'auto';
+    } else {
+        marker.style.removeProperty('left');
+        marker.style.removeProperty('width');
+        marker.style.removeProperty('right');
+    }
+    marker.style.setProperty('--today-offset', `${todayOffset}%`);
 }
 
 // ===== OKR 浠〃鐩?=====
@@ -587,8 +691,39 @@ function renderOKRs() {
         const dateRange = okr.startDate && okr.endDate 
             ? `${formatDate(okr.startDate)} - ${formatDate(okr.endDate)}`
             : (okr.period || '');
+        let remainingClass = '';
+        let remainingPrefix = '';
+        let remainingNumber = '';
+        let remainingSuffix = '';
+        let remainingText = '';
+        if (okr.endDate) {
+            const end = new Date(`${okr.endDate}T00:00:00`);
+            if (Number.isFinite(end.getTime())) {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const msPerDay = 24 * 60 * 60 * 1000;
+                const diffDays = Math.floor((end.getTime() - today.getTime()) / msPerDay);
+                if (diffDays > 0) {
+                    remainingPrefix = '剩余';
+                    remainingNumber = String(diffDays);
+                    remainingSuffix = '天';
+                    remainingClass = 'normal';
+                } else if (diffDays === 0) {
+                    remainingText = '今日截止';
+                    remainingClass = 'today';
+                } else {
+                    remainingPrefix = '已逾期';
+                    remainingNumber = String(Math.abs(diffDays));
+                    remainingSuffix = '天';
+                    remainingClass = 'overdue';
+                }
+            }
+        }
         const safeTitle = escapePlannerHtml(okr.title);
         const safeDateRange = escapePlannerHtml(dateRange);
+        const safeRemainingHtml = remainingNumber
+            ? `${escapePlannerHtml(remainingPrefix)} <span class="okr-remaining-number">${escapePlannerHtml(remainingNumber)}</span> ${escapePlannerHtml(remainingSuffix)}`
+            : escapePlannerHtml(remainingText);
         const safeMemo = escapePlannerHtml(okr.memo || '');
 
         return `
@@ -598,6 +733,7 @@ function renderOKRs() {
                     <div class="okr-header-main">
                         <div class="okr-title" onclick="editOkr('${safeOkrId}')">${safeTitle}</div>
                         <div class="okr-period">${safeDateRange}</div>
+                        ${safeRemainingHtml ? `<div class="okr-remaining ${remainingClass}">${safeRemainingHtml}</div>` : ''}
                     </div>
                     <div class="ring-container">
                         <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
@@ -658,6 +794,35 @@ function getStatusText(status) {
     return map[status];
 }
 
+const BOOK_STATUS_SORT_ORDER = { reading: 0, unread: 1, finished: 2 };
+
+let readingLayoutRafId = null;
+
+function syncReadingItemOverflowLayout() {
+    const list = document.getElementById('readingList');
+    if (!list) return;
+
+    const items = list.querySelectorAll('.reading-item');
+    items.forEach(item => item.classList.remove('reading-item-overflow'));
+
+    items.forEach((item) => {
+        const titleEl = item.querySelector('.book-title');
+        if (!titleEl) return;
+        const isOverflow = titleEl.scrollWidth > (titleEl.clientWidth + 1);
+        item.classList.toggle('reading-item-overflow', isOverflow);
+    });
+}
+
+function scheduleReadingItemOverflowLayout() {
+    if (readingLayoutRafId !== null) {
+        cancelAnimationFrame(readingLayoutRafId);
+    }
+    readingLayoutRafId = requestAnimationFrame(() => {
+        readingLayoutRafId = null;
+        syncReadingItemOverflowLayout();
+    });
+}
+
 function renderBooks() {
     const list = document.getElementById('readingList');
 
@@ -666,32 +831,52 @@ function renderBooks() {
         return;
     }
 
-    list.innerHTML = data.books.map(book => {
-        const status = getBookStatus(book.current, book.total);
+    const booksForRender = data.books
+        .map((book, index) => ({
+            book,
+            index,
+            status: getBookStatus(book.current, book.total)
+        }))
+        .sort((left, right) => {
+            const leftOrder = BOOK_STATUS_SORT_ORDER[left.status] ?? 99;
+            const rightOrder = BOOK_STATUS_SORT_ORDER[right.status] ?? 99;
+            if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+            return left.index - right.index;
+        });
+
+    list.innerHTML = booksForRender.map(({ book, status }) => {
         const progress = Math.round((book.current / book.total) * 100);
         const safeBookId = escapePlannerJsString(book.id);
-        const safeTitle = escapePlannerHtml(book.title);
-        const safeAuthor = escapePlannerHtml(book.author || '未知作者');
+        const rawTitle = String(book.title || '').trim();
+        const rawAuthor = String(book.author || '').trim();
+        const displayTitle = rawTitle || rawAuthor || '未命名书籍';
+        const displayAuthor = rawTitle ? (rawAuthor || '未知作者') : (rawAuthor ? '未填写作者' : '未知作者');
+        const safeTitle = escapePlannerHtml(displayTitle);
+        const safeAuthor = escapePlannerHtml(displayAuthor);
         const safeStatusText = escapePlannerHtml(getStatusText(status));
+        const finishedClass = status === 'finished' ? ' is-finished' : '';
 
         return `
             <div class="reading-item">
                 <div class="book-info">
                     <div class="book-title-row">
-                        <div class="book-title" onclick="editBook('${safeBookId}')">${safeTitle}</div>
+                        <div class="book-title${finishedClass}" title="${safeTitle}" onclick="editBook('${safeBookId}')">${safeTitle}</div>
                         <span class="book-status-pill status-pill-${status}">${safeStatusText}</span>
                     </div>
                     <div class="book-meta">${safeAuthor}</div>
                 </div>
-                <div class="book-progress">
-                    <div class="progress-bar-bg" onclick="editBookProgress('${safeBookId}')">
-                        <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                <div class="book-progress-wrap">
+                    <div class="book-progress">
+                        <div class="progress-bar-bg" onclick="editBookProgress('${safeBookId}')">
+                            <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                        </div>
                     </div>
                 </div>
-                <button class="book-delete" onclick="deleteBook('${safeBookId}')">×</button>
             </div>
         `;
     }).join('');
+
+    scheduleReadingItemOverflowLayout();
 }
 
 // ===== 弹窗控制 =====
@@ -714,6 +899,10 @@ function closeModal(id) {
     // 隐藏删除按钮
     const deleteBtn = document.getElementById('projectDeleteBtn');
     if (deleteBtn) deleteBtn.style.display = 'none';
+    const bookDeleteBtn = document.getElementById('bookDeleteBtn');
+    if (bookDeleteBtn) bookDeleteBtn.style.display = 'none';
+    const bookModalTitle = document.getElementById('bookModalTitle');
+    if (bookModalTitle) bookModalTitle.textContent = '添加书籍';
     // 清空表单
     document.querySelectorAll('.form-input').forEach(input => input.value = '');
 }
@@ -1194,6 +1383,14 @@ function adjustKrCount(okrId, krId, delta) {
 
 // ===== 书籍管理 =====
 function openBookModal() {
+    const bookDeleteBtn = document.getElementById('bookDeleteBtn');
+    if (bookDeleteBtn) bookDeleteBtn.style.display = 'none';
+    const bookModalTitle = document.getElementById('bookModalTitle');
+    if (bookModalTitle) bookModalTitle.textContent = '添加书籍';
+    document.getElementById('bookTitle').value = '';
+    document.getElementById('bookAuthor').value = '';
+    document.getElementById('bookCurrent').value = '0';
+    document.getElementById('bookTotal').value = '100';
     openModal('bookModal');
 }
 
@@ -1236,6 +1433,10 @@ function editBook(id) {
     if (!book) return;
 
     editingId = id;
+    const bookModalTitle = document.getElementById('bookModalTitle');
+    if (bookModalTitle) bookModalTitle.textContent = '编辑书籍';
+    const bookDeleteBtn = document.getElementById('bookDeleteBtn');
+    if (bookDeleteBtn) bookDeleteBtn.style.display = 'block';
     document.getElementById('bookTitle').value = book.title;
     document.getElementById('bookAuthor').value = book.author || '';
     document.getElementById('bookCurrent').value = book.current;
@@ -1260,6 +1461,7 @@ function deleteBook(id) {
         data.books = data.books.filter(b => b.id != id);
         Storage.set('planner_books', data.books);
         renderBooks();
+        closeModal('bookModal');
     }
 }
 
@@ -1295,11 +1497,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('resize', () => {
+        renderTimeline();
+        scheduleReadingItemOverflowLayout();
         const popover = lightDatePickerState.popover;
         if (popover && popover.classList.contains('active')) {
             positionLightDatePicker();
         }
     });
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+            scheduleReadingItemOverflowLayout();
+        });
+    }
 
     window.addEventListener('scroll', () => {
         const popover = lightDatePickerState.popover;
@@ -1322,4 +1532,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // 保持“今日线固定 + 时间轴元素随时间滑动”
+    setInterval(() => {
+        updateDate();
+        renderTimeline();
+    }, 60 * 1000);
 });

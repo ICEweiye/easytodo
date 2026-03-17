@@ -1,0 +1,34 @@
+﻿# Workspace / editor
+.vscode/
+.claude/
+
+# Local scratch files in repo root
+_head_*.txt
+_head_*.bin
+_head_*.css
+_style_head_tmp.css
+
+# Dependencies
+**/node_modules/
+
+# Logs / runtime output
+*.log
+personal-planner/stdout
+personal-planner/.dev-server.err.log
+personal-planner/.dev-server.out.log
+
+# Local data (do not upload)
+personal-planner/.planner-shared-storage.json
+personal-planner/.planner-shared-storage.last-good.json
+personal-planner/SHARED-STORAGE.md
+personal-planner/backups/
+personal-planner/*.sqlite3
+personal-planner/planner-todos-all-localstorage-scan.json
+personal-planner/planner-todos-history-from-leveldb.json
+personal-planner/recovered-*.json
+personal-planner/recovery-candidate.json
+personal-planner/tmp-leveldb-dirs.json
+personal-planner/test-results/.last-run.json
+
+# Temporary backups
+personal-planner/*.bak

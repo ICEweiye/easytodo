@@ -24,6 +24,9 @@
     let pushTimer = null;
     let pullTimer = null;
     let applyingRemoteData = false;
+    let pushing = false;
+    let pendingPatchData = {};
+    let pendingClearAllSyncKeys = false;
 
     function shouldSyncKey(key) {
         if (!key) return false;
@@ -235,25 +238,99 @@
         if (pushTimer) clearTimeout(pushTimer);
         pushTimer = setTimeout(() => {
             pushTimer = null;
+            if (pushing) {
+                schedulePush();
+                return;
+            }
             pushLocalData();
         }, PUSH_DELAY_MS);
     }
 
-    function pushLocalData() {
-        if (!activeEndpoint || applyingRemoteData) return;
+    function hasPendingPatch() {
+        return pendingClearAllSyncKeys || Object.keys(pendingPatchData).length > 0;
+    }
 
-        const payload = {
+    function queuePatchValue(key, value) {
+        if (!shouldSyncKey(key)) return;
+        pendingPatchData[key] = value;
+    }
+
+    function buildPushPayload() {
+        if (hasPendingPatch()) {
+            return {
+                updatedAt: Date.now(),
+                mode: 'patch',
+                clearAllSyncKeys: pendingClearAllSyncKeys,
+                // Keep `data` as a full snapshot for backward compatibility with older servers.
+                // Newer servers should prefer `patchData` when mode is patch.
+                data: collectLocalData(),
+                patchData: { ...pendingPatchData }
+            };
+        }
+
+        // Fallback to patch mode even without a pending queue.
+        // This avoids accidental full-overwrite when a tab only has a partial local key set.
+        const snapshot = collectLocalData();
+        return {
             updatedAt: Date.now(),
-            data: collectLocalData()
+            mode: 'patch',
+            clearAllSyncKeys: false,
+            data: snapshot,
+            patchData: snapshot
         };
+    }
+
+    function resetQueuedPatch() {
+        pendingPatchData = {};
+        pendingClearAllSyncKeys = false;
+    }
+
+    function requeuePushPayload(payload) {
+        if (!payload || payload.mode !== 'patch') return;
+        if (payload.clearAllSyncKeys) {
+            pendingClearAllSyncKeys = true;
+            pendingPatchData = {};
+        }
+        const patch = payload.patchData && typeof payload.patchData === 'object'
+            ? payload.patchData
+            : (payload.data && typeof payload.data === 'object' ? payload.data : {});
+        Object.keys(patch).forEach((key) => {
+            if (!shouldSyncKey(key)) return;
+            const value = patch[key];
+            if (typeof value === 'string' || value === null) {
+                pendingPatchData[key] = value;
+            }
+        });
+    }
+
+    function pushLocalData() {
+        if (!activeEndpoint || applyingRemoteData || pushing) return;
+
+        const payload = buildPushPayload();
+        const isPatchPayload = payload.mode === 'patch';
+        if (isPatchPayload) {
+            const patchKeys = Object.keys(payload.patchData || {});
+            if (!payload.clearAllSyncKeys && patchKeys.length === 0) return;
+            resetQueuedPatch();
+        }
+
+        pushing = true;
 
         requestJson(activeEndpoint, 'POST', payload, (remote) => {
+            pushing = false;
             if (!remote) {
                 setLocalTimestamp(payload.updatedAt);
+                if (isPatchPayload) {
+                    requeuePushPayload(payload);
+                    schedulePush();
+                }
                 return;
             }
             if ((remote.updatedAt || 0) >= getLocalTimestamp()) {
                 applyRemoteData(remote, { allowReload: false });
+            }
+            if (hasPendingPatch()) {
+                schedulePush();
             }
         });
     }
@@ -273,7 +350,9 @@
         storageProto.setItem = function patchedSetItem(key, value) {
             rawSetItem.call(this, key, value);
             if (this !== storage || applyingRemoteData) return;
-            if (!shouldSyncKey(String(key || ''))) return;
+            const keyText = String(key || '');
+            if (!shouldSyncKey(keyText)) return;
+            queuePatchValue(keyText, String(value));
             setLocalTimestamp(Date.now());
             schedulePush();
         };
@@ -281,7 +360,9 @@
         storageProto.removeItem = function patchedRemoveItem(key) {
             rawRemoveItem.call(this, key);
             if (this !== storage || applyingRemoteData) return;
-            if (!shouldSyncKey(String(key || ''))) return;
+            const keyText = String(key || '');
+            if (!shouldSyncKey(keyText)) return;
+            queuePatchValue(keyText, null);
             setLocalTimestamp(Date.now());
             schedulePush();
         };
@@ -289,6 +370,8 @@
         storageProto.clear = function patchedClear() {
             rawClear.call(this);
             if (this !== storage || applyingRemoteData) return;
+            pendingClearAllSyncKeys = true;
+            pendingPatchData = {};
             setLocalTimestamp(Date.now());
             schedulePush();
         };
