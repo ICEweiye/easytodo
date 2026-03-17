@@ -586,8 +586,10 @@ function renderTimeline() {
         duration = parseFloat(duration.toFixed(2));
         
         const safeProgress = Math.max(0, Math.min(100, parseInt(item.progress, 10) || 0));
-        const labelProgress = Math.max(8, safeProgress);
-        const showLabelOnRight = safeProgress <= 20 || duration <= 12;
+        const showLabelOnRight = safeProgress <= 20;
+        const labelProgress = showLabelOnRight
+            ? Math.max(2, safeProgress)
+            : Math.max(8, safeProgress);
         const progressTextClass = showLabelOnRight ? 'progress-text progress-text-right' : 'progress-text';
         const progressTextHtml = safeProgress > 0
             ? `<span class="${progressTextClass}" style="left: ${labelProgress}%;">${safeProgress}%</span>`
