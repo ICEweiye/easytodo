@@ -30,6 +30,8 @@
 
     function shouldSyncKey(key) {
         if (!key) return false;
+        // Never sync auth credentials/session/prefs.
+        if (key.startsWith('planner_auth_')) return false;
         return key === 'sidebarCollapsed'
             || key === 'reviews'
             || key.startsWith('planner_')

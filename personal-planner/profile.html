@@ -1,0 +1,745 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户信息 - 个人规划管理</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
+    <script src="storage-sync.js"></script>
+    <script src="backup-client.js"></script>
+    <style>
+        .profile-shell {
+            max-width: 920px;
+            margin: 0 auto;
+        }
+
+        .profile-module {
+            padding: 22px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .profile-title-group h2 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--warm-gray-900);
+        }
+
+        .profile-title-group p {
+            margin: 8px 0 0;
+            font-size: 13px;
+            color: var(--warm-gray-500);
+        }
+
+        .profile-avatar-preview {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #1f2937, #4b5563);
+            box-shadow: 0 4px 10px rgba(17, 24, 39, 0.22);
+        }
+
+        .profile-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 16px;
+        }
+
+        .profile-field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .profile-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .profile-field label {
+            font-size: 13px;
+            color: var(--warm-gray-700);
+        }
+
+        .profile-field input,
+        .profile-field textarea {
+            width: 100%;
+            border: 1px solid var(--warm-gray-200);
+            border-radius: 10px;
+            font-size: 14px;
+            padding: 10px 12px;
+            color: var(--warm-gray-900);
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .profile-field textarea {
+            min-height: 108px;
+            resize: vertical;
+        }
+
+        .profile-field input:focus,
+        .profile-field textarea:focus {
+            border-color: #ad8a67;
+            box-shadow: 0 0 0 3px rgba(173, 138, 103, 0.18);
+        }
+
+        .profile-field input[readonly] {
+            background: var(--warm-gray-50);
+            color: var(--warm-gray-600);
+            cursor: not-allowed;
+        }
+
+        .profile-actions {
+            margin-top: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .profile-actions-left,
+        .profile-actions-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-status {
+            min-height: 22px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--warm-gray-600);
+        }
+
+        .profile-status.is-error {
+            color: #b03737;
+        }
+
+        .profile-status.is-success {
+            color: #2f7d3e;
+        }
+
+        .profile-avatar-menu-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .profile-avatar-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: calc(var(--topbar-avatar-size, 36px) / 2 - 10px);
+            width: 280px;
+            padding: 20px 14px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(222, 214, 204, 0.85);
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 18px 34px rgba(35, 30, 25, 0.16);
+            z-index: 42;
+            opacity: 0;
+            transform: translateY(-6px);
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .profile-avatar-menu-wrap.is-open .profile-avatar-menu {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .profile-avatar-menu-head {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(224, 216, 208, 0.9);
+            margin-bottom: 10px;
+        }
+
+        .profile-avatar-menu-big-avatar {
+            position: absolute;
+            right: -34px;
+            top: -28px;
+            width: 88px;
+            height: 88px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(140deg, #1f2937, #4b5563);
+            box-shadow: 0 8px 18px rgba(17, 24, 39, 0.28);
+            flex-shrink: 0;
+            transform: translate(0, 0) scale(1);
+            transition: transform 0.28s cubic-bezier(0.22, 0.62, 0.36, 1);
+        }
+
+        .profile-avatar-menu-wrap .global-avatar-btn.is-avatar-hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .profile-avatar-menu-name {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--warm-gray-900);
+            line-height: 1.2;
+        }
+
+        .profile-avatar-menu-sub {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: var(--warm-gray-500);
+            word-break: break-word;
+        }
+
+        .profile-avatar-menu-list {
+            display: grid;
+            gap: 4px;
+        }
+
+        .profile-avatar-menu-item {
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            border-radius: 10px;
+            color: var(--warm-gray-800);
+            font-size: 13px;
+            padding: 9px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .profile-avatar-menu-item:hover {
+            background: var(--warm-gray-50);
+            color: var(--warm-gray-900);
+        }
+
+        .profile-avatar-menu-item-danger {
+            color: #a53535;
+        }
+
+        .profile-avatar-menu-item-danger:hover {
+            background: rgba(181, 68, 68, 0.1);
+            color: #8f2f2f;
+        }
+
+        .profile-avatar-menu-item::after {
+            content: '›';
+            font-size: 14px;
+            color: var(--warm-gray-400);
+            line-height: 1;
+        }
+
+        .profile-avatar-menu-item-danger::after {
+            content: '';
+        }
+
+        @media (max-width: 767px) {
+            .profile-module {
+                padding: 16px;
+            }
+
+            .profile-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-header {
+                align-items: flex-start;
+            }
+
+            .profile-avatar-menu {
+                right: calc(var(--topbar-avatar-size, 36px) / 2 - 10px);
+                width: min(280px, calc(100vw - 32px));
+            }
+        }
+    </style>
+</head>
+<body class="home-page">
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo"><img class="logo-img" src="logo.svg" alt="Logo"></div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item"><span class="nav-text">主页</span></a>
+                <a href="life.html" class="nav-item"><span class="nav-text">生活</span></a>
+                <a href="stats.html" class="nav-item"><span class="nav-text">统计</span></a>
+                <a href="review.html" class="nav-item"><span class="nav-text">复盘</span></a>
+                <a href="archive.html" class="nav-item"><span class="nav-text">归档</span></a>
+            </nav>
+        </aside>
+
+        <main class="main-content with-global-topbar">
+            <header class="global-topbar" aria-label="页面工具栏">
+                <div class="global-topbar-card">
+                    <a class="global-topbar-logo" href="index.html" aria-label="返回主页">
+                        <img class="global-topbar-logo-img" src="logo.svg" alt="Logo">
+                    </a>
+                    <div class="global-topbar-actions">
+                        <button type="button" class="nav-icon-btn global-tool-btn nav-backup-btn" onclick="runDatabaseBackup()" title="备份数据库" aria-label="备份数据库">
+                            <span class="nav-backup-icon" aria-hidden="true">
+                                <svg t="1773543480237" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5912">
+                                    <path d="M42.666667 768c0 46.933333 38.4 85.333333 85.333333 85.333333h768c46.933333 0 85.333333-38.4 85.333333-85.333333v-170.666667H42.666667v170.666667z m672-64h106.666666c17.066667 0 32 14.933333 32 32s-14.933333 32-32 32h-106.666666c-17.066667 0-32-14.933333-32-32s14.933333-32 32-32zM829.866667 230.4C819.2 194.133333 785.066667 170.666667 748.8 170.666667H275.2c-36.266667 0-70.4 23.466667-81.066667 59.733333L42.666667 533.333333h938.666666l-151.466666-302.933333zM746.666667 473.6v17.066667c-2.133333-21.333333-10.666667-40.533333-23.466667-57.6-12.8-17.066667-27.733333-34.133333-46.933333-46.933334-19.2-12.8-40.533333-23.466667-66.133334-32-23.466667-8.533333-49.066667-12.8-76.8-12.8h-17.066666c-6.4 0-10.666667 0-17.066667 2.133334-6.4 0-10.666667 2.133333-14.933333 2.133333-4.266667 0-10.666667 2.133333-14.933334 4.266667v74.666666l-170.666666-115.2 170.666666-113.066666v64c38.4 0 74.666667 6.4 106.666667 17.066666 34.133333 10.666667 64 25.6 87.466667 44.8 25.6 19.2 44.8 42.666667 59.733333 68.266667 17.066667 25.6 23.466667 53.333333 23.466667 83.2z" p-id="5913" fill="currentColor"></path>
+                                </svg>
+                            </span>
+                        </button>
+                        <button type="button" class="nav-icon-btn global-tool-btn nav-settings-btn" onclick="openPlannerSettings()" title="设置" aria-label="设置">
+                            <span class="nav-settings-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.21 7.2a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                            </span>
+                        </button>
+                        <div class="profile-avatar-menu-wrap" id="profileAvatarMenuWrap">
+                            <button type="button" class="global-avatar-btn" title="用户头像" aria-label="用户头像">
+                                <span class="global-avatar-mark" aria-hidden="true">U</span>
+                            </button>
+                            <div class="profile-avatar-menu" id="profileAvatarMenu" role="menu" aria-label="用户菜单">
+                                <div class="profile-avatar-menu-head">
+                                    <span class="profile-avatar-menu-big-avatar" id="profileMenuAvatarLarge" aria-hidden="true">U</span>
+                                    <div>
+                                        <p class="profile-avatar-menu-name" id="profileMenuName">用户</p>
+                                        <p class="profile-avatar-menu-sub" id="profileMenuSub">账号信息</p>
+                                    </div>
+                                </div>
+                                <div class="profile-avatar-menu-list">
+                                    <button type="button" class="profile-avatar-menu-item" id="profileMenuUserInfo" role="menuitem">用户信息</button>
+                                    <button type="button" class="profile-avatar-menu-item" id="profileMenuAppearance" role="menuitem">界面外观</button>
+                                    <button type="button" class="profile-avatar-menu-item" id="profileMenuPrivacy" role="menuitem">安全隐私</button>
+                                    <button type="button" class="profile-avatar-menu-item profile-avatar-menu-item-danger" id="profileMenuLogout" role="menuitem">退出登录</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="container home-dashboard profile-shell">
+                <section class="module profile-module">
+                    <div class="profile-header">
+                        <div class="profile-title-group">
+                            <h2>用户信息</h2>
+                            <p>在这里管理昵称、联系方式和个人简介。</p>
+                        </div>
+                        <div class="profile-avatar-preview" id="profileAvatarPreview" aria-hidden="true">U</div>
+                    </div>
+
+                    <form id="profileForm" novalidate>
+                        <div class="profile-form-grid">
+                            <div class="profile-field">
+                                <label for="profileAccount">登录账号</label>
+                                <input id="profileAccount" type="text" readonly>
+                            </div>
+                            <div class="profile-field">
+                                <label for="profileNickname">昵称</label>
+                                <input id="profileNickname" type="text" maxlength="20" placeholder="请输入昵称">
+                            </div>
+                            <div class="profile-field">
+                                <label for="profilePhone">手机号</label>
+                                <input id="profilePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="请输入手机号">
+                            </div>
+                            <div class="profile-field">
+                                <label for="profileEmail">邮箱</label>
+                                <input id="profileEmail" type="email" maxlength="80" placeholder="请输入邮箱">
+                            </div>
+                            <div class="profile-field full">
+                                <label for="profileBio">个人简介</label>
+                                <textarea id="profileBio" maxlength="240" placeholder="记录一下你想展示的个人信息..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <div class="profile-actions-left">
+                                <button class="btn btn-primary" type="submit">保存信息</button>
+                                <button class="btn btn-secondary" type="button" id="profileResetBtn">重置</button>
+                            </div>
+                            <div class="profile-actions-right">
+                                <button class="btn btn-danger" type="button" id="profileLogoutBtn">退出登录</button>
+                            </div>
+                        </div>
+                        <div class="profile-status" id="profileStatus" aria-live="polite"></div>
+                    </form>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var PROFILE_STORE_KEY = 'planner_user_profile_v1';
+
+            function readProfileStore() {
+                var raw = localStorage.getItem(PROFILE_STORE_KEY);
+                if (!raw) return {};
+                try {
+                    var parsed = JSON.parse(raw);
+                    return parsed && typeof parsed === 'object' ? parsed : {};
+                } catch (err) {
+                    return {};
+                }
+            }
+
+            function writeProfileStore(store) {
+                localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(store || {}));
+            }
+
+            function normalizeText(value) {
+                return String(value || '').trim();
+            }
+
+            function getAvatarSeed(account, nickname) {
+                var source = normalizeText(nickname) || normalizeText(account) || 'U';
+                return source.charAt(0).toUpperCase();
+            }
+
+            function setStatus(message, kind) {
+                var statusEl = document.getElementById('profileStatus');
+                if (!statusEl) return;
+                statusEl.textContent = message || '';
+                statusEl.classList.remove('is-error', 'is-success');
+                if (kind) statusEl.classList.add(kind);
+            }
+
+            function isValidPhone(phone) {
+                var value = normalizeText(phone);
+                if (!value) return true;
+                return /^1\d{10}$/.test(value);
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.PlannerAuth || typeof window.PlannerAuth.getCurrentUser !== 'function') return;
+
+                var currentUser = window.PlannerAuth.getCurrentUser();
+                if (!currentUser || !currentUser.account) {
+                    window.location.replace('login.html');
+                    return;
+                }
+
+                var account = currentUser.account;
+                var accountEl = document.getElementById('profileAccount');
+                var nicknameEl = document.getElementById('profileNickname');
+                var phoneEl = document.getElementById('profilePhone');
+                var emailEl = document.getElementById('profileEmail');
+                var bioEl = document.getElementById('profileBio');
+                var avatarPreviewEl = document.getElementById('profileAvatarPreview');
+                var topbarAvatarEl = document.querySelector('.global-avatar-mark');
+                var topbarAvatarBtn = document.querySelector('#profileAvatarMenuWrap .global-avatar-btn');
+                var avatarMenuWrap = document.getElementById('profileAvatarMenuWrap');
+                var menuAvatarLargeEl = document.getElementById('profileMenuAvatarLarge');
+                var menuNameEl = document.getElementById('profileMenuName');
+                var menuSubEl = document.getElementById('profileMenuSub');
+                var menuUserInfoBtn = document.getElementById('profileMenuUserInfo');
+                var menuAppearanceBtn = document.getElementById('profileMenuAppearance');
+                var menuPrivacyBtn = document.getElementById('profileMenuPrivacy');
+                var menuLogoutBtn = document.getElementById('profileMenuLogout');
+                var formEl = document.getElementById('profileForm');
+                var resetBtn = document.getElementById('profileResetBtn');
+                var logoutBtn = document.getElementById('profileLogoutBtn');
+
+                if (!accountEl || !nicknameEl || !phoneEl || !emailEl || !bioEl || !avatarPreviewEl || !formEl || !resetBtn || !logoutBtn) {
+                    return;
+                }
+
+                var store = readProfileStore();
+                var initialProfile = store[account] || {};
+
+                function applyProfile(profile) {
+                    var safeProfile = profile || {};
+                    accountEl.value = account;
+                    nicknameEl.value = normalizeText(safeProfile.nickname);
+                    phoneEl.value = normalizeText(safeProfile.phone);
+                    emailEl.value = normalizeText(safeProfile.email);
+                    bioEl.value = String(safeProfile.bio || '').trim();
+
+                    var mark = getAvatarSeed(account, nicknameEl.value);
+                    avatarPreviewEl.textContent = mark;
+                    if (topbarAvatarEl) topbarAvatarEl.textContent = mark;
+                    if (menuAvatarLargeEl) menuAvatarLargeEl.textContent = mark;
+                    if (menuNameEl) menuNameEl.textContent = normalizeText(safeProfile.nickname) || account;
+                    if (menuSubEl) {
+                        var summary = [];
+                        var normalizedPhone = normalizeText(safeProfile.phone);
+                        if (normalizedPhone) summary.push(normalizedPhone);
+                        summary.push(account);
+                        menuSubEl.textContent = summary.join(' · ');
+                    }
+                }
+
+                applyProfile(initialProfile);
+
+                if (avatarMenuWrap) {
+                    var AVATAR_RESTORE_DELAY_MS = 250;
+                    var closeMenuTimer = 0;
+                    var closeMenuToken = 0;
+                    var menuFlybackAvatarEl = null;
+                    var removeMenuFlybackAvatar = function () {
+                        if (!menuFlybackAvatarEl) return;
+                        if (menuFlybackAvatarEl.parentNode) {
+                            menuFlybackAvatarEl.parentNode.removeChild(menuFlybackAvatarEl);
+                        }
+                        menuFlybackAvatarEl = null;
+                    };
+                    var resetMenuAvatarMotion = function () {
+                        if (!menuAvatarLargeEl) return;
+                        menuAvatarLargeEl.style.transition = '';
+                        menuAvatarLargeEl.style.transform = 'translate(0px, 0px) scale(1)';
+                    };
+                    var animateMenuAvatar = function () {
+                        if (!topbarAvatarBtn || !menuAvatarLargeEl) return;
+                        var btnRect = topbarAvatarBtn.getBoundingClientRect();
+                        var targetRect = menuAvatarLargeEl.getBoundingClientRect();
+                        if (!btnRect.width || !targetRect.width) return;
+
+                        var fromX = (btnRect.left + btnRect.width / 2) - (targetRect.left + targetRect.width / 2);
+                        var fromY = (btnRect.top + btnRect.height / 2) - (targetRect.top + targetRect.height / 2);
+                        var fromScale = Math.max(0.2, Math.min(1.2, btnRect.width / targetRect.width));
+
+                        menuAvatarLargeEl.style.transition = 'none';
+                        menuAvatarLargeEl.style.transform = 'translate(' + fromX.toFixed(2) + 'px, ' + fromY.toFixed(2) + 'px) scale(' + fromScale.toFixed(4) + ')';
+                        menuAvatarLargeEl.getBoundingClientRect();
+                        menuAvatarLargeEl.style.transition = '';
+                        menuAvatarLargeEl.style.transform = 'translate(0px, 0px) scale(1)';
+                    };
+                    var animateMenuAvatarBack = function (startRect, done) {
+                        if (!topbarAvatarBtn || !menuAvatarLargeEl) {
+                            done();
+                            return;
+                        }
+                        var btnRect = topbarAvatarBtn.getBoundingClientRect();
+                        var sourceRect = startRect && startRect.width ? startRect : menuAvatarLargeEl.getBoundingClientRect();
+                        if (!btnRect.width || !sourceRect.width) {
+                            done();
+                            return;
+                        }
+
+                        var toX = (btnRect.left + btnRect.width / 2) - (sourceRect.left + sourceRect.width / 2);
+                        var toY = (btnRect.top + btnRect.height / 2) - (sourceRect.top + sourceRect.height / 2);
+                        var toScale = Math.max(0.2, Math.min(1.2, btnRect.width / sourceRect.width));
+                        removeMenuFlybackAvatar();
+                        var computed = window.getComputedStyle(menuAvatarLargeEl);
+                        menuFlybackAvatarEl = document.createElement('span');
+                        menuFlybackAvatarEl.textContent = menuAvatarLargeEl.textContent || 'U';
+                        menuFlybackAvatarEl.setAttribute('aria-hidden', 'true');
+                        menuFlybackAvatarEl.style.position = 'fixed';
+                        menuFlybackAvatarEl.style.left = sourceRect.left + 'px';
+                        menuFlybackAvatarEl.style.top = sourceRect.top + 'px';
+                        menuFlybackAvatarEl.style.width = sourceRect.width + 'px';
+                        menuFlybackAvatarEl.style.height = sourceRect.height + 'px';
+                        menuFlybackAvatarEl.style.display = 'inline-flex';
+                        menuFlybackAvatarEl.style.alignItems = 'center';
+                        menuFlybackAvatarEl.style.justifyContent = 'center';
+                        menuFlybackAvatarEl.style.borderRadius = computed.borderRadius || '999px';
+                        menuFlybackAvatarEl.style.background = computed.background || 'linear-gradient(140deg, #1f2937, #4b5563)';
+                        menuFlybackAvatarEl.style.boxShadow = computed.boxShadow || '0 8px 18px rgba(17, 24, 39, 0.28)';
+                        menuFlybackAvatarEl.style.color = computed.color || '#fff';
+                        menuFlybackAvatarEl.style.fontSize = computed.fontSize || '32px';
+                        menuFlybackAvatarEl.style.fontWeight = computed.fontWeight || '700';
+                        menuFlybackAvatarEl.style.transform = 'translate(0px, 0px) scale(1)';
+                        menuFlybackAvatarEl.style.transition = 'transform 0.28s cubic-bezier(0.22, 0.62, 0.36, 1)';
+                        menuFlybackAvatarEl.style.pointerEvents = 'none';
+                        menuFlybackAvatarEl.style.zIndex = '9999';
+                        menuFlybackAvatarEl.style.willChange = 'transform';
+                        document.body.appendChild(menuFlybackAvatarEl);
+                        var completed = false;
+                        var finish = function () {
+                            if (completed) return;
+                            completed = true;
+                            if (menuFlybackAvatarEl) {
+                                menuFlybackAvatarEl.removeEventListener('transitionend', onEnd);
+                            }
+                            removeMenuFlybackAvatar();
+                            done();
+                        };
+                        var onEnd = function (event) {
+                            if (!event || event.propertyName === 'transform') finish();
+                        };
+
+                        menuFlybackAvatarEl.addEventListener('transitionend', onEnd);
+                        requestAnimationFrame(function () {
+                            requestAnimationFrame(function () {
+                                if (!menuFlybackAvatarEl) return;
+                                menuFlybackAvatarEl.style.transform = 'translate(' + toX.toFixed(2) + 'px, ' + toY.toFixed(2) + 'px) scale(' + toScale.toFixed(4) + ')';
+                            });
+                        });
+                        setTimeout(finish, 360);
+                    };
+                    var openAvatarMenu = function () {
+                        if (closeMenuTimer) {
+                            clearTimeout(closeMenuTimer);
+                            closeMenuTimer = 0;
+                        }
+                        closeMenuToken += 1;
+                        removeMenuFlybackAvatar();
+                        resetMenuAvatarMotion();
+                        var wasOpen = avatarMenuWrap.classList.contains('is-open');
+                        avatarMenuWrap.classList.add('is-open');
+                        if (topbarAvatarBtn) topbarAvatarBtn.classList.add('is-avatar-hidden');
+                        if (!wasOpen) {
+                            requestAnimationFrame(animateMenuAvatar);
+                        }
+                    };
+                    var closeAvatarMenu = function (delayMs) {
+                        if (closeMenuTimer) clearTimeout(closeMenuTimer);
+                        var token = ++closeMenuToken;
+                        var delay = typeof delayMs === 'number' ? delayMs : AVATAR_RESTORE_DELAY_MS;
+                        closeMenuTimer = setTimeout(function () {
+                            closeMenuTimer = 0;
+                            if (token !== closeMenuToken) return;
+                            var startRect = menuAvatarLargeEl ? menuAvatarLargeEl.getBoundingClientRect() : null;
+                            avatarMenuWrap.classList.remove('is-open');
+                            resetMenuAvatarMotion();
+                            animateMenuAvatarBack(startRect, function () {
+                                if (token !== closeMenuToken) return;
+                                if (topbarAvatarBtn) topbarAvatarBtn.classList.remove('is-avatar-hidden');
+                                resetMenuAvatarMotion();
+                            });
+                        }, delay);
+                    };
+
+                    avatarMenuWrap.addEventListener('mouseenter', openAvatarMenu);
+                    avatarMenuWrap.addEventListener('mouseleave', function () { closeAvatarMenu(AVATAR_RESTORE_DELAY_MS); });
+
+                    if (topbarAvatarBtn) {
+                        // Override the global click-to-profile behavior on this page.
+                        topbarAvatarBtn.addEventListener('click', function (event) {
+                            event.preventDefault();
+                            event.stopImmediatePropagation();
+                            if (avatarMenuWrap.classList.contains('is-open')) {
+                                closeAvatarMenu(0);
+                            } else {
+                                openAvatarMenu();
+                            }
+                        }, true);
+                    }
+
+                    document.addEventListener('pointerdown', function (event) {
+                        var target = event.target;
+                        if (!(target instanceof Element)) return;
+                        if (avatarMenuWrap.contains(target)) return;
+                        closeAvatarMenu(0);
+                    });
+
+                    if (menuUserInfoBtn) {
+                        menuUserInfoBtn.addEventListener('click', function () {
+                            closeAvatarMenu(0);
+                            var profileForm = document.getElementById('profileForm');
+                            if (profileForm && typeof profileForm.scrollIntoView === 'function') {
+                                profileForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        });
+                    }
+
+                    if (menuAppearanceBtn) {
+                        menuAppearanceBtn.addEventListener('click', function () {
+                            closeAvatarMenu(0);
+                            if (typeof window.openPlannerSettings === 'function') {
+                                window.openPlannerSettings();
+                            } else {
+                                setStatus('界面外观设置暂不可用。');
+                            }
+                        });
+                    }
+
+                    if (menuPrivacyBtn) {
+                        menuPrivacyBtn.addEventListener('click', function () {
+                            closeAvatarMenu(0);
+                            setStatus('安全隐私设置即将支持。');
+                        });
+                    }
+
+                    if (menuLogoutBtn) {
+                        menuLogoutBtn.addEventListener('click', function () {
+                            closeAvatarMenu(0);
+                            if (!window.PlannerAuth || typeof window.PlannerAuth.logout !== 'function') return;
+                            var shouldLogout = window.confirm('确认退出登录吗？');
+                            if (!shouldLogout) return;
+                            window.PlannerAuth.logout();
+                        });
+                    }
+                }
+
+                nicknameEl.addEventListener('input', function () {
+                    var mark = getAvatarSeed(account, nicknameEl.value);
+                    avatarPreviewEl.textContent = mark;
+                    if (topbarAvatarEl) topbarAvatarEl.textContent = mark;
+                    if (menuAvatarLargeEl) menuAvatarLargeEl.textContent = mark;
+                    if (menuNameEl) menuNameEl.textContent = normalizeText(nicknameEl.value) || account;
+                });
+
+                formEl.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    var nickname = normalizeText(nicknameEl.value);
+                    var phone = normalizeText(phoneEl.value);
+                    var email = normalizeText(emailEl.value);
+                    var bio = String(bioEl.value || '').trim();
+
+                    if (!isValidPhone(phone)) {
+                        setStatus('手机号格式不正确，请输入 11 位手机号。', 'is-error');
+                        return;
+                    }
+
+                    if (nickname.length > 20) {
+                        setStatus('昵称最多 20 个字符。', 'is-error');
+                        return;
+                    }
+
+                    var nextProfile = {
+                        nickname: nickname,
+                        phone: phone,
+                        email: email,
+                        bio: bio,
+                        updatedAt: Date.now()
+                    };
+
+                    var nextStore = readProfileStore();
+                    nextStore[account] = nextProfile;
+                    writeProfileStore(nextStore);
+                    applyProfile(nextProfile);
+                    setStatus('用户信息已保存。', 'is-success');
+                });
+
+                resetBtn.addEventListener('click', function () {
+                    var latestStore = readProfileStore();
+                    applyProfile(latestStore[account] || {});
+                    setStatus('已恢复到最近保存的信息。');
+                });
+
+                logoutBtn.addEventListener('click', function () {
+                    if (!window.PlannerAuth || typeof window.PlannerAuth.logout !== 'function') return;
+                    var shouldLogout = window.confirm('确认退出登录吗？');
+                    if (!shouldLogout) return;
+                    window.PlannerAuth.logout();
+                });
+            });
+        })();
+    </script>
+    <script src="no-multiline.js"></script>
+</body>
+</html>
