@@ -427,7 +427,7 @@ function renderTimeline() {
     const now = new Date();
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const FIXED_TODAY_OFFSET = 37.5;
-    const VISIBLE_MONTH_CELLS = 4;
+    const VISIBLE_MONTH_CELLS = 3.6;
 
     // 收集时间轴条目（与 OKR 仪表盘保持一致，仅显示 OKR）
     const timelineItems = [];
