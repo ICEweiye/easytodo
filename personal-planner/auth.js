@@ -498,6 +498,7 @@
             };
             var animateAvatarMotion = function () {
                 if (!largeAvatarEl) return;
+                if (!dropdown.classList.contains('is-open')) return;
                 var btnRect = avatarBtn.getBoundingClientRect();
                 var targetRect = largeAvatarEl.getBoundingClientRect();
                 if (!btnRect.width || !targetRect.width) return;
@@ -598,6 +599,12 @@
                 closeTimer = setTimeout(function () {
                     closeTimer = 0;
                     if (token !== closeToken) return;
+                    if (!dropdown.classList.contains('is-open')) {
+                        removeFlybackAvatar();
+                        avatarBtn.classList.remove('planner-avatar-hidden');
+                        resetAvatarMotion();
+                        return;
+                    }
                     var startRect = largeAvatarEl ? largeAvatarEl.getBoundingClientRect() : null;
                     dropdown.classList.remove('is-open');
                     resetAvatarMotion();
@@ -663,6 +670,7 @@
                 var target = event.target;
                 if (!(target instanceof Element)) return;
                 if (topbarActions.contains(target)) return;
+                if (!dropdown.classList.contains('is-open')) return;
                 closeMenu(0);
             });
         });

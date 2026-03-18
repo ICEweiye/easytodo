@@ -513,6 +513,7 @@
                     };
                     var animateMenuAvatar = function () {
                         if (!topbarAvatarBtn || !menuAvatarLargeEl) return;
+                        if (!avatarMenuWrap.classList.contains('is-open')) return;
                         var btnRect = topbarAvatarBtn.getBoundingClientRect();
                         var targetRect = menuAvatarLargeEl.getBoundingClientRect();
                         if (!btnRect.width || !targetRect.width) return;
@@ -612,6 +613,12 @@
                         closeMenuTimer = setTimeout(function () {
                             closeMenuTimer = 0;
                             if (token !== closeMenuToken) return;
+                            if (!avatarMenuWrap.classList.contains('is-open')) {
+                                removeMenuFlybackAvatar();
+                                if (topbarAvatarBtn) topbarAvatarBtn.classList.remove('is-avatar-hidden');
+                                resetMenuAvatarMotion();
+                                return;
+                            }
                             var startRect = menuAvatarLargeEl ? menuAvatarLargeEl.getBoundingClientRect() : null;
                             avatarMenuWrap.classList.remove('is-open');
                             resetMenuAvatarMotion();
@@ -643,6 +650,7 @@
                         var target = event.target;
                         if (!(target instanceof Element)) return;
                         if (avatarMenuWrap.contains(target)) return;
+                        if (!avatarMenuWrap.classList.contains('is-open')) return;
                         closeAvatarMenu(0);
                     });
 
