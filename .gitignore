@@ -1,6 +1,11 @@
-﻿# Workspace / editor
+# OS
+.DS_Store
+Thumbs.db
+
+# Workspace / editor
 .vscode/
 .claude/
+.cursor/
 
 # Local scratch files in repo root
 _head_*.txt
@@ -18,11 +23,21 @@ personal-planner/.dev-server.err.log
 personal-planner/.dev-server.out.log
 
 # Local data (do not upload)
+# Main DB: planner-data.sqlite3; backups: backups/db/*.sqlite3
 personal-planner/.planner-shared-storage.json
 personal-planner/.planner-shared-storage.last-good.json
 personal-planner/SHARED-STORAGE.md
 personal-planner/backups/
 personal-planner/*.sqlite3
+# SQLite write-ahead / shared-memory (not matched by *.sqlite3; may hold live data)
+personal-planner/*.sqlite3-wal
+personal-planner/*.sqlite3-shm
+
+# Secrets / local env (if you add them later)
+.env
+.env.local
+.env.*.local
+*.pem
 personal-planner/planner-todos-all-localstorage-scan.json
 personal-planner/planner-todos-history-from-leveldb.json
 personal-planner/recovered-*.json
@@ -32,3 +47,9 @@ personal-planner/test-results/.last-run.json
 
 # Temporary backups
 personal-planner/*.bak
+
+# Local FRP client (contains token)
+personal-planner/frpc.toml
+
+# Server access code
+personal-planner/.planner-access-code

@@ -8,15 +8,21 @@
     const TARGET_DIR_KEY = '__planner_backup_target_dir';
     const OPEN_AFTER_BACKUP_KEY = '__planner_backup_open_dir_after_backup';
     const START_PAGE_KEY = '__planner_start_page';
+    const FONT_SIZE_KEY = '__planner_font_size';
+    const LANGUAGE_KEY = '__planner_language';
+    const CONTENT_OVERFLOW_KEY = '__planner_content_overflow';
 
-    const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
-    const ALLOWED_START_PAGES = ['index.html', 'life.html', 'stats.html', 'review.html', 'archive.html'];
+    function getSidebarCollapsedStorageKey() {
+        if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
+            return PlannerAuth.scopedStorageKey('sidebarCollapsed');
+        }
+        return 'sidebarCollapsed';
+    }
+    const ALLOWED_START_PAGES = ['index.html', 'nav.html', 'stats.html', 'review.html', 'archive.html'];
 
     const SETTINGS_MODAL_ID = 'plannerSettingsModal';
     const SETTINGS_INPUT_ID = 'plannerSettingsTargetDir';
     const SETTINGS_AUTO_OPEN_ID = 'plannerSettingsAutoOpenDir';
-    const SETTINGS_SIDEBAR_COLLAPSE_ID = 'plannerSettingsSidebarCollapsed';
-    const SETTINGS_START_PAGE_ID = 'plannerSettingsStartPage';
 
     let activeEndpoint = '';
     let backupInProgress = false;
@@ -56,7 +62,7 @@
     applyStartPageRedirect();
 
     function getSidebarCollapsedPreference() {
-        return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+        return localStorage.getItem(getSidebarCollapsedStorageKey()) === 'true';
     }
 
     function applySidebarCollapsedPreference(collapsed) {
@@ -64,7 +70,57 @@
         sidebars.forEach((sidebar) => {
             sidebar.classList.toggle('collapsed', !!collapsed);
         });
-        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? 'true' : 'false');
+        localStorage.setItem(getSidebarCollapsedStorageKey(), collapsed ? 'true' : 'false');
+    }
+
+    const FONT_SIZE_VALUES = { small: 0.875, standard: 1, medium: 1.1, large: 1.2, xlarge: 1.3 };
+    function getFontSizePreference() {
+        const v = localStorage.getItem(FONT_SIZE_KEY) || 'standard';
+        return FONT_SIZE_VALUES[v] ? v : 'standard';
+    }
+    function setFontSizePreference(v) {
+        const valid = Object.keys(FONT_SIZE_VALUES).includes(v) ? v : 'standard';
+        localStorage.setItem(FONT_SIZE_KEY, valid);
+        return valid;
+    }
+    function applyFontSizePreference() {
+        const v = getFontSizePreference();
+        const scale = FONT_SIZE_VALUES[v] || 1;
+        document.documentElement.style.setProperty('--planner-font-scale', String(scale));
+        document.documentElement.classList.remove('font-size-small', 'font-size-standard', 'font-size-medium', 'font-size-large', 'font-size-xlarge');
+        document.documentElement.classList.add('font-size-' + v);
+    }
+
+    const ALLOWED_LANGUAGES = ['zh-CN', 'en'];
+    function getLanguagePreference() {
+        const v = localStorage.getItem(LANGUAGE_KEY) || 'zh-CN';
+        return ALLOWED_LANGUAGES.includes(v) ? v : 'zh-CN';
+    }
+    function setLanguagePreference(v) {
+        const valid = ALLOWED_LANGUAGES.includes(v) ? v : 'zh-CN';
+        localStorage.setItem(LANGUAGE_KEY, valid);
+        return valid;
+    }
+
+    const ALLOWED_OVERFLOW = ['ellipsis', 'wrap'];
+    function getContentOverflowPreference() {
+        const v = localStorage.getItem(CONTENT_OVERFLOW_KEY) || 'ellipsis';
+        return ALLOWED_OVERFLOW.includes(v) ? v : 'ellipsis';
+    }
+    function setContentOverflowPreference(v) {
+        const valid = ALLOWED_OVERFLOW.includes(v) ? v : 'ellipsis';
+        localStorage.setItem(CONTENT_OVERFLOW_KEY, valid);
+        return valid;
+    }
+    function applyContentOverflowPreference() {
+        const v = getContentOverflowPreference();
+        document.documentElement.classList.toggle('planner-content-overflow-wrap', v === 'wrap');
+        document.documentElement.classList.toggle('planner-content-overflow-ellipsis', v === 'ellipsis');
+    }
+
+    function applyAppearancePrefs() {
+        applyFontSizePreference();
+        applyContentOverflowPreference();
     }
 
     function moveToolsAboveCollapseButton() {
@@ -89,6 +145,7 @@
         });
 
         applySidebarCollapsedPreference(getSidebarCollapsedPreference());
+        applyAppearancePrefs();
     }
 
     if (document.readyState === 'loading') {
@@ -122,7 +179,7 @@
     function fetchWithTimeout(url, options, timeoutMs) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), timeoutMs || REQUEST_TIMEOUT_MS);
-        return fetch(url, { ...(options || {}), signal: controller.signal })
+        return fetch(url, { ...(options || {}), signal: controller.signal, credentials: 'include' })
             .finally(() => clearTimeout(timeout));
     }
 
@@ -183,6 +240,11 @@
             body: JSON.stringify(body || {})
         }, timeoutMs || REQUEST_TIMEOUT_MS);
 
+        if (response.status === 401) {
+            window.location.replace('login.html?server_session=expired');
+            throw new Error('Unauthorized');
+        }
+
         let payload = null;
         try {
             payload = await response.json();
@@ -242,24 +304,6 @@
                         <input type="checkbox" id="${SETTINGS_AUTO_OPEN_ID}">
                         <span>备份完成后自动打开目录</span>
                     </label>
-                </div>
-
-                <div class="planner-settings-section">
-                    <h4 class="planner-settings-subtitle">站点适配</h4>
-                    <label class="planner-settings-check">
-                        <input type="checkbox" id="${SETTINGS_SIDEBAR_COLLAPSE_ID}">
-                        <span>默认折叠左侧导航栏</span>
-                    </label>
-                    <div class="form-group">
-                        <label class="form-label" for="${SETTINGS_START_PAGE_ID}">启动页</label>
-                        <select class="form-input" id="${SETTINGS_START_PAGE_ID}">
-                            <option value="index.html">主页</option>
-                            <option value="life.html">生活</option>
-                            <option value="stats.html">统计</option>
-                            <option value="review.html">复盘</option>
-                            <option value="archive.html">归档</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="modal-actions">
@@ -361,13 +405,9 @@
         const overlay = ensureSettingsModal();
         const pathInput = document.getElementById(SETTINGS_INPUT_ID);
         const autoOpen = document.getElementById(SETTINGS_AUTO_OPEN_ID);
-        const sidebarCollapsed = document.getElementById(SETTINGS_SIDEBAR_COLLAPSE_ID);
-        const startPageSelect = document.getElementById(SETTINGS_START_PAGE_ID);
 
         if (pathInput) pathInput.value = getSavedTargetDir();
         if (autoOpen) autoOpen.checked = getOpenDirAfterBackup();
-        if (sidebarCollapsed) sidebarCollapsed.checked = getSidebarCollapsedPreference();
-        if (startPageSelect) startPageSelect.value = getStartPage();
         overlay.classList.add('active');
 
         const opts = options || {};
@@ -390,18 +430,12 @@
     function savePlannerSettingsFromModal(options) {
         const pathInput = document.getElementById(SETTINGS_INPUT_ID);
         const autoOpen = document.getElementById(SETTINGS_AUTO_OPEN_ID);
-        const sidebarCollapsed = document.getElementById(SETTINGS_SIDEBAR_COLLAPSE_ID);
-        const startPageSelect = document.getElementById(SETTINGS_START_PAGE_ID);
         if (!pathInput) return false;
 
         const targetDir = setSavedTargetDir(pathInput.value);
         const openAfter = !!(autoOpen && autoOpen.checked);
-        const collapseSidebar = !!(sidebarCollapsed && sidebarCollapsed.checked);
-        const startPage = normalizeStartPage(startPageSelect && startPageSelect.value);
 
         setOpenDirAfterBackup(openAfter);
-        applySidebarCollapsedPreference(collapseSidebar);
-        setStartPage(startPage);
 
         if (!targetDir) {
             window.alert('请先选择或填写备份目录。');
@@ -465,5 +499,20 @@
         openPlannerSettings(options).catch((err) => {
             window.alert(`设置打开失败：${err && err.message ? err.message : '未知错误'}`);
         });
+    };
+
+    window.PlannerBackup = {
+        getSidebarCollapsedPreference,
+        applySidebarCollapsedPreference,
+        getStartPage,
+        setStartPage,
+        getFontSizePreference,
+        setFontSizePreference,
+        applyFontSizePreference,
+        getLanguagePreference,
+        setLanguagePreference,
+        getContentOverflowPreference,
+        setContentOverflowPreference,
+        applyAppearancePrefs
     };
 })();

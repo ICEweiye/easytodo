@@ -1,0 +1,13 @@
+{
+  "name": "personal-planner",
+  "private": true,
+  "description": "个人规划站：Node 静态服务 + SQLite 同步",
+  "scripts": {
+    "start": "node dev-server.js",
+    "dev": "node dev-server.js",
+    "invite": "node generate-invite.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

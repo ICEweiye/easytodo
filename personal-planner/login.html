@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -57,8 +57,8 @@
         }
 
         .auth-form-logo {
-            width: 60px;
-            height: 60px;
+            width: 72px;
+            height: 72px;
             object-fit: contain;
             display: block;
         }
@@ -233,6 +233,10 @@
             <form id="authForm" class="auth-form" novalidate>
                 <div class="auth-form-logo-wrap">
                     <img class="auth-form-logo" src="logo.svg" alt="Logo">
+                </div>
+                <div class="field" id="authAccessCodeWrap" style="display:none;">
+                    <label for="authAccessCode">注册码 <small style="font-weight:normal; opacity:0.6;">(已有数据的账号无需填写)</small></label>
+                    <input id="authAccessCode" type="text" autocomplete="off" placeholder="新用户需填写，老用户可留空">
                 </div>
                 <div class="field">
                     <label for="authAccount">用户名 / 手机号</label>

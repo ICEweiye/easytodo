@@ -3,8 +3,9 @@ setlocal
 
 cd /d "%~dp0"
 
-set "HOST=127.0.0.1"
-set "PORT=8787"
+rem 仅本机: 127.0.0.1；局域网直连本机可改为 0.0.0.0（需与 frpc local_ip 一致）
+if not defined HOST set "HOST=127.0.0.1"
+if not defined PORT set "PORT=8787"
 set "URL=http://%HOST%:%PORT%/index.html"
 set "API_URL=http://%HOST%:%PORT%/api/storage"
 set "DB_FILE=planner-data.sqlite3"

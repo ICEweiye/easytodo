@@ -1,11 +1,24 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用户信息 - 个人规划管理</title>
+    <script>
+        (function () {
+            var h = window.location.hash;
+            if (h === '#privacySecuritySection' || h === '#privacy' || h === '#profileAppearanceSection' || h === '#appearance') {
+                try {
+                    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+                    sessionStorage.setItem('profilePanelHash', h);
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                } catch (e) {}
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
+    <script src="utf8-utils.js"></script>
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <style>
@@ -15,7 +28,7 @@
         }
 
         .profile-module {
-            padding: 22px;
+            padding: var(--spacing-lg);
         }
 
         .profile-header {
@@ -23,12 +36,13 @@
             align-items: center;
             justify-content: space-between;
             gap: 14px;
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-md);
         }
 
         .profile-title-group h2 {
             margin: 0;
-            font-size: 24px;
+            font-size: 18px;
+            font-weight: 600;
             color: var(--warm-gray-900);
         }
 
@@ -130,6 +144,85 @@
         }
 
         .profile-status.is-success {
+            color: #2f7d3e;
+        }
+
+        .profile-panel-hidden {
+            display: none;
+        }
+
+        .privacy-shell {
+            margin-top: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .privacy-card {
+            border: 1px solid var(--warm-gray-200);
+            border-radius: 12px;
+            background: #fff;
+            padding: 14px;
+        }
+
+        .privacy-card h3 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            color: var(--warm-gray-900);
+        }
+
+        .privacy-card p {
+            margin: 0 0 10px;
+            font-size: 13px;
+            color: var(--warm-gray-600);
+        }
+
+        .privacy-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .privacy-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 0;
+            border-top: 1px dashed var(--warm-gray-200);
+        }
+
+        .privacy-toggle-row:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .privacy-toggle-text {
+            display: grid;
+            gap: 3px;
+        }
+
+        .privacy-toggle-text strong {
+            font-size: 14px;
+            color: var(--warm-gray-900);
+        }
+
+        .privacy-toggle-text span {
+            font-size: 12px;
+            color: var(--warm-gray-500);
+        }
+
+        .privacy-status {
+            min-height: 20px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--warm-gray-600);
+        }
+
+        .privacy-status.is-error {
+            color: #b03737;
+        }
+
+        .privacy-status.is-success {
             color: #2f7d3e;
         }
 
@@ -260,7 +353,7 @@
 
         @media (max-width: 767px) {
             .profile-module {
-                padding: 16px;
+                padding: var(--spacing-lg);
             }
 
             .profile-form-grid {
@@ -276,6 +369,37 @@
                 width: min(280px, calc(100vw - 32px));
             }
         }
+
+        .deregister-modal-desc {
+            margin: 0 0 14px;
+            font-size: 14px;
+            color: var(--warm-gray-600);
+            line-height: 1.5;
+        }
+
+        .deregister-modal-error {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: var(--auth-danger, #b03737);
+            min-height: 1.4em;
+        }
+
+        .deregister-modal-error:empty {
+            display: none;
+        }
+
+        .modal .form-input {
+            width: 100%;
+            border: 1px solid var(--warm-gray-200);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        .modal .form-input:focus {
+            border-color: #ad8a67;
+            box-shadow: 0 0 0 3px rgba(173, 138, 103, 0.18);
+        }
     </style>
 </head>
 <body class="home-page">
@@ -286,7 +410,7 @@
             </div>
             <nav class="sidebar-nav">
                 <a href="index.html" class="nav-item"><span class="nav-text">主页</span></a>
-                <a href="life.html" class="nav-item"><span class="nav-text">生活</span></a>
+                <a href="nav.html" class="nav-item"><span class="nav-text">导航</span></a>
                 <a href="stats.html" class="nav-item"><span class="nav-text">统计</span></a>
                 <a href="review.html" class="nav-item"><span class="nav-text">复盘</span></a>
                 <a href="archive.html" class="nav-item"><span class="nav-text">归档</span></a>
@@ -297,24 +421,13 @@
             <header class="global-topbar" aria-label="页面工具栏">
                 <div class="global-topbar-card">
                     <a class="global-topbar-logo" href="index.html" aria-label="返回主页">
-                        <img class="global-topbar-logo-img" src="logo.svg" alt="Logo">
+                        <img class="global-topbar-logo-img" src="logo.svg" alt="">
+                        <span class="global-topbar-brand">
+                            <span class="global-topbar-brand-main"><span class="brand-easy">easy</span><span class="brand-os">OS</span></span>
+                            <span class="global-topbar-brand-sub">light your life</span>
+                        </span>
                     </a>
                     <div class="global-topbar-actions">
-                        <button type="button" class="nav-icon-btn global-tool-btn nav-backup-btn" onclick="runDatabaseBackup()" title="备份数据库" aria-label="备份数据库">
-                            <span class="nav-backup-icon" aria-hidden="true">
-                                <svg t="1773543480237" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5912">
-                                    <path d="M42.666667 768c0 46.933333 38.4 85.333333 85.333333 85.333333h768c46.933333 0 85.333333-38.4 85.333333-85.333333v-170.666667H42.666667v170.666667z m672-64h106.666666c17.066667 0 32 14.933333 32 32s-14.933333 32-32 32h-106.666666c-17.066667 0-32-14.933333-32-32s14.933333-32 32-32zM829.866667 230.4C819.2 194.133333 785.066667 170.666667 748.8 170.666667H275.2c-36.266667 0-70.4 23.466667-81.066667 59.733333L42.666667 533.333333h938.666666l-151.466666-302.933333zM746.666667 473.6v17.066667c-2.133333-21.333333-10.666667-40.533333-23.466667-57.6-12.8-17.066667-27.733333-34.133333-46.933333-46.933334-19.2-12.8-40.533333-23.466667-66.133334-32-23.466667-8.533333-49.066667-12.8-76.8-12.8h-17.066666c-6.4 0-10.666667 0-17.066667 2.133334-6.4 0-10.666667 2.133333-14.933333 2.133333-4.266667 0-10.666667 2.133333-14.933334 4.266667v74.666666l-170.666666-115.2 170.666666-113.066666v64c38.4 0 74.666667 6.4 106.666667 17.066666 34.133333 10.666667 64 25.6 87.466667 44.8 25.6 19.2 44.8 42.666667 59.733333 68.266667 17.066667 25.6 23.466667 53.333333 23.466667 83.2z" p-id="5913" fill="currentColor"></path>
-                                </svg>
-                            </span>
-                        </button>
-                        <button type="button" class="nav-icon-btn global-tool-btn nav-settings-btn" onclick="openPlannerSettings()" title="设置" aria-label="设置">
-                            <span class="nav-settings-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.21 7.2a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                                </svg>
-                            </span>
-                        </button>
                         <div class="profile-avatar-menu-wrap" id="profileAvatarMenuWrap">
                             <button type="button" class="global-avatar-btn" title="用户头像" aria-label="用户头像">
                                 <span class="global-avatar-mark" aria-hidden="true">U</span>
@@ -329,7 +442,7 @@
                                 </div>
                                 <div class="profile-avatar-menu-list">
                                     <button type="button" class="profile-avatar-menu-item" id="profileMenuUserInfo" role="menuitem">用户信息</button>
-                                    <button type="button" class="profile-avatar-menu-item" id="profileMenuAppearance" role="menuitem">界面外观</button>
+                                    <button type="button" class="profile-avatar-menu-item" id="profileMenuAppearance" role="menuitem">个性化设置</button>
                                     <button type="button" class="profile-avatar-menu-item" id="profileMenuPrivacy" role="menuitem">安全隐私</button>
                                     <button type="button" class="profile-avatar-menu-item profile-avatar-menu-item-danger" id="profileMenuLogout" role="menuitem">退出登录</button>
                                 </div>
@@ -340,7 +453,7 @@
             </header>
 
             <div class="container home-dashboard profile-shell">
-                <section class="module profile-module">
+                <section class="module profile-module" id="profileUserInfoSection">
                     <div class="profile-header">
                         <div class="profile-title-group">
                             <h2>用户信息</h2>
@@ -379,14 +492,174 @@
                                 <button class="btn btn-secondary" type="button" id="profileResetBtn">重置</button>
                             </div>
                             <div class="profile-actions-right">
-                                <button class="btn btn-danger" type="button" id="profileLogoutBtn">退出登录</button>
+                                <button class="btn btn-danger" type="button" id="profileLogoutBtn">注销</button>
                             </div>
                         </div>
                         <div class="profile-status" id="profileStatus" aria-live="polite"></div>
                     </form>
                 </section>
+
+                <section class="module profile-module" id="profileAppearanceSection">
+                    <div class="profile-header">
+                        <div class="profile-title-group">
+                            <h2>界面外观</h2>
+                            <p>自定义侧边栏与启动页，让界面更符合使用习惯。</p>
+                        </div>
+                    </div>
+
+                    <div class="privacy-shell">
+                        <article class="privacy-card">
+                            <h3>语言与显示</h3>
+                            <p>语言、字号及内容过长时的展示方式。</p>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>语言</strong>
+                                    <span>界面显示语言。</span>
+                                </div>
+                                <select class="form-input" id="appearanceLanguage" style="min-width: 120px;">
+                                    <option value="zh-CN">简体中文</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>字号</strong>
+                                    <span>全局文字大小。</span>
+                                </div>
+                                <select class="form-input" id="appearanceFontSize" style="min-width: 120px;">
+                                    <option value="small">小</option>
+                                    <option value="standard" selected>标准</option>
+                                    <option value="medium">中</option>
+                                    <option value="large">大</option>
+                                    <option value="xlarge">加大</option>
+                                </select>
+                            </div>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>内容过长折叠</strong>
+                                    <span>标题、卡片等内容过长时的展示方式。</span>
+                                </div>
+                                <select class="form-input" id="appearanceContentOverflow" style="min-width: 120px;">
+                                    <option value="ellipsis">单行省略</option>
+                                    <option value="wrap">多行换行</option>
+                                </select>
+                            </div>
+                        </article>
+                        <article class="privacy-card">
+                            <h3>布局与导航</h3>
+                            <p>调整侧边栏默认状态与登录后的起始页面。</p>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>默认折叠左侧导航栏</strong>
+                                    <span>勾选后，进入各页面时侧边栏默认收起，可点击展开。</span>
+                                </div>
+                                <label>
+                                    <input type="checkbox" id="appearanceSidebarCollapsed">
+                                </label>
+                            </div>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>启动页</strong>
+                                    <span>登录后或从主页访问时，将跳转到的默认页面。</span>
+                                </div>
+                                <select class="form-input" id="appearanceStartPage" style="min-width: 140px;">
+                                    <option value="index.html">主页</option>
+                                    <option value="nav.html">导航</option>
+                                    <option value="stats.html">统计</option>
+                                    <option value="review.html">复盘</option>
+                                    <option value="archive.html">归档</option>
+                                </select>
+                            </div>
+                            <div class="profile-actions" style="margin-top: 14px;">
+                                <button class="btn btn-primary" type="button" id="appearanceSaveBtn">保存设置</button>
+                            </div>
+                            <div class="privacy-status" id="appearanceStatus" aria-live="polite"></div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="module profile-module" id="privacySecuritySection">
+                    <div class="profile-header">
+                        <div class="profile-title-group">
+                            <h2>安全隐私</h2>
+                            <p>管理备份能力与本地数据安全选项。</p>
+                        </div>
+                    </div>
+
+                    <div class="privacy-shell">
+                        <article class="privacy-card">
+                            <h3>数据备份</h3>
+                            <p>将数据库备份到本地目录，建议在重要修改前先备份。</p>
+                            <div class="privacy-actions">
+                                <button class="btn btn-secondary" type="button" id="privacyBackupSettingsBtn">备份设置</button>
+                                <button class="btn btn-primary" type="button" id="privacyRunBackupBtn">立即备份</button>
+                            </div>
+                            <div class="privacy-status" id="privacyBackupStatus" aria-live="polite"></div>
+                        </article>
+
+                        <article class="privacy-card">
+                            <h3>会话与访问</h3>
+                            <p>管理设备访问偏好，减少账户误操作风险。</p>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>自动锁屏（30 分钟无操作）</strong>
+                                    <span>仅当前浏览器生效，重新打开页面后继续生效。</span>
+                                </div>
+                                <label>
+                                    <input type="checkbox" id="privacyAutoLockToggle">
+                                </label>
+                            </div>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>记住我（自动登录）</strong>
+                                    <span>关闭后将清除自动登录凭据，需要下次手动登录。</span>
+                                </div>
+                                <label>
+                                    <input type="checkbox" id="privacyRememberMeToggle">
+                                </label>
+                            </div>
+                            <div class="privacy-status" id="privacySessionStatus" aria-live="polite"></div>
+                        </article>
+
+                        <article class="privacy-card">
+                            <h3>数据恢复</h3>
+                            <p>当数据出现乱码或异常时，可从服务端备份恢复。恢复后需刷新页面使本地缓存同步。</p>
+                            <div class="privacy-actions" style="flex-wrap: wrap; gap: 8px;">
+                                <button class="btn btn-secondary" type="button" id="restoreListBtn">查看可用备份</button>
+                                <button class="btn btn-primary" type="button" id="restoreLatestBtn">从最新备份恢复</button>
+                            </div>
+                            <div id="restoreBackupList" class="privacy-status" style="margin-top: 8px; font-size: 12px;" aria-live="polite"></div>
+                            <div class="privacy-status" id="restoreStatus" aria-live="polite"></div>
+                        </article>
+                        <article class="privacy-card">
+                            <h3>本地隐私工具</h3>
+                            <p>用于数据自检、导出与清理，不会上传到外部服务。</p>
+                            <div class="privacy-actions">
+                                <button class="btn btn-secondary" type="button" id="privacyExportBtn">导出本地数据</button>
+                                <button class="btn btn-danger" type="button" id="privacyClearCacheBtn">清理本地缓存</button>
+                            </div>
+                            <div class="privacy-status" id="privacyDataStatus" aria-live="polite"></div>
+                        </article>
+                    </div>
+                </section>
             </div>
         </main>
+    </div>
+
+    <div class="modal-overlay" id="deregisterModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deregisterModalTitle">
+            <h3 class="modal-title" id="deregisterModalTitle">注销账号</h3>
+            <p class="deregister-modal-desc">注销后将删除账号及本地数据，无法恢复。请输入当前账号密码以确认注销。</p>
+            <div class="form-group">
+                <label class="form-label" for="deregisterPasswordInput">密码</label>
+                <input type="password" id="deregisterPasswordInput" class="form-input" autocomplete="current-password" placeholder="请输入密码">
+            </div>
+            <p id="deregisterModalError" class="deregister-modal-error" role="alert" aria-live="polite"></p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" type="button" id="deregisterModalCancel">取消</button>
+                <button class="btn btn-danger" type="button" id="deregisterModalConfirm">确认注销</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -421,6 +694,14 @@
 
             function setStatus(message, kind) {
                 var statusEl = document.getElementById('profileStatus');
+                if (!statusEl) return;
+                statusEl.textContent = message || '';
+                statusEl.classList.remove('is-error', 'is-success');
+                if (kind) statusEl.classList.add(kind);
+            }
+
+            function setPrivacyStatus(id, message, kind) {
+                var statusEl = document.getElementById(id);
                 if (!statusEl) return;
                 statusEl.textContent = message || '';
                 statusEl.classList.remove('is-error', 'is-success');
@@ -462,6 +743,26 @@
                 var formEl = document.getElementById('profileForm');
                 var resetBtn = document.getElementById('profileResetBtn');
                 var logoutBtn = document.getElementById('profileLogoutBtn');
+                var userInfoSectionEl = document.getElementById('profileUserInfoSection');
+                var appearanceSectionEl = document.getElementById('profileAppearanceSection');
+                var privacySectionEl = document.getElementById('privacySecuritySection');
+                var privacyBackupSettingsBtn = document.getElementById('privacyBackupSettingsBtn');
+                var privacyRunBackupBtn = document.getElementById('privacyRunBackupBtn');
+                var privacyAutoLockToggle = document.getElementById('privacyAutoLockToggle');
+                var privacyRememberMeToggle = document.getElementById('privacyRememberMeToggle');
+                var privacyExportBtn = document.getElementById('privacyExportBtn');
+                var privacyClearCacheBtn = document.getElementById('privacyClearCacheBtn');
+                var AUTO_LOCK_KEY = 'planner_privacy_auto_lock_30m';
+                var EXPORTED_FILENAME = 'planner-local-data-export.json';
+
+                function showPanel(panel) {
+                    var isUserInfo = panel === 'userinfo';
+                    var isAppearance = panel === 'appearance';
+                    var isPrivacy = panel === 'privacy';
+                    if (userInfoSectionEl) userInfoSectionEl.classList.toggle('profile-panel-hidden', !isUserInfo);
+                    if (appearanceSectionEl) appearanceSectionEl.classList.toggle('profile-panel-hidden', !isAppearance);
+                    if (privacySectionEl) privacySectionEl.classList.toggle('profile-panel-hidden', !isPrivacy);
+                }
 
                 if (!accountEl || !nicknameEl || !phoneEl || !emailEl || !bioEl || !avatarPreviewEl || !formEl || !resetBtn || !logoutBtn) {
                     return;
@@ -657,28 +958,24 @@
                     if (menuUserInfoBtn) {
                         menuUserInfoBtn.addEventListener('click', function () {
                             closeAvatarMenu(0);
-                            var profileForm = document.getElementById('profileForm');
-                            if (profileForm && typeof profileForm.scrollIntoView === 'function') {
-                                profileForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
+                            showPanel('userinfo');
+                            scrollPanelToTop();
                         });
                     }
 
                     if (menuAppearanceBtn) {
                         menuAppearanceBtn.addEventListener('click', function () {
                             closeAvatarMenu(0);
-                            if (typeof window.openPlannerSettings === 'function') {
-                                window.openPlannerSettings();
-                            } else {
-                                setStatus('界面外观设置暂不可用。');
-                            }
+                            showPanel('appearance');
+                            scrollPanelToTop();
                         });
                     }
 
                     if (menuPrivacyBtn) {
                         menuPrivacyBtn.addEventListener('click', function () {
                             closeAvatarMenu(0);
-                            setStatus('安全隐私设置即将支持。');
+                            showPanel('privacy');
+                            scrollPanelToTop();
                         });
                     }
 
@@ -739,11 +1036,363 @@
                     setStatus('已恢复到最近保存的信息。');
                 });
 
+                var deregisterModal = document.getElementById('deregisterModal');
+                var deregisterPasswordInput = document.getElementById('deregisterPasswordInput');
+                var deregisterModalError = document.getElementById('deregisterModalError');
+                var deregisterModalCancel = document.getElementById('deregisterModalCancel');
+                var deregisterModalConfirm = document.getElementById('deregisterModalConfirm');
+
+                function openDeregisterModal() {
+                    if (!deregisterModal || !deregisterPasswordInput || !deregisterModalError) return;
+                    deregisterModalError.textContent = '';
+                    deregisterPasswordInput.value = '';
+                    deregisterModal.classList.add('active');
+                    deregisterModal.setAttribute('aria-hidden', 'false');
+                    setTimeout(function () { deregisterPasswordInput.focus(); }, 100);
+                }
+
+                function closeDeregisterModal() {
+                    if (!deregisterModal) return;
+                    deregisterModal.classList.remove('active');
+                    deregisterModal.setAttribute('aria-hidden', 'true');
+                }
+
                 logoutBtn.addEventListener('click', function () {
-                    if (!window.PlannerAuth || typeof window.PlannerAuth.logout !== 'function') return;
-                    var shouldLogout = window.confirm('确认退出登录吗？');
-                    if (!shouldLogout) return;
-                    window.PlannerAuth.logout();
+                    if (!window.PlannerAuth || typeof window.PlannerAuth.deregister !== 'function') return;
+                    openDeregisterModal();
+                });
+
+                if (deregisterModalCancel) deregisterModalCancel.addEventListener('click', closeDeregisterModal);
+                if (deregisterModal) {
+                    deregisterModal.addEventListener('click', function (e) {
+                        if (e.target === deregisterModal) closeDeregisterModal();
+                    });
+                }
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && deregisterModal && deregisterModal.classList.contains('active')) {
+                        closeDeregisterModal();
+                    }
+                });
+
+                function submitDeregister() {
+                    if (!deregisterModalConfirm || !deregisterPasswordInput || !deregisterModalError) return;
+                    var password = String(deregisterPasswordInput.value || '').trim();
+                    if (!password) {
+                        deregisterModalError.textContent = '请输入密码后再注销。';
+                        deregisterPasswordInput.focus();
+                        return;
+                    }
+                    deregisterModalError.textContent = '';
+                    window.PlannerAuth.deregister(password, {
+                        onError: function (msg) {
+                            deregisterModalError.textContent = msg || '密码错误或注销失败，请重试。';
+                            deregisterPasswordInput.focus();
+                        }
+                    });
+                }
+
+                if (deregisterModalConfirm) deregisterModalConfirm.addEventListener('click', submitDeregister);
+                if (deregisterPasswordInput) {
+                    deregisterPasswordInput.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            submitDeregister();
+                        }
+                    });
+                }
+
+                if (privacyBackupSettingsBtn) {
+                    privacyBackupSettingsBtn.addEventListener('click', function () {
+                        if (typeof window.openPlannerSettings === 'function') {
+                            window.openPlannerSettings();
+                            setPrivacyStatus('privacyBackupStatus', '已打开备份设置。');
+                        } else {
+                            setPrivacyStatus('privacyBackupStatus', '备份设置暂不可用。', 'is-error');
+                        }
+                    });
+                }
+
+                if (privacyRunBackupBtn) {
+                    privacyRunBackupBtn.addEventListener('click', function () {
+                        if (typeof window.runDatabaseBackup === 'function') {
+                            setPrivacyStatus('privacyBackupStatus', '正在执行备份，请稍候...');
+                            window.runDatabaseBackup();
+                        } else {
+                            setPrivacyStatus('privacyBackupStatus', '备份功能暂不可用。', 'is-error');
+                        }
+                    });
+                }
+
+                if (privacyAutoLockToggle) {
+                    privacyAutoLockToggle.checked = localStorage.getItem(AUTO_LOCK_KEY) === 'true';
+                    privacyAutoLockToggle.addEventListener('change', function () {
+                        localStorage.setItem(AUTO_LOCK_KEY, privacyAutoLockToggle.checked ? 'true' : 'false');
+                        setPrivacyStatus('privacySessionStatus', privacyAutoLockToggle.checked ? '已开启自动锁屏。' : '已关闭自动锁屏。', 'is-success');
+                    });
+                }
+
+                if (privacyRememberMeToggle) {
+                    var remembered = !!(window.PlannerAuth && typeof window.PlannerAuth.isAutoLoginEnabled === 'function' && window.PlannerAuth.isAutoLoginEnabled());
+                    privacyRememberMeToggle.checked = remembered;
+                    privacyRememberMeToggle.addEventListener('change', function () {
+                        if (!window.PlannerAuth) return;
+                        if (privacyRememberMeToggle.checked) {
+                            if (typeof window.PlannerAuth.enableAutoLogin === 'function') {
+                                window.PlannerAuth.enableAutoLogin();
+                                setPrivacyStatus('privacySessionStatus', '已开启记住我。', 'is-success');
+                            } else {
+                                setPrivacyStatus('privacySessionStatus', '当前版本不支持开启记住我。', 'is-error');
+                            }
+                            return;
+                        }
+                        if (typeof window.PlannerAuth.disableAutoLogin === 'function') {
+                            window.PlannerAuth.disableAutoLogin();
+                            setPrivacyStatus('privacySessionStatus', '已关闭记住我。', 'is-success');
+                        } else {
+                            setPrivacyStatus('privacySessionStatus', '当前版本不支持关闭记住我。', 'is-error');
+                        }
+                    });
+                }
+
+                var restoreListBtn = document.getElementById('restoreListBtn');
+                var restoreLatestBtn = document.getElementById('restoreLatestBtn');
+
+                function setRestoreStatus(msg, kind) {
+                    var el = document.getElementById('restoreStatus');
+                    if (el) { el.textContent = msg || ''; el.className = 'privacy-status ' + (kind || ''); }
+                }
+
+                function fetchRestoreApi(path, method, body) {
+                    var base = (window.location && window.location.origin) || '';
+                    var url = base + '/api/restore' + (path || '');
+                    return fetch(url, {
+                        method: method || 'GET',
+                        credentials: 'include',
+                        headers: body ? { 'Content-Type': 'application/json' } : {},
+                        body: body ? JSON.stringify(body) : undefined
+                    }).then(function (r) { return r.json(); });
+                }
+
+                if (restoreListBtn) {
+                    restoreListBtn.addEventListener('click', function () {
+                        setRestoreStatus('加载中...', '');
+                        fetchRestoreApi('/list').then(function (data) {
+                            var listEl = document.getElementById('restoreBackupList');
+                            if (!data.ok || !data.backups || !data.backups.length) {
+                                setRestoreStatus('', '');
+                                if (listEl) listEl.textContent = '暂无备份，或服务未运行。';
+                                return;
+                            }
+                            var lines = data.backups.slice(0, 5).map(function (b) {
+                                return b.fileName + ' (' + new Date(b.mtimeMs).toLocaleString('zh-CN') + ')';
+                            });
+                            if (listEl) listEl.textContent = '最近备份：\n' + lines.join('\n');
+                            setRestoreStatus('共 ' + data.backups.length + ' 个备份，可点击「从最新备份恢复」恢复。', 'is-success');
+                        }).catch(function () {
+                            setRestoreStatus('请求失败，请确认服务已启动。', 'is-error');
+                            var listEl = document.getElementById('restoreBackupList');
+                            if (listEl) listEl.textContent = '';
+                        });
+                    });
+                }
+
+                if (restoreLatestBtn) {
+                    restoreLatestBtn.addEventListener('click', function () {
+                        if (!window.confirm('确定从最新备份恢复数据？本地缓存将被清除并重新从服务端同步，请确认。')) return;
+                        setRestoreStatus('恢复中...', '');
+                        fetchRestoreApi('', 'POST', { index: 0 }).then(function (data) {
+                            if (data.ok) {
+                                var keysToRemove = ['__planner_sync_updated_at', 'sidebarCollapsed', 'reviews'];
+                                for (var i = localStorage.length - 1; i >= 0; i--) {
+                                    var k = localStorage.key(i);
+                                    if (!k) continue;
+                                    if (k.startsWith('life_')) keysToRemove.push(k);
+                                    if (k.startsWith('planner_') && k.indexOf('planner_auth_') !== 0 &&
+                                        k !== 'planner_current_user' && k.indexOf('planner_auto_login') !== 0 &&
+                                        k !== 'planner_users') keysToRemove.push(k);
+                                }
+                                keysToRemove = keysToRemove.filter(function (x, i, a) { return a.indexOf(x) === i; });
+                                keysToRemove.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+                                setRestoreStatus('恢复成功，正在刷新...', 'is-success');
+                                setTimeout(function () { window.location.reload(); }, 800);
+                            } else {
+                                setRestoreStatus('恢复失败：' + (data.error || '未知错误'), 'is-error');
+                            }
+                        }).catch(function () {
+                            setRestoreStatus('请求失败，请确认服务已启动。', 'is-error');
+                        });
+                    });
+                }
+
+                if (privacyExportBtn) {
+                    privacyExportBtn.addEventListener('click', function () {
+                        try {
+                            var exportData = {};
+                            for (var i = 0; i < localStorage.length; i += 1) {
+                                var key = localStorage.key(i);
+                                if (!key) continue;
+                                exportData[key] = localStorage.getItem(key);
+                            }
+                            var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' });
+                            var objectUrl = URL.createObjectURL(blob);
+                            var link = document.createElement('a');
+                            link.href = objectUrl;
+                            link.download = EXPORTED_FILENAME;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(objectUrl);
+                            setPrivacyStatus('privacyDataStatus', '本地数据已导出。', 'is-success');
+                        } catch (err) {
+                            setPrivacyStatus('privacyDataStatus', '导出失败：' + (err && err.message ? err.message : '未知错误'), 'is-error');
+                        }
+                    });
+                }
+
+                if (privacyClearCacheBtn) {
+                    privacyClearCacheBtn.addEventListener('click', function () {
+                        var confirmed = window.confirm('将清理除登录态外的大部分本地缓存，是否继续？');
+                        if (!confirmed) return;
+                        var keepKeys = {};
+                        keepKeys['planner_current_user'] = true;
+                        keepKeys['planner_users'] = true;
+                        keepKeys['planner_auto_login_enabled'] = true;
+                        keepKeys['planner_auto_login_account'] = true;
+                        keepKeys['planner_auto_login_expires_at'] = true;
+
+                        var removed = 0;
+                        var keys = [];
+                        for (var i = 0; i < localStorage.length; i += 1) {
+                            var key = localStorage.key(i);
+                            if (key) keys.push(key);
+                        }
+                        keys.forEach(function (key) {
+                            if (keepKeys[key]) return;
+                            localStorage.removeItem(key);
+                            removed += 1;
+                        });
+                        setPrivacyStatus('privacyDataStatus', '已清理 ' + removed + ' 项缓存。', 'is-success');
+                    });
+                }
+
+                function scrollPanelToTop() {
+                    var el = document.querySelector('.main-content');
+                    if (el) { el.scrollTop = 0; el.scrollTo && el.scrollTo(0, 0); }
+                    el = document.documentElement;
+                    if (el) { el.scrollTop = 0; }
+                    el = document.body;
+                    if (el) { el.scrollTop = 0; }
+                    el = document.querySelector('.app-layout');
+                    if (el && el.scrollHeight > el.clientHeight) { el.scrollTop = 0; }
+                    window.scrollTo(0, 0);
+                }
+
+                var hash = (window.location && window.location.hash) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('profilePanelHash')) || '';
+                if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('profilePanelHash');
+                if (hash === '#privacySecuritySection' || hash === '#privacy') {
+                    showPanel('privacy');
+                    if (window.location.hash !== hash) history.replaceState(null, '', window.location.pathname + (window.location.search || '') + hash);
+                    requestAnimationFrame(function () {
+                        scrollPanelToTop();
+                        setTimeout(scrollPanelToTop, 50);
+                        setTimeout(scrollPanelToTop, 150);
+                    });
+                } else if (hash === '#profileAppearanceSection' || hash === '#appearance') {
+                    showPanel('appearance');
+                    if (window.location.hash !== hash) history.replaceState(null, '', window.location.pathname + (window.location.search || '') + hash);
+                    requestAnimationFrame(function () {
+                        scrollPanelToTop();
+                        setTimeout(scrollPanelToTop, 50);
+                        setTimeout(scrollPanelToTop, 150);
+                    });
+                } else {
+                    showPanel('userinfo');
+                }
+
+                var appearanceSidebarEl = document.getElementById('appearanceSidebarCollapsed');
+                var appearanceStartPageEl = document.getElementById('appearanceStartPage');
+                var appearanceSaveBtn = document.getElementById('appearanceSaveBtn');
+                var appearanceStatusEl = document.getElementById('appearanceStatus');
+
+                function setAppearanceStatus(msg, kind) {
+                    if (!appearanceStatusEl) return;
+                    appearanceStatusEl.textContent = msg || '';
+                    appearanceStatusEl.classList.remove('is-error', 'is-success');
+                    if (kind) appearanceStatusEl.classList.add(kind);
+                }
+
+                var appearanceLanguageEl = document.getElementById('appearanceLanguage');
+                var appearanceFontSizeEl = document.getElementById('appearanceFontSize');
+                var appearanceContentOverflowEl = document.getElementById('appearanceContentOverflow');
+
+                function loadAppearancePrefs() {
+                    if (window.PlannerBackup) {
+                        if (appearanceSidebarEl) appearanceSidebarEl.checked = window.PlannerBackup.getSidebarCollapsedPreference();
+                        if (appearanceStartPageEl) appearanceStartPageEl.value = window.PlannerBackup.getStartPage();
+                        if (appearanceLanguageEl) appearanceLanguageEl.value = window.PlannerBackup.getLanguagePreference();
+                        if (appearanceFontSizeEl) appearanceFontSizeEl.value = window.PlannerBackup.getFontSizePreference();
+                        if (appearanceContentOverflowEl) appearanceContentOverflowEl.value = window.PlannerBackup.getContentOverflowPreference();
+                    }
+                }
+
+                function saveAppearancePrefs() {
+                    if (!window.PlannerBackup) {
+                        setAppearanceStatus('外观设置暂不可用。', 'is-error');
+                        return;
+                    }
+                    var collapsed = !!(appearanceSidebarEl && appearanceSidebarEl.checked);
+                    var startPage = appearanceStartPageEl ? appearanceStartPageEl.value : 'index.html';
+                    window.PlannerBackup.applySidebarCollapsedPreference(collapsed);
+                    window.PlannerBackup.setStartPage(startPage);
+                    if (appearanceLanguageEl) window.PlannerBackup.setLanguagePreference(appearanceLanguageEl.value);
+                    if (appearanceFontSizeEl) {
+                        window.PlannerBackup.setFontSizePreference(appearanceFontSizeEl.value);
+                        window.PlannerBackup.applyFontSizePreference();
+                    }
+                    if (appearanceContentOverflowEl) {
+                        window.PlannerBackup.setContentOverflowPreference(appearanceContentOverflowEl.value);
+                        window.PlannerBackup.applyAppearancePrefs();
+                    }
+                    setAppearanceStatus('界面外观已保存。', 'is-success');
+                }
+
+                if (appearanceSidebarEl) loadAppearancePrefs();
+                if (appearanceSaveBtn) {
+                    appearanceSaveBtn.addEventListener('click', function () {
+                        saveAppearancePrefs();
+                    });
+                }
+                appearanceSidebarEl && appearanceSidebarEl.addEventListener('change', function () {
+                    if (window.PlannerBackup) {
+                        window.PlannerBackup.applySidebarCollapsedPreference(appearanceSidebarEl.checked);
+                        setAppearanceStatus('侧边栏设置已生效。', 'is-success');
+                    }
+                });
+                appearanceStartPageEl && appearanceStartPageEl.addEventListener('change', function () {
+                    if (window.PlannerBackup) {
+                        window.PlannerBackup.setStartPage(appearanceStartPageEl.value);
+                        setAppearanceStatus('启动页已保存，下次进入将生效。', 'is-success');
+                    }
+                });
+                appearanceFontSizeEl && appearanceFontSizeEl.addEventListener('change', function () {
+                    if (window.PlannerBackup) {
+                        window.PlannerBackup.setFontSizePreference(appearanceFontSizeEl.value);
+                        window.PlannerBackup.applyFontSizePreference();
+                        setAppearanceStatus('字号已生效。', 'is-success');
+                    }
+                });
+                appearanceContentOverflowEl && appearanceContentOverflowEl.addEventListener('change', function () {
+                    if (window.PlannerBackup) {
+                        window.PlannerBackup.setContentOverflowPreference(appearanceContentOverflowEl.value);
+                        window.PlannerBackup.applyAppearancePrefs();
+                        setAppearanceStatus('内容折叠设置已生效。', 'is-success');
+                    }
+                });
+                appearanceLanguageEl && appearanceLanguageEl.addEventListener('change', function () {
+                    if (window.PlannerBackup) {
+                        window.PlannerBackup.setLanguagePreference(appearanceLanguageEl.value);
+                        setAppearanceStatus('语言设置已保存，部分页面需刷新后生效。', 'is-success');
+                    }
                 });
             });
         })();

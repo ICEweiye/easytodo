@@ -1,4 +1,4 @@
-﻿const assert = require('assert');
+const assert = require('assert');
 const { chromium } = require('playwright');
 
 const EDGE_PATH = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
@@ -70,7 +70,7 @@ async function testSpecialCharactersRender() {
     await page.locator('#bookModal .btn-primary').click();
     await page.locator('.reading-item').filter({ hasText: bookTitle }).first().waitFor({ state: 'visible' });
 
-    await page.goto(`${BASE_URL}/life.html`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE_URL}/nav.html`, { waitUntil: 'domcontentloaded' });
     await page.locator('.site-category .action-btn').first().click();
     await page.locator('#siteName').fill(siteName);
     await page.locator('#siteUrl').fill('https://example.com');

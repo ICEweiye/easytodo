@@ -1,0 +1,15 @@
+# 复制为 frpc.toml，把 serverAddr、auth.token 改成服务器上 install 脚本生成的值。
+# Mac 下载与服务器相同版本的 frp: https://github.com/fatedier/frp/releases
+# 本机终端: ./frpc -c frpc.toml
+
+serverAddr = "替换为阿里云公网IP"
+serverPort = 7000
+auth.method = "token"
+auth.token = "与服务器 /opt/frp/frps.toml 中 auth.token 完全一致"
+
+[[proxies]]
+name = "planner-web"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8787
+remotePort = 18080

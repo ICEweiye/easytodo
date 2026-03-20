@@ -1,11 +1,14 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { URL } = require('url');
 const { spawn } = require('child_process');
 const { DatabaseSync } = require('node:sqlite');
+const crypto = require('crypto');
+const Utf8Utils = require('./utf8-utils.js');
 
-const HOST = '127.0.0.1';
+/** 监听地址：本机仅自己访问用 127.0.0.1；局域网或其它机器访问需 0.0.0.0（FRP 本机转发仍可用 127.0.0.1） */
+const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 8787);
 const ROOT_DIR = __dirname;
 
@@ -19,6 +22,68 @@ const LEGACY_LAST_GOOD_FILE = path.join(ROOT_DIR, '.planner-shared-storage.last-
 
 let db = null;
 let lastBackupAt = 0;
+
+// ===== Access Code & Session Authentication =====
+const ACCESS_CODE_FILE = path.join(ROOT_DIR, '.planner-access-code');
+const SESSION_COOKIE = 'planner_sid';
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const activeSessions = new Map();
+
+function loadOrCreateAccessCode() {
+    const envCode = (process.env.PLANNER_ACCESS_CODE || '').trim();
+    if (envCode.length >= 6) return envCode;
+    try {
+        if (fs.existsSync(ACCESS_CODE_FILE)) {
+            const stored = fs.readFileSync(ACCESS_CODE_FILE, 'utf8').trim();
+            if (stored.length >= 6) return stored;
+        }
+    } catch (_) { /* regenerate */ }
+    const generated = crypto.randomBytes(16).toString('base64url');
+    try { fs.writeFileSync(ACCESS_CODE_FILE, generated + '\n', { mode: 0o600 }); } catch (_) {}
+    return generated;
+}
+
+const ACCESS_CODE = loadOrCreateAccessCode();
+
+function createSession() {
+    const token = crypto.randomBytes(32).toString('hex');
+    activeSessions.set(token, Date.now() + SESSION_MAX_AGE_MS);
+    if (activeSessions.size > 200) {
+        const now = Date.now();
+        for (const [k, exp] of activeSessions) { if (now > exp) activeSessions.delete(k); }
+    }
+    return token;
+}
+
+function isValidSession(token) {
+    if (!token) return false;
+    const exp = activeSessions.get(token);
+    if (!exp) return false;
+    if (Date.now() > exp) { activeSessions.delete(token); return false; }
+    return true;
+}
+
+function parseCookies(cookieHeader) {
+    const map = {};
+    (cookieHeader || '').split(';').forEach(part => {
+        const eq = part.indexOf('=');
+        if (eq > 0) map[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+    });
+    return map;
+}
+
+function getReqSession(req) {
+    return parseCookies(req.headers.cookie)[SESSION_COOKIE] || '';
+}
+
+function isReqAuthenticated(req) {
+    return isValidSession(getReqSession(req));
+}
+
+function sessionCookieHeader(token) {
+    const maxAge = Math.floor(SESSION_MAX_AGE_MS / 1000);
+    return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
+}
 
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -35,7 +100,6 @@ const MIME_TYPES = {
 
 function getCorsHeaders(extraHeaders = {}) {
     return {
-        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         ...extraHeaders
@@ -57,7 +121,7 @@ function sanitizeData(rawData) {
         if (!shouldSyncKey(key)) return;
         const value = rawData[key];
         if (typeof value === 'string') {
-            data[key] = value;
+            data[key] = Utf8Utils.repairStorageData({ [key]: value })[key];
         }
     });
 
@@ -71,8 +135,10 @@ function sanitizePatchData(rawData) {
     Object.keys(rawData).forEach((key) => {
         if (!shouldSyncKey(key)) return;
         const value = rawData[key];
-        if (typeof value === 'string' || value === null) {
-            patch[key] = value;
+        if (value === null) {
+            patch[key] = null;
+        } else if (typeof value === 'string') {
+            patch[key] = Utf8Utils.repairStorageData({ [key]: value })[key];
         }
     });
 
@@ -174,6 +240,56 @@ function initDatabaseSchema() {
         VALUES (1, 0)
         ON CONFLICT(id) DO NOTHING
     `);
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            password_hash TEXT NOT NULL,
+            salt TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    `);
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS invite_codes (
+            code TEXT PRIMARY KEY,
+            label TEXT DEFAULT '',
+            created_by TEXT DEFAULT '',
+            used_by TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            used_at TEXT
+        )
+    `);
+}
+
+function hashPassword(password, salt) {
+    return crypto.createHash('sha256').update(salt + ':' + password).digest('hex');
+}
+
+function accountHasExistingData(account) {
+    const prefix = 'planner_acc_' + account + '_';
+    const row = db.prepare("SELECT 1 FROM storage_kv WHERE key LIKE ? || '%' LIMIT 1").get(prefix);
+    return !!row;
+}
+
+function tryUseInviteCode(code, account) {
+    if (!code) return false;
+    const row = db.prepare('SELECT code FROM invite_codes WHERE code = ? AND used_by IS NULL').get(code);
+    if (!row) return false;
+    db.prepare("UPDATE invite_codes SET used_by = ?, used_at = datetime('now') WHERE code = ?").run(account, code);
+    return true;
+}
+
+function seedDemoUser() {
+    try {
+        const row = db.prepare('SELECT id FROM users WHERE account = ?').get('demo');
+        if (!row) {
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = hashPassword('123456', salt);
+            db.prepare('INSERT INTO users (account, password_hash, salt) VALUES (?, ?, ?)').run('demo', hash, salt);
+        }
+    } catch (_) {}
 }
 
 function readLegacyStorageFile(filePath) {
@@ -263,9 +379,14 @@ function resolveTargetDirectory(rawTargetDir) {
     }
 
     const normalized = path.normalize(targetText);
-    return path.isAbsolute(normalized)
+    const resolved = path.isAbsolute(normalized)
         ? normalized
         : path.resolve(ROOT_DIR, normalized);
+
+    if (!resolved.startsWith(ROOT_DIR + path.sep) && resolved !== ROOT_DIR) {
+        throw new Error('Backup directory must be within the application directory');
+    }
+    return resolved;
 }
 
 function createManualBackupSnapshot(targetDir, prefix) {
@@ -651,6 +772,93 @@ function handleFolderPickerApi(req, res) {
         });
 }
 
+function handleRestoreListApi(req, res) {
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204, getCorsHeaders({ 'Access-Control-Max-Age': '86400' }));
+        res.end();
+        return;
+    }
+    if (req.method !== 'GET') {
+        sendJson(res, 405, { ok: false, error: 'Method not allowed' });
+        return;
+    }
+    const backups = getBackupFiles();
+    const list = backups.map((b, idx) => ({
+        index: idx,
+        fileName: path.basename(b.fullPath),
+        mtimeMs: b.mtimeMs,
+        mtime: new Date(b.mtimeMs).toISOString()
+    }));
+    sendJson(res, 200, { ok: true, backups: list });
+}
+
+function restoreFromBackupFile(backupFullPath) {
+    const backupDb = new DatabaseSync(backupFullPath);
+    const rows = backupDb.prepare('SELECT key, value FROM storage_kv').all();
+    const metaRow = backupDb.prepare('SELECT updated_at FROM storage_meta WHERE id = 1').get();
+    const updatedAt = Number(metaRow && metaRow.updated_at) || 0;
+    backupDb.close();
+
+    const clearStmt = db.prepare('DELETE FROM storage_kv');
+    const upsertStmt = db.prepare('INSERT OR REPLACE INTO storage_kv (key, value) VALUES (?, ?)');
+    const metaStmt = db.prepare('UPDATE storage_meta SET updated_at = ? WHERE id = 1');
+
+    db.exec('BEGIN IMMEDIATE');
+    try {
+        clearStmt.run();
+        rows.forEach((row) => {
+            if (row && typeof row.key === 'string' && typeof row.value === 'string') {
+                const repaired = Utf8Utils.repairStorageData({ [row.key]: row.value })[row.key];
+                upsertStmt.run(row.key, repaired);
+            }
+        });
+        metaStmt.run(updatedAt);
+        db.exec('COMMIT');
+    } catch (err) {
+        db.exec('ROLLBACK');
+        throw err;
+    }
+}
+
+function handleRestoreApi(req, res) {
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204, getCorsHeaders({ 'Access-Control-Max-Age': '86400' }));
+        res.end();
+        return;
+    }
+    if (req.method !== 'POST') {
+        sendJson(res, 405, { ok: false, error: 'Method not allowed' });
+        return;
+    }
+    parseBody(req)
+        .then((payload) => {
+            const backups = getBackupFiles();
+            const index = Number(payload && payload.index);
+            if (!backups.length) {
+                sendJson(res, 400, { ok: false, error: '没有可用的备份文件' });
+                return;
+            }
+            const idx = Number.isFinite(index) && index >= 0
+                ? Math.min(index, backups.length - 1)
+                : 0;
+            const backup = backups[idx];
+            const normalizedPath = path.normalize(backup.fullPath);
+            if (!normalizedPath.startsWith(BACKUP_DIR + path.sep) && path.dirname(normalizedPath) !== BACKUP_DIR) {
+                sendJson(res, 403, { ok: false, error: 'Invalid backup path' });
+                return;
+            }
+            restoreFromBackupFile(backup.fullPath);
+            sendJson(res, 200, {
+                ok: true,
+                restoredFrom: path.basename(backup.fullPath),
+                message: '数据已从备份恢复，请刷新页面'
+            });
+        })
+        .catch((err) => {
+            sendJson(res, 500, { ok: false, error: err && err.message ? err.message : '恢复失败' });
+        });
+}
+
 function handleOpenFolderApi(req, res) {
     if (req.method === 'OPTIONS') {
         res.writeHead(204, getCorsHeaders({
@@ -701,6 +909,18 @@ function serveStatic(req, res, pathname) {
         return;
     }
 
+    const BLOCKED_PATTERNS = [
+        /\.sqlite3$/i, /\.env$/i, /^\/\.planner-/i, /^\/backups(\/|$)/i,
+        /^\/node_modules(\/|$)/i, /^\/deploy(\/|$)/i, /^\/dev-server\.js$/i,
+        /^\/generate-invite\.js$/i, /^\/package\.json$/i, /^\/package-lock\.json$/i, /^\/\.nvmrc$/i,
+        /\.bat$/i, /\.bak$/i, /\.sh$/i, /^\/tmp-/i, /^\/__(.*?)\.js$/i,
+    ];
+    if (BLOCKED_PATTERNS.some(p => p.test(relativePath))) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Forbidden');
+        return;
+    }
+
     fs.readFile(absolutePath, (err, data) => {
         if (err) {
             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -723,12 +943,194 @@ function initStorageLayer() {
     db = openDatabase();
     initDatabaseSchema();
     seedDatabaseFromLegacyIfNeeded();
+    seedDemoUser();
 }
 
 initStorageLayer();
 
+function handleAuth(req, res, pathname) {
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204, getCorsHeaders({ 'Access-Control-Max-Age': '86400' }));
+        res.end();
+        return;
+    }
+
+    if (pathname === '/api/auth/session') {
+        if (req.method === 'GET') {
+            sendJson(res, 200, { ok: isReqAuthenticated(req) });
+            return;
+        }
+        if (req.method === 'DELETE') {
+            const token = getReqSession(req);
+            if (token) activeSessions.delete(token);
+            res.writeHead(200, getCorsHeaders({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`
+            }));
+            res.end(JSON.stringify({ ok: true }));
+            return;
+        }
+    }
+
+    if (pathname === '/api/auth/login' && req.method === 'POST') {
+        parseBody(req).then(body => {
+            const account = String((body && body.account) || '').trim();
+            const password = String((body && body.password) || '');
+            if (!account || !password) {
+                sendJson(res, 400, { ok: false, error: '请输入账号和密码' });
+                return;
+            }
+            let user = db.prepare('SELECT * FROM users WHERE account = ?').get(account);
+            if (!user) {
+                if (accountHasExistingData(account)) {
+                    const salt = crypto.randomBytes(16).toString('hex');
+                    const hash = hashPassword(password, salt);
+                    db.prepare('INSERT INTO users (account, password_hash, salt) VALUES (?, ?, ?)').run(account, hash, salt);
+                    user = db.prepare('SELECT * FROM users WHERE account = ?').get(account);
+                } else {
+                    sendJson(res, 401, { ok: false, error: '账号未注册，请先注册。' });
+                    return;
+                }
+            } else if (hashPassword(password, user.salt) !== user.password_hash) {
+                sendJson(res, 401, { ok: false, error: '密码错误' });
+                return;
+            }
+            const token = createSession();
+            res.writeHead(200, getCorsHeaders({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store',
+                'Set-Cookie': sessionCookieHeader(token)
+            }));
+            res.end(JSON.stringify({ ok: true, account: user.account }));
+        }).catch(() => sendJson(res, 400, { ok: false, error: 'Bad request' }));
+        return;
+    }
+
+    if (pathname === '/api/auth/register' && req.method === 'POST') {
+        parseBody(req).then(body => {
+            const account = String((body && body.account) || '').trim();
+            const password = String((body && body.password) || '');
+            const inviteCode = String((body && body.inviteCode) || '').trim();
+            if (!account || !password) {
+                sendJson(res, 400, { ok: false, error: '请输入账号和密码' });
+                return;
+            }
+            const existing = db.prepare('SELECT id FROM users WHERE account = ?').get(account);
+            if (existing) {
+                sendJson(res, 409, { ok: false, error: '该账号已注册，请直接登录。' });
+                return;
+            }
+            const isAdminCode = inviteCode && inviteCode === ACCESS_CODE;
+            const isValidInvite = !isAdminCode && tryUseInviteCode(inviteCode, account);
+            const hasData = accountHasExistingData(account);
+            if (!isAdminCode && !isValidInvite && !hasData) {
+                sendJson(res, 403, { ok: false, error: '注册码无效。新用户注册需要有效的注册码。' });
+                return;
+            }
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = hashPassword(password, salt);
+            db.prepare('INSERT INTO users (account, password_hash, salt) VALUES (?, ?, ?)').run(account, hash, salt);
+            const token = createSession();
+            res.writeHead(200, getCorsHeaders({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store',
+                'Set-Cookie': sessionCookieHeader(token)
+            }));
+            res.end(JSON.stringify({ ok: true, account }));
+        }).catch(() => sendJson(res, 400, { ok: false, error: 'Bad request' }));
+        return;
+    }
+
+    if (pathname === '/api/auth/deregister' && req.method === 'POST') {
+        if (!isReqAuthenticated(req)) {
+            sendJson(res, 401, { ok: false, error: '请先登录' });
+            return;
+        }
+        parseBody(req).then(body => {
+            const account = String((body && body.account) || '').trim();
+            const password = String((body && body.password) || '');
+            if (!account) {
+                sendJson(res, 400, { ok: false, error: '请提供账号' });
+                return;
+            }
+            if (!password) {
+                sendJson(res, 400, { ok: false, error: '请输入密码' });
+                return;
+            }
+            if (account.toLowerCase() === 'demo') {
+                sendJson(res, 400, { ok: false, error: '演示账号不可注销' });
+                return;
+            }
+            const user = db.prepare('SELECT * FROM users WHERE account = ?').get(account);
+            if (!user) {
+                sendJson(res, 404, { ok: false, error: '账号不存在' });
+                return;
+            }
+            if (hashPassword(password, user.salt) !== user.password_hash) {
+                sendJson(res, 401, { ok: false, error: '密码错误' });
+                return;
+            }
+            const deleted = db.prepare('DELETE FROM users WHERE account = ?').run(account);
+            const token = getReqSession(req);
+            if (token) activeSessions.delete(token);
+            res.writeHead(200, getCorsHeaders({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`
+            }));
+            res.end(JSON.stringify({ ok: true, deleted: deleted.changes > 0 }));
+        }).catch(() => sendJson(res, 400, { ok: false, error: 'Bad request' }));
+        return;
+    }
+
+    if (pathname === '/api/auth/invite' && req.method === 'POST') {
+        if (!isReqAuthenticated(req)) {
+            sendJson(res, 401, { error: 'Unauthorized' });
+            return;
+        }
+        parseBody(req).then(body => {
+            const label = String((body && body.label) || '').trim();
+            const code = crypto.randomBytes(8).toString('base64url');
+            const createdBy = getReqSession(req);
+            db.prepare('INSERT INTO invite_codes (code, label, created_by) VALUES (?, ?, ?)').run(code, label, createdBy);
+            sendJson(res, 200, { ok: true, code, label });
+        }).catch(() => sendJson(res, 400, { ok: false, error: 'Bad request' }));
+        return;
+    }
+
+    if (pathname === '/api/auth/invite' && req.method === 'GET') {
+        if (!isReqAuthenticated(req)) {
+            sendJson(res, 401, { error: 'Unauthorized' });
+            return;
+        }
+        const codes = db.prepare('SELECT code, label, used_by, created_at, used_at FROM invite_codes ORDER BY created_at DESC').all();
+        sendJson(res, 200, { ok: true, codes });
+        return;
+    }
+
+    sendJson(res, 404, { error: 'Not found' });
+}
+
 const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
+
+    const origin = req.headers.origin || '';
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Vary', 'Origin');
+    }
+
+    if (url.pathname.startsWith('/api/auth/')) {
+        handleAuth(req, res, url.pathname);
+        return;
+    }
+
+    if (url.pathname.startsWith('/api/') && req.method !== 'OPTIONS') {
+        if (!isReqAuthenticated(req)) {
+            sendJson(res, 401, { error: 'Unauthorized' });
+            return;
+        }
+    }
 
     if (url.pathname === '/api/storage') {
         handleStorageApi(req, res);
@@ -750,6 +1152,16 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    if (url.pathname === '/api/restore/list') {
+        handleRestoreListApi(req, res);
+        return;
+    }
+
+    if (url.pathname === '/api/restore') {
+        handleRestoreApi(req, res);
+        return;
+    }
+
     serveStatic(req, res, url.pathname);
 });
 
@@ -759,4 +1171,11 @@ server.listen(PORT, HOST, () => {
     console.log(`SQLite database file: ${DB_FILE}`);
     console.log(`SQLite backup directory: ${BACKUP_DIR}`);
     console.log(`Legacy JSON (migration source): ${LEGACY_STORAGE_FILE}`);
+    console.log();
+    console.log('========================================');
+    console.log(`  注册码: ${ACCESS_CODE}`);
+    console.log('  (新用户注册时需要输入此码)');
+    console.log('  已有账号直接输入账号密码登录即可');
+    console.log('========================================');
+    console.log();
 });

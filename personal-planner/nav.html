@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航 - 网站导航</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
+    <script src="utf8-utils.js"></script>
+    <script src="storage-sync.js"></script>
+    <script src="backup-client.js"></script>
+</head>
+<body class="home-page">
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header"><div class="logo"><img class="logo-img" src="logo.svg" alt="Logo"></div></div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item"><span class="nav-text">主页</span></a>
+                <a href="nav.html" class="nav-item active"><span class="nav-text">导航</span></a>
+                <a href="stats.html" class="nav-item"><span class="nav-text">统计</span></a>
+                <a href="review.html" class="nav-item"><span class="nav-text">复盘</span></a>
+                <a href="archive.html" class="nav-item"><span class="nav-text">归档</span></a>
+            </nav></aside>
+<main class="main-content with-global-topbar">
+            <header class="global-topbar" aria-label="页面工具栏">
+                <div class="global-topbar-card">
+                    <a class="global-topbar-logo" href="index.html" aria-label="返回主页">
+                        <img class="global-topbar-logo-img" src="logo.svg" alt="">
+                        <span class="global-topbar-brand">
+                            <span class="global-topbar-brand-main"><span class="brand-easy">easy</span><span class="brand-os">OS</span></span>
+                            <span class="global-topbar-brand-sub">light your life</span>
+                        </span>
+                    </a>
+                    <div class="global-topbar-actions">
+                    <button type="button" class="nav-icon-btn global-tool-btn nav-backup-btn" style="display:none !important;" onclick="runDatabaseBackup()" title="备份数据库" aria-label="备份数据库">
+                        <span class="nav-backup-icon" aria-hidden="true">
+                            <svg t="1773543480237" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5912">
+                                <path d="M42.666667 768c0 46.933333 38.4 85.333333 85.333333 85.333333h768c46.933333 0 85.333333-38.4 85.333333-85.333333v-170.666667H42.666667v170.666667z m672-64h106.666666c17.066667 0 32 14.933333 32 32s-14.933333 32-32 32h-106.666666c-17.066667 0-32-14.933333-32-32s14.933333-32 32-32zM829.866667 230.4C819.2 194.133333 785.066667 170.666667 748.8 170.666667H275.2c-36.266667 0-70.4 23.466667-81.066667 59.733333L42.666667 533.333333h938.666666l-151.466666-302.933333zM746.666667 473.6v17.066667c-2.133333-21.333333-10.666667-40.533333-23.466667-57.6-12.8-17.066667-27.733333-34.133333-46.933333-46.933334-19.2-12.8-40.533333-23.466667-66.133334-32-23.466667-8.533333-49.066667-12.8-76.8-12.8h-17.066666c-6.4 0-10.666667 0-17.066667 2.133334-6.4 0-10.666667 2.133333-14.933333 2.133333-4.266667 0-10.666667 2.133333-14.933334 4.266667v74.666666l-170.666666-115.2 170.666666-113.066666v64c38.4 0 74.666667 6.4 106.666667 17.066666 34.133333 10.666667 64 25.6 87.466667 44.8 25.6 19.2 44.8 42.666667 59.733333 68.266667 17.066667 25.6 23.466667 53.333333 23.466667 83.2z" p-id="5913" fill="currentColor"></path>
+                            </svg>
+                        </span>
+                    </button>
+                    <button type="button" class="nav-icon-btn global-tool-btn nav-settings-btn" style="display:none !important;" onclick="openPlannerSettings()" title="设置" aria-label="设置">
+                        <span class="nav-settings-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.21 7.2a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                    <button type="button" class="global-avatar-btn" title="用户头像" aria-label="用户头像">
+                        <span class="global-avatar-mark" aria-hidden="true">U</span>
+                    </button>
+                </div>
+                </div>
+            </header>
+            <div class="container home-dashboard">
+                <div class="nav-toolbar">
+                    <div class="toolbar-left"><input type="text" class="search-input" id="searchInput" placeholder="&#25628;&#32034;&#32593;&#31449;..." oninput="filterSites()"></div>
+                    <div class="toolbar-right"><button class="btn btn-primary" onclick="openCategoryModal()"><span class="btn-icon">+</span>&#28155;&#21152;&#20998;&#31867;</button></div>
+                </div>
+                <div class="site-categories" id="siteCategories" ondragover="handleCategoryContainerDragOver(event)" ondrop="handleCategoryContainerDrop(event)"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal">
+            <div class="modal-title-row">
+                <h3 class="modal-title" id="categoryModalTitle">&#28155;&#21152;&#20998;&#31867;</h3>
+                <button class="modal-pin-btn" id="categoryPinBtn" type="button" onclick="pinCurrentCategory()" title="&#32622;&#39030;&#20998;&#31867;" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 4h14"></path>
+                        <path d="M12 20V8"></path>
+                        <path d="m8 12 4-4 4 4"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="form-group"><label class="form-label">&#20998;&#31867;&#21517;&#31216;</label><input type="text" class="form-input" id="categoryName" placeholder="&#20363;&#65306;&#24120;&#29992;&#24037;&#20855;&#12289;&#23398;&#20064;&#36164;&#28304;"></div>
+            <div class="form-group"><label class="form-label">&#36873;&#25321;&#22270;&#26631;</label><div class="icon-selector" id="iconSelector"><button class="icon-btn selected" data-icon="&#128193;" onclick="selectIcon(this)">&#128193;</button><button class="icon-btn" data-icon="&#127919;" onclick="selectIcon(this)">&#127919;</button><button class="icon-btn" data-icon="&#128161;" onclick="selectIcon(this)">&#128161;</button><button class="icon-btn" data-icon="&#127912;" onclick="selectIcon(this)">&#127912;</button><button class="icon-btn" data-icon="&#128218;" onclick="selectIcon(this)">&#128218;</button><button class="icon-btn" data-icon="&#127918;" onclick="selectIcon(this)">&#127918;</button><button class="icon-btn" data-icon="&#127925;" onclick="selectIcon(this)">&#127925;</button><button class="icon-btn" data-icon="&#127916;" onclick="selectIcon(this)">&#127916;</button><button class="icon-btn" data-icon="&#128722;" onclick="selectIcon(this)">&#128722;</button><button class="icon-btn" data-icon="&#128240;" onclick="selectIcon(this)">&#128240;</button><button class="icon-btn" data-icon="&#128295;" onclick="selectIcon(this)">&#128295;</button><button class="icon-btn" data-icon="&#128188;" onclick="selectIcon(this)">&#128188;</button><button class="icon-btn" data-icon="&#127775;" onclick="selectIcon(this)">&#127775;</button><button class="icon-btn" data-icon="&#128241;" onclick="selectIcon(this)">&#128241;</button><button class="icon-btn" data-icon="&#127752;" onclick="selectIcon(this)">&#127752;</button></div></div>
+            <div class="form-group"><label class="form-label">&#36873;&#25321;&#39068;&#33394;</label><div class="color-selector" id="colorSelector"><button class="color-btn selected" data-color="#e74c3c" style="background: #e74c3c;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#f39c12" style="background: #f39c12;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#f1c40f" style="background: #f1c40f;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#27ae60" style="background: #27ae60;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#1abc9c" style="background: #1abc9c;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#3498db" style="background: #3498db;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#8e44ad" style="background: #8e44ad;" onclick="selectColor(this)"></button><button class="color-btn" data-color="#7f8c8d" style="background: #7f8c8d;" onclick="selectColor(this)"></button></div></div>
+            <div class="modal-actions"><button class="btn btn-danger" id="categoryDeleteBtn" style="display:none;" onclick="deleteCategory()">&#21024;&#38500;&#20998;&#31867;</button><div style="flex:1;"></div><button class="btn btn-secondary" onclick="closeModal('categoryModal')">&#21462;&#28040;</button><button class="btn btn-primary" onclick="saveCategory()">&#20445;&#23384;</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="siteModal">
+        <div class="modal">
+            <h3 class="modal-title" id="siteModalTitle">&#28155;&#21152;&#32593;&#31449;</h3>
+            <div class="form-group"><label class="form-label">&#32593;&#31449;&#21517;&#31216;</label><input type="text" class="form-input" id="siteName" placeholder="&#20363;&#65306;GitHub"></div>
+            <div class="form-group"><label class="form-label">&#32593;&#31449;&#22320;&#22336;</label><input type="text" class="form-input" id="siteUrl" placeholder="&#20363;&#65306;https://github.com"></div>
+            <div class="form-group"><label class="form-label">&#32593;&#31449;&#25551;&#36848;&#65288;&#21487;&#36873;&#65289;</label><input type="text" class="form-input" id="siteDesc" placeholder="&#31616;&#30701;&#25551;&#36848;..."></div>
+            <div class="form-group"><label class="form-label">&#25152;&#23646;&#20998;&#31867;</label><select class="form-input" id="siteCategory"></select></div>
+            <div class="modal-actions"><button class="btn btn-danger" id="siteDeleteBtn" style="display:none;" onclick="deleteSite()">&#21024;&#38500;&#32593;&#31449;</button><div style="flex:1;"></div><button class="btn btn-secondary" onclick="closeModal('siteModal')">&#21462;&#28040;</button><button class="btn btn-primary" onclick="saveSite()">&#20445;&#23384;</button></div>
+        </div>
+    </div>
+
+    <script>
+
+        // ===== 数据与状态 =====
+        let categories = [];
+        let sites = [];
+        let selectedIcon = '\ud83d\udcc1';
+        let selectedColor = '#e74c3c';
+        let editingCategoryId = null;
+        let editingSiteId = null;
+        let dragState = {
+            type: null,
+            categoryId: null,
+            siteId: null,
+            sourceEl: null,
+            hoverTarget: null,
+            categoryAnchorId: null,
+            categoryDropAfter: null,
+            siteAnchorId: null,
+            siteDropAfter: null,
+            siteAxis: null
+        };
+        let pinnedCategoryId = null;
+        let suppressSiteOpenUntil = 0;
+        function navScoped(logicalKey) {
+            if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
+                return PlannerAuth.scopedStorageKey(logicalKey);
+            }
+            return logicalKey;
+        }
+        const NAV_CATEGORIES_KEY = navScoped('life_categories');
+        const NAV_SITES_KEY = navScoped('life_sites');
+        const NAV_LAST_GOOD_CATEGORIES_KEY = navScoped('life_categories_last_good');
+        const NAV_LAST_GOOD_SITES_KEY = navScoped('life_sites_last_good');
+
+        // 安全解析 localStorage 中的 JSON
+        function safeJsonArray(raw, fallback = []) {
+            if (!raw) return fallback;
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : fallback;
+            } catch {
+                return fallback;
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value);
+        }
+
+        function escapeJsString(value) {
+            return String(value || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/</g, '\\u003C')
+                .replace(/>/g, '\\u003E');
+        }
+
+        function looksCorruptedText(value) {
+            if (typeof value !== 'string') return true;
+            const text = value.trim();
+            if (!text) return true;
+            if (/\uFFFD/.test(text) || /\?{2,}/.test(text)) return true;
+            return /[甯瀛濞鎼浠瑙嗛寮曟搸樼骞冲彴馃鈥€锟]/.test(text);
+        }
+
+        function repairKnownMojibakeText(value) {
+            if (typeof value !== 'string') return '';
+            const text = value.trim();
+            if (!text) return '';
+
+            const exactMap = {
+                '甯哥敤宸ュ叿': '常用工具',
+                '瀛︿範璧勬簮': '学习资源',
+                '濞变箰浼戦棽': '娱乐休闲',
+                '鎼滅储寮曟搸': '搜索引擎',
+                '浠ｇ爜鎵樼骞冲彴': '代码托管平台',
+                '瑙嗛缃戠珯': '视频网站'
+            };
+
+            if (Object.prototype.hasOwnProperty.call(exactMap, text)) {
+                return exactMap[text];
+            }
+
+            if (text.includes('寮€鍙戞枃妗')) return 'Web 开发文档';
+            return text;
+        }
+
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        function normalizeUrl(value) {
+            const raw = typeof value === 'string' ? value.trim() : '';
+            if (!raw) return 'https://example.com';
+            const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+            return isValidUrl(withProtocol) ? withProtocol : 'https://example.com';
+        }
+
+        function hostnameFromUrl(url) {
+            try {
+                return new URL(url).hostname.toLowerCase();
+            } catch {
+                return '';
+            }
+        }
+
+        function defaultSiteDesc(hostname) {
+            const descMap = {
+                'google.com': '\u641c\u7d22\u5f15\u64ce',
+                'www.google.com': '\u641c\u7d22\u5f15\u64ce',
+                'github.com': '\u4ee3\u7801\u6258\u7ba1\u5e73\u53f0',
+                'developer.mozilla.org': 'Web \u5f00\u53d1\u6587\u6863',
+                'bilibili.com': '\u89c6\u9891\u7f51\u7ad9',
+                'www.bilibili.com': '\u89c6\u9891\u7f51\u7ad9'
+            };
+            return descMap[hostname] || '';
+        }
+
+        function defaultSiteName(url) {
+            const hostname = hostnameFromUrl(url);
+            if (!hostname) return '\u672a\u547d\u540d\u7f51\u7ad9';
+            const normalized = hostname.replace(/^www\./, '');
+            return normalized || '\u672a\u547d\u540d\u7f51\u7ad9';
+        }
+
+        function normalizeCategory(raw, index) {
+            const defaults = [
+                { name: '\u5e38\u7528\u5de5\u5177', icon: '\ud83d\udcc1', color: '#e74c3c' },
+                { name: '\u5b66\u4e60\u8d44\u6e90', icon: '\ud83c\udfaf', color: '#3498db' },
+                { name: '\u5a31\u4e50\u4f11\u95f2', icon: '\ud83c\udfae', color: '#27ae60' }
+            ];
+            const fallback = defaults[index] || defaults[0];
+
+            const rawName = typeof raw?.name === 'string' ? raw.name.trim() : '';
+            const fixedName = repairKnownMojibakeText(rawName);
+            const name = looksCorruptedText(rawName) || fixedName !== rawName ? (fixedName || fallback.name) : rawName;
+
+            const rawIcon = typeof raw?.icon === 'string' ? raw.icon.trim() : '';
+            const isEmoji = !!rawIcon && /[\u{1F300}-\u{1FAFF}]/u.test(rawIcon);
+            const icon = isEmoji && !looksCorruptedText(rawIcon) ? rawIcon : fallback.icon;
+
+            const rawColor = typeof raw?.color === 'string' ? raw.color.trim() : '';
+            const color = /^#[0-9a-fA-F]{6}$/.test(rawColor) ? rawColor : fallback.color;
+
+            return {
+                id: Number.isInteger(raw?.id) && raw.id > 0 ? raw.id : index + 1,
+                name,
+                icon,
+                color
+            };
+        }
+
+        function normalizeSite(raw, index, fallbackCategoryId, validCategoryIds) {
+            const url = normalizeUrl(raw?.url);
+            const host = hostnameFromUrl(url);
+
+            const rawName = typeof raw?.name === 'string' ? raw.name.trim() : '';
+            const fixedName = repairKnownMojibakeText(rawName);
+            const name = looksCorruptedText(rawName) || fixedName !== rawName ? (fixedName || defaultSiteName(url)) : rawName;
+
+            const rawDesc = typeof raw?.desc === 'string' ? raw.desc.trim() : '';
+            const fixedDesc = repairKnownMojibakeText(rawDesc);
+            const desc = looksCorruptedText(rawDesc) || fixedDesc !== rawDesc ? (fixedDesc || defaultSiteDesc(host)) : rawDesc;
+
+            let categoryId = Number.isInteger(raw?.categoryId) ? raw.categoryId : fallbackCategoryId;
+            if (!validCategoryIds.has(categoryId)) categoryId = fallbackCategoryId;
+
+            return {
+                id: Number.isInteger(raw?.id) && raw.id > 0 ? raw.id : index + 1,
+                name,
+                url,
+                desc,
+                categoryId
+            };
+        }
+
+        function parseNavStorageArray(key) {
+            return safeJsonArray(localStorage.getItem(key), []);
+        }
+
+        function isDefaultCategorySnapshot(rawCategories) {
+            if (!Array.isArray(rawCategories) || rawCategories.length !== 3) return false;
+            const expectedNames = ['常用工具', '学习资源', '娱乐休闲'];
+            const normalized = rawCategories.map((item, idx) => normalizeCategory(item, idx));
+            return normalized.every((item, idx) => item.id === idx + 1 && item.name === expectedNames[idx]);
+        }
+
+        function shouldRecoverFromLastGood(storedCategories, storedSites, backupCategories, backupSites, defaultSiteCount) {
+            if (!Array.isArray(backupCategories) || !Array.isArray(backupSites)) return false;
+            if (backupCategories.length === 0 || backupSites.length === 0) return false;
+
+            const storedMissing = storedCategories.length === 0 || storedSites.length === 0;
+            const looksResetToDefault = isDefaultCategorySnapshot(storedCategories) && storedSites.length <= defaultSiteCount;
+            const backupIsRicher = backupCategories.length > storedCategories.length || backupSites.length > storedSites.length;
+
+            return storedMissing || (looksResetToDefault && backupIsRicher);
+        }
+
+        function refreshNavLastGoodSnapshots() {
+            if (!Array.isArray(categories) || !Array.isArray(sites) || categories.length === 0 || sites.length === 0) return;
+
+            const backupCategories = parseNavStorageArray(NAV_LAST_GOOD_CATEGORIES_KEY);
+            const backupSites = parseNavStorageArray(NAV_LAST_GOOD_SITES_KEY);
+            const currentScore = categories.length + sites.length;
+            const backupScore = backupCategories.length + backupSites.length;
+
+            if (backupScore === 0 || currentScore >= backupScore) {
+                localStorage.setItem(NAV_LAST_GOOD_CATEGORIES_KEY, JSON.stringify(categories));
+                localStorage.setItem(NAV_LAST_GOOD_SITES_KEY, JSON.stringify(sites));
+            }
+        }
+
+        function loadData() {
+            const defaultCategories = [
+                { id: 1, name: '\u5e38\u7528\u5de5\u5177', icon: '\ud83d\udcc1', color: '#e74c3c' },
+                { id: 2, name: '\u5b66\u4e60\u8d44\u6e90', icon: '\ud83c\udfaf', color: '#3498db' },
+                { id: 3, name: '\u5a31\u4e50\u4f11\u95f2', icon: '\ud83c\udfae', color: '#27ae60' }
+            ];
+            const defaultSites = [
+                { id: 1, name: 'Google', url: 'https://www.google.com', desc: '\u641c\u7d22\u5f15\u64ce', categoryId: 1 },
+                { id: 2, name: 'GitHub', url: 'https://github.com', desc: '\u4ee3\u7801\u6258\u7ba1\u5e73\u53f0', categoryId: 1 },
+                { id: 3, name: 'MDN Web Docs', url: 'https://developer.mozilla.org', desc: 'Web \u5f00\u53d1\u6587\u6863', categoryId: 2 },
+                { id: 4, name: 'Bilibili', url: 'https://www.bilibili.com', desc: '\u89c6\u9891\u7f51\u7ad9', categoryId: 3 }
+            ];
+
+            const storedCategories = parseNavStorageArray(NAV_CATEGORIES_KEY);
+            const storedSites = parseNavStorageArray(NAV_SITES_KEY);
+            const backupCategories = parseNavStorageArray(NAV_LAST_GOOD_CATEGORIES_KEY);
+            const backupSites = parseNavStorageArray(NAV_LAST_GOOD_SITES_KEY);
+
+            let sourceCategories = storedCategories;
+            let sourceSites = storedSites;
+
+            if (shouldRecoverFromLastGood(storedCategories, storedSites, backupCategories, backupSites, defaultSites.length)) {
+                sourceCategories = backupCategories;
+                sourceSites = backupSites;
+                localStorage.setItem(NAV_CATEGORIES_KEY, JSON.stringify(sourceCategories));
+                localStorage.setItem(NAV_SITES_KEY, JSON.stringify(sourceSites));
+            }
+
+            if (!sourceCategories.length) sourceCategories = defaultCategories;
+            if (!sourceSites.length) sourceSites = defaultSites;
+
+            categories = sourceCategories
+                .map((item, idx) => normalizeCategory(item, idx));
+            loadPinnedCategory();
+            ensurePinnedCategoryOnTop();
+
+            const fallbackCategoryId = categories[0]?.id || 1;
+            const validCategoryIds = new Set(categories.map(c => c.id));
+
+            sites = sourceSites
+                .map((item, idx) => normalizeSite(item, idx, fallbackCategoryId, validCategoryIds));
+
+            if (!localStorage.getItem(NAV_CATEGORIES_KEY)) {
+                localStorage.setItem(NAV_CATEGORIES_KEY, JSON.stringify(categories));
+            }
+            if (!localStorage.getItem(NAV_SITES_KEY)) {
+                localStorage.setItem(NAV_SITES_KEY, JSON.stringify(sites));
+            }
+            refreshNavLastGoodSnapshots();
+        }
+
+        function saveCategories() {
+            localStorage.setItem(NAV_CATEGORIES_KEY, JSON.stringify(categories));
+            refreshNavLastGoodSnapshots();
+        }
+
+        function saveSites() {
+            localStorage.setItem(NAV_SITES_KEY, JSON.stringify(sites));
+            refreshNavLastGoodSnapshots();
+        }
+
+        function savePinnedCategory() {
+            if (Number.isInteger(pinnedCategoryId) && pinnedCategoryId > 0) {
+                localStorage.setItem(navScoped('life_pinned_category_id'), String(pinnedCategoryId));
+            } else {
+                localStorage.removeItem(navScoped('life_pinned_category_id'));
+            }
+        }
+
+        function loadPinnedCategory() {
+            const raw = localStorage.getItem(navScoped('life_pinned_category_id'));
+            const parsed = Number.parseInt(raw || '', 10);
+            pinnedCategoryId = Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+        }
+
+        function ensurePinnedCategoryOnTop() {
+            if (!Number.isInteger(pinnedCategoryId)) return;
+
+            const pinnedIndex = categories.findIndex(category => category.id === pinnedCategoryId);
+            if (pinnedIndex === -1) {
+                pinnedCategoryId = null;
+                savePinnedCategory();
+                return;
+            }
+
+            if (pinnedIndex > 0) {
+                const [pinnedCategory] = categories.splice(pinnedIndex, 1);
+                categories.unshift(pinnedCategory);
+            }
+        }
+
+        function isSearchMode() {
+            return document.getElementById('searchInput').value.trim().length > 0;
+        }
+
+        function clearDropHints() {
+            if (dragState && Object.prototype.hasOwnProperty.call(dragState, 'hoverTarget')) {
+                dragState.hoverTarget = null;
+            }
+        }
+
+        function setDragHoverTarget(element) {
+            dragState.hoverTarget = element || null;
+        }
+
+        function removeDropPlaceholders() {
+            ['categoryDropPlaceholder', 'siteDropPlaceholder'].forEach(id => {
+                const placeholder = document.getElementById(id);
+                if (placeholder && placeholder.parentElement) {
+                    placeholder.parentElement.removeChild(placeholder);
+                }
+            });
+        }
+
+        function clearDragState() {
+            document.querySelectorAll('.dragging').forEach(element => element.classList.remove('dragging'));
+            document.body.classList.remove('drag-sorting');
+            clearDropHints();
+            removeDropPlaceholders();
+            dragState = {
+                type: null,
+                categoryId: null,
+                siteId: null,
+                sourceEl: null,
+                hoverTarget: null,
+                categoryAnchorId: null,
+                categoryDropAfter: null,
+                siteAnchorId: null,
+                siteDropAfter: null,
+                siteAxis: null
+            };
+        }
+
+        function captureSiteCardRects() {
+            const rectMap = new Map();
+            document.querySelectorAll('.site-card').forEach(card => {
+                const siteId = Number.parseInt(card.dataset.siteId || '', 10);
+                if (!Number.isInteger(siteId)) return;
+                rectMap.set(siteId, card.getBoundingClientRect());
+            });
+            return rectMap;
+        }
+
+        function captureCategoryRects() {
+            const rectMap = new Map();
+            document.querySelectorAll('.site-category').forEach(categoryEl => {
+                const categoryId = Number.parseInt(categoryEl.dataset.categoryId || '', 10);
+                if (!Number.isInteger(categoryId)) return;
+                rectMap.set(categoryId, categoryEl.getBoundingClientRect());
+            });
+            return rectMap;
+        }
+
+        function animateSiteCardReorder(previousRects) {
+            if (!previousRects || previousRects.size === 0) return;
+
+            document.querySelectorAll('.site-card').forEach(card => {
+                const siteId = Number.parseInt(card.dataset.siteId || '', 10);
+                if (!Number.isInteger(siteId)) return;
+
+                const prev = previousRects.get(siteId);
+                if (!prev) return;
+
+                const next = card.getBoundingClientRect();
+                const dx = prev.left - next.left;
+                const dy = prev.top - next.top;
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+                card.animate(
+                    [
+                        { transform: `translate(${dx}px, ${dy}px)` },
+                        { transform: 'translate(0, 0)' }
+                    ],
+                    {
+                        duration: 260,
+                        easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+                    }
+                );
+            });
+        }
+
+        function animateCategoryReorder(previousRects) {
+            if (!previousRects || previousRects.size === 0) return;
+
+            document.querySelectorAll('.site-category').forEach(categoryEl => {
+                const categoryId = Number.parseInt(categoryEl.dataset.categoryId || '', 10);
+                if (!Number.isInteger(categoryId)) return;
+
+                const prev = previousRects.get(categoryId);
+                if (!prev) return;
+
+                const next = categoryEl.getBoundingClientRect();
+                const dx = prev.left - next.left;
+                const dy = prev.top - next.top;
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+                categoryEl.animate(
+                    [
+                        { transform: `translate(${dx}px, ${dy}px)` },
+                        { transform: 'translate(0, 0)' }
+                    ],
+                    {
+                        duration: 280,
+                        easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+                    }
+                );
+            });
+        }
+
+        function renderCategoriesWithSiteMoveAnimation(previousRects) {
+            renderCategories();
+            requestAnimationFrame(() => {
+                animateSiteCardReorder(previousRects);
+            });
+        }
+
+        function renderCategoriesWithCategoryMoveAnimation(previousRects) {
+            renderCategories();
+            requestAnimationFrame(() => {
+                animateCategoryReorder(previousRects);
+            });
+        }
+
+        function getOrCreatePlaceholder(id, className) {
+            let placeholder = document.getElementById(id);
+            if (!placeholder) {
+                placeholder = document.createElement('div');
+                placeholder.id = id;
+                placeholder.className = className;
+            }
+            return placeholder;
+        }
+
+        function placePlaceholder(placeholder, parent, referenceNode, width, height) {
+            const previousParent = placeholder.parentElement;
+            const isNewParent = previousParent !== parent;
+            const normalizedReference = referenceNode === placeholder
+                ? placeholder.nextElementSibling
+                : referenceNode;
+            const alreadyPlaced = previousParent === parent && (
+                (normalizedReference && placeholder.nextElementSibling === normalizedReference) ||
+                (!normalizedReference && parent.lastElementChild === placeholder)
+            );
+
+            if (!alreadyPlaced) {
+                if (normalizedReference) {
+                    parent.insertBefore(placeholder, normalizedReference);
+                } else {
+                    parent.appendChild(placeholder);
+                }
+            }
+
+            const nextWidth = Math.max(16, Math.round(width || 16));
+            const nextHeight = Math.max(16, Math.round(height || 16));
+            if (isNewParent) {
+                placeholder.classList.remove('ready');
+                placeholder.style.width = '16px';
+                placeholder.style.height = '16px';
+                requestAnimationFrame(() => {
+                    placeholder.style.width = `${nextWidth}px`;
+                    placeholder.style.height = `${nextHeight}px`;
+                    placeholder.classList.add('ready');
+                });
+            } else {
+                placeholder.style.width = `${nextWidth}px`;
+                placeholder.style.height = `${nextHeight}px`;
+                placeholder.classList.add('ready');
+            }
+        }
+
+        function nextSiblingSkippingPlaceholder(element, placeholderId) {
+            let candidate = element ? element.nextElementSibling : null;
+            while (candidate && candidate.id === placeholderId) {
+                candidate = candidate.nextElementSibling;
+            }
+            return candidate;
+        }
+
+        function findLastIndex(items, predicate) {
+            for (let i = items.length - 1; i >= 0; i -= 1) {
+                if (predicate(items[i], i)) return i;
+            }
+            return -1;
+        }
+
+        function moveCategory(sourceCategoryId, targetCategoryId, insertAfter = false) {
+            const sourceIndex = categories.findIndex(category => category.id === sourceCategoryId);
+            const targetIndex = categories.findIndex(category => category.id === targetCategoryId);
+            if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) return false;
+            if (Number.isInteger(pinnedCategoryId) && sourceCategoryId === pinnedCategoryId) return false;
+
+            const [movedCategory] = categories.splice(sourceIndex, 1);
+            let insertIndex = targetIndex + (insertAfter ? 1 : 0);
+            if (sourceIndex < insertIndex) insertIndex -= 1;
+            if (Number.isInteger(pinnedCategoryId)) {
+                insertIndex = Math.max(1, insertIndex);
+            }
+            categories.splice(insertIndex, 0, movedCategory);
+            ensurePinnedCategoryOnTop();
+            return true;
+        }
+
+        function moveCategoryByPlaceholder(sourceCategoryId) {
+            const sourceIndex = categories.findIndex(category => category.id === sourceCategoryId);
+            if (sourceIndex === -1) return false;
+
+            const placeholder = document.getElementById('categoryDropPlaceholder');
+            if (!placeholder || !placeholder.parentElement) return false;
+
+            const nextCategoryElement = placeholder.nextElementSibling;
+            const nextCategoryId = nextCategoryElement && nextCategoryElement.classList.contains('site-category')
+                ? Number.parseInt(nextCategoryElement.dataset.categoryId || '', 10)
+                : null;
+
+            const [movedCategory] = categories.splice(sourceIndex, 1);
+            let insertIndex = Number.isInteger(nextCategoryId)
+                ? categories.findIndex(category => category.id === nextCategoryId)
+                : categories.length;
+            if (insertIndex < 0) insertIndex = categories.length;
+            if (Number.isInteger(pinnedCategoryId)) {
+                insertIndex = Math.max(1, insertIndex);
+            }
+            categories.splice(insertIndex, 0, movedCategory);
+            ensurePinnedCategoryOnTop();
+
+            const finalIndex = categories.findIndex(category => category.id === sourceCategoryId);
+            return finalIndex !== sourceIndex;
+        }
+
+        function getCategoryInsertIndex(categoryId) {
+            const lastInCategory = findLastIndex(sites, site => site.categoryId === categoryId);
+            if (lastInCategory !== -1) return lastInCategory + 1;
+
+            const categoryIndex = categories.findIndex(category => category.id === categoryId);
+            if (categoryIndex === -1) return sites.length;
+
+            for (let i = categoryIndex + 1; i < categories.length; i += 1) {
+                const nextCategoryId = categories[i].id;
+                const firstNextCategorySiteIndex = sites.findIndex(site => site.categoryId === nextCategoryId);
+                if (firstNextCategorySiteIndex !== -1) return firstNextCategorySiteIndex;
+            }
+
+            return sites.length;
+        }
+
+        function moveSite(sourceSiteId, targetSiteId, targetCategoryId, insertAfter = false) {
+            const sourceIndex = sites.findIndex(site => site.id === sourceSiteId);
+            if (sourceIndex === -1) return false;
+
+            const sourceCategoryId = sites[sourceIndex].categoryId;
+            const [movedSite] = sites.splice(sourceIndex, 1);
+            movedSite.categoryId = targetCategoryId;
+
+            let insertIndex = getCategoryInsertIndex(targetCategoryId);
+            if (targetSiteId !== null && targetSiteId !== undefined) {
+                const targetIndex = sites.findIndex(site => site.id === targetSiteId);
+                if (targetIndex !== -1) {
+                    insertIndex = targetIndex + (insertAfter ? 1 : 0);
+                }
+            }
+
+            sites.splice(insertIndex, 0, movedSite);
+            const finalIndex = sites.findIndex(site => site.id === sourceSiteId);
+            return sourceCategoryId !== targetCategoryId || finalIndex !== sourceIndex;
+        }
+
+        function moveSiteByPlaceholder(sourceSiteId) {
+            const sourceIndex = sites.findIndex(site => site.id === sourceSiteId);
+            if (sourceIndex === -1) return false;
+
+            const placeholder = document.getElementById('siteDropPlaceholder');
+            if (!placeholder || !placeholder.parentElement) return false;
+
+            const targetGrid = placeholder.closest('.site-grid');
+            const targetCategoryId = targetGrid
+                ? Number.parseInt(targetGrid.dataset.categoryId || '', 10)
+                : sites[sourceIndex].categoryId;
+            const nextCardElement = placeholder.nextElementSibling;
+            const nextSiteId = nextCardElement && nextCardElement.classList.contains('site-card')
+                ? Number.parseInt(nextCardElement.dataset.siteId || '', 10)
+                : null;
+
+            const originalCategoryId = sites[sourceIndex].categoryId;
+            const [movedSite] = sites.splice(sourceIndex, 1);
+            movedSite.categoryId = Number.isInteger(targetCategoryId) ? targetCategoryId : originalCategoryId;
+
+            let insertIndex = getCategoryInsertIndex(movedSite.categoryId);
+            if (Number.isInteger(nextSiteId)) {
+                const nextSiteIndex = sites.findIndex(site => site.id === nextSiteId);
+                if (nextSiteIndex !== -1) insertIndex = nextSiteIndex;
+            }
+            sites.splice(insertIndex, 0, movedSite);
+
+            const finalIndex = sites.findIndex(site => site.id === sourceSiteId);
+            return finalIndex !== sourceIndex || movedSite.categoryId !== originalCategoryId;
+        }
+
+        function handleCategoryDragStart(event, categoryId) {
+            if (isSearchMode() || (Number.isInteger(pinnedCategoryId) && categoryId === pinnedCategoryId)) {
+                event.preventDefault();
+                return;
+            }
+
+            dragState = {
+                type: 'category',
+                categoryId,
+                siteId: null,
+                sourceEl: null,
+                hoverTarget: null,
+                categoryAnchorId: null,
+                categoryDropAfter: null,
+                siteAnchorId: null,
+                siteDropAfter: null,
+                siteAxis: null
+            };
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', `category:${categoryId}`);
+            }
+            document.body.classList.add('drag-sorting');
+            dragState.sourceEl = event.currentTarget.closest('.site-category') || event.currentTarget;
+            event.currentTarget.classList.add('dragging');
+        }
+
+        function handleCategoryDragOver(event) {
+            if (dragState.type !== 'category') return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const categoryElement = event.currentTarget;
+            const targetCategoryId = Number.parseInt(categoryElement.dataset.categoryId || '', 10);
+            setDragHoverTarget(categoryElement);
+
+            const rect = categoryElement.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            let dropAfter = event.clientY > midY;
+            if (dragState.categoryAnchorId === targetCategoryId && typeof dragState.categoryDropAfter === 'boolean') {
+                const hysteresis = 10;
+                if (dragState.categoryDropAfter) {
+                    dropAfter = event.clientY > midY - hysteresis;
+                } else {
+                    dropAfter = event.clientY > midY + hysteresis;
+                }
+            }
+            if (Number.isInteger(pinnedCategoryId) && targetCategoryId === pinnedCategoryId) {
+                dropAfter = true;
+            }
+            dragState.categoryAnchorId = targetCategoryId;
+            dragState.categoryDropAfter = dropAfter;
+
+            const placeholder = getOrCreatePlaceholder('categoryDropPlaceholder', 'drop-placeholder category-drop-placeholder');
+            const placeholderReference = dropAfter
+                ? nextSiblingSkippingPlaceholder(categoryElement, 'categoryDropPlaceholder')
+                : categoryElement;
+            placePlaceholder(
+                placeholder,
+                categoryElement.parentElement,
+                placeholderReference,
+                dragState.sourceEl?.offsetWidth || categoryElement.offsetWidth,
+                dragState.sourceEl?.offsetHeight || categoryElement.offsetHeight
+            );
+        }
+
+        function handleCategoryDragLeave(event) {
+            if (dragState.type !== 'category') return;
+            event.stopPropagation();
+        }
+
+        function handleCategoryDrop(event, targetCategoryId) {
+            if (dragState.type !== 'category') return;
+            event.preventDefault();
+
+            const sourceCategoryId = dragState.categoryId;
+            if (!sourceCategoryId || sourceCategoryId === targetCategoryId) {
+                clearDragState();
+                return;
+            }
+            if (Number.isInteger(pinnedCategoryId) && sourceCategoryId === pinnedCategoryId) {
+                clearDragState();
+                return;
+            }
+
+            const previousCategoryRects = captureCategoryRects();
+            if (moveCategoryByPlaceholder(sourceCategoryId) || moveCategory(sourceCategoryId, targetCategoryId, true)) {
+                saveCategories();
+                renderCategoriesWithCategoryMoveAnimation(previousCategoryRects);
+            } else {
+                clearDragState();
+            }
+        }
+
+        function handleCategoryContainerDragOver(event) {
+            if (dragState.type !== 'category') return;
+            event.preventDefault();
+
+            const targetCategory = event.target.closest('.site-category');
+            if (targetCategory) return;
+            const targetPlaceholder = event.target.closest('.drop-placeholder');
+            if (targetPlaceholder) return;
+
+            setDragHoverTarget(null);
+            const container = event.currentTarget;
+            const existingPlaceholder = document.getElementById('categoryDropPlaceholder');
+            const hasCategories = !!container.querySelector('.site-category');
+            const placeholderInContainer = existingPlaceholder && existingPlaceholder.parentElement === container;
+            const nearTail = event.clientY > (container.getBoundingClientRect().bottom - 24);
+            if (hasCategories && placeholderInContainer && !nearTail) return;
+
+            const placeholder = getOrCreatePlaceholder('categoryDropPlaceholder', 'drop-placeholder category-drop-placeholder');
+            placePlaceholder(
+                placeholder,
+                container,
+                null,
+                dragState.sourceEl?.offsetWidth || container.clientWidth,
+                dragState.sourceEl?.offsetHeight || 80
+            );
+        }
+
+        function handleCategoryContainerDrop(event) {
+            if (dragState.type !== 'category') return;
+            event.preventDefault();
+
+            const sourceCategoryId = dragState.categoryId;
+            if (!sourceCategoryId || (Number.isInteger(pinnedCategoryId) && sourceCategoryId === pinnedCategoryId)) {
+                clearDragState();
+                return;
+            }
+
+            const previousCategoryRects = captureCategoryRects();
+            if (moveCategoryByPlaceholder(sourceCategoryId)) {
+                saveCategories();
+                renderCategoriesWithCategoryMoveAnimation(previousCategoryRects);
+            } else {
+                clearDragState();
+            }
+        }
+
+        function handleSiteDragStart(event, siteId, categoryId) {
+            if (isSearchMode()) {
+                event.preventDefault();
+                return;
+            }
+            event.stopPropagation();
+
+            dragState = {
+                type: 'site',
+                categoryId,
+                siteId,
+                sourceEl: null,
+                hoverTarget: null,
+                categoryAnchorId: null,
+                categoryDropAfter: null,
+                siteAnchorId: null,
+                siteDropAfter: null,
+                siteAxis: null
+            };
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', `site:${siteId}`);
+            }
+            document.body.classList.add('drag-sorting');
+            dragState.sourceEl = event.currentTarget;
+            event.currentTarget.classList.add('dragging');
+        }
+
+        function handleSiteDragOver(event) {
+            if (dragState.type !== 'site') return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const siteElement = event.currentTarget;
+            const targetSiteId = Number.parseInt(siteElement.dataset.siteId || '', 10);
+            if (targetSiteId === dragState.siteId) return;
+
+            setDragHoverTarget(siteElement);
+
+            const rect = siteElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const deltaX = event.clientX - centerX;
+            const deltaY = event.clientY - centerY;
+            const rawHorizontal = Math.abs(deltaX) >= Math.abs(deltaY);
+            const axis = (dragState.siteAnchorId === targetSiteId && dragState.siteAxis)
+                ? dragState.siteAxis
+                : (rawHorizontal ? 'x' : 'y');
+            let dropAfter = axis === 'x' ? deltaX > 0 : deltaY > 0;
+            if (dragState.siteAnchorId === targetSiteId && typeof dragState.siteDropAfter === 'boolean') {
+                const hysteresis = 8;
+                if (axis === 'x') {
+                    dropAfter = dragState.siteDropAfter ? deltaX > -hysteresis : deltaX > hysteresis;
+                } else {
+                    dropAfter = dragState.siteDropAfter ? deltaY > -hysteresis : deltaY > hysteresis;
+                }
+            }
+            dragState.siteAnchorId = targetSiteId;
+            dragState.siteDropAfter = dropAfter;
+            dragState.siteAxis = axis;
+
+            const placeholder = getOrCreatePlaceholder('siteDropPlaceholder', 'drop-placeholder site-drop-placeholder');
+            placePlaceholder(
+                placeholder,
+                siteElement.parentElement,
+                dropAfter
+                    ? nextSiblingSkippingPlaceholder(siteElement, 'siteDropPlaceholder')
+                    : siteElement,
+                dragState.sourceEl?.offsetWidth || siteElement.offsetWidth,
+                dragState.sourceEl?.offsetHeight || siteElement.offsetHeight
+            );
+        }
+
+        function handleSiteDragLeave(event) {
+            if (dragState.type !== 'site') return;
+            event.stopPropagation();
+        }
+
+        function handleSiteDrop(event, targetSiteId, targetCategoryId) {
+            if (dragState.type !== 'site') return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const sourceSiteId = dragState.siteId;
+            if (!sourceSiteId || sourceSiteId === targetSiteId) {
+                clearDragState();
+                return;
+            }
+
+            const previousRects = captureSiteCardRects();
+            if (moveSiteByPlaceholder(sourceSiteId)) {
+                saveSites();
+                renderCategoriesWithSiteMoveAnimation(previousRects);
+            } else {
+                clearDragState();
+            }
+        }
+
+        function handleSiteGridDragOver(event) {
+            if (dragState.type !== 'site') return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (event.target.closest('.site-card')) return;
+            if (event.target.closest('.drop-placeholder')) return;
+            setDragHoverTarget(null);
+
+            const gridElement = event.currentTarget;
+            const existingPlaceholder = document.getElementById('siteDropPlaceholder');
+            const hasCards = !!gridElement.querySelector('.site-card');
+            const placeholderInGrid = existingPlaceholder && existingPlaceholder.parentElement === gridElement;
+            const nearTail = event.clientY > (gridElement.getBoundingClientRect().bottom - 24);
+            if (hasCards && placeholderInGrid && !nearTail) return;
+
+            const placeholder = getOrCreatePlaceholder('siteDropPlaceholder', 'drop-placeholder site-drop-placeholder');
+            placePlaceholder(
+                placeholder,
+                gridElement,
+                null,
+                dragState.sourceEl?.offsetWidth || 160,
+                dragState.sourceEl?.offsetHeight || 58
+            );
+        }
+
+        function handleSiteGridDragLeave(event) {
+            if (dragState.type !== 'site') return;
+            event.stopPropagation();
+            if (event.currentTarget.contains(event.relatedTarget)) return;
+        }
+
+        function handleSiteGridDrop(event, targetCategoryId) {
+            if (dragState.type !== 'site') return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (event.target.closest('.site-card')) return;
+            const sourceSiteId = dragState.siteId;
+            if (!sourceSiteId) {
+                clearDragState();
+                return;
+            }
+
+            const previousRects = captureSiteCardRects();
+            if (moveSiteByPlaceholder(sourceSiteId) || moveSite(sourceSiteId, null, targetCategoryId)) {
+                saveSites();
+                renderCategoriesWithSiteMoveAnimation(previousRects);
+            } else {
+                clearDragState();
+            }
+        }
+
+        function handleAnyDragEnd() {
+            suppressSiteOpenUntil = Date.now() + 320;
+            clearDragState();
+        }
+
+        // ===== 渲染分类列表 =====
+        function renderCategories() {
+            const container = document.getElementById('siteCategories');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const sortable = !searchTerm.trim();
+            
+            if (categories.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📂</div>
+                        <p>还没有分类，点击上方“添加分类”开始吧。</p>
+                    </div>
+                `;
+                clearDragState();
+                return;
+            }
+            
+            let html = '';
+            
+            categories.forEach(category => {
+                const categorySites = sites.filter(site => site.categoryId === category.id);
+                const filteredSites = searchTerm 
+                    ? categorySites.filter(site => 
+                        site.name.toLowerCase().includes(searchTerm) || 
+                        site.desc.toLowerCase().includes(searchTerm) ||
+                        site.url.toLowerCase().includes(searchTerm))
+                    : categorySites;
+                const categorySortable = sortable && category.id !== pinnedCategoryId;
+                
+                // 搜索时该分类下无匹配站点则跳过
+                if (searchTerm && filteredSites.length === 0) return;
+                
+                html += `
+                    <div 
+                        class="site-category" 
+                        data-category-id="${category.id}"
+                        ondragover="handleCategoryDragOver(event)"
+                        ondragleave="handleCategoryDragLeave(event)"
+                        ondrop="handleCategoryDrop(event, ${category.id})"
+                    >
+                        <div 
+                            class="category-header ${categorySortable ? 'is-draggable' : ''}" 
+                            style="border-left-color: ${category.color}"
+                            draggable="${categorySortable}"
+                            ondragstart="handleCategoryDragStart(event, ${category.id})"
+                            ondragend="handleAnyDragEnd()"
+                        >
+                            <div class="category-info">
+                                <span class="category-icon">${escapeHtml(category.icon)}</span>
+                                <span class="category-name">${escapeHtml(category.name)}</span>
+                            </div>
+                            <div class="category-actions">
+                                <button class="action-btn" onclick="openSiteModal(${category.id})" title="\u6dfb\u52a0\u7f51\u7ad9">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                </button>
+                                <button class="action-btn" onclick="openCategoryModal(${category.id})" title="\u7f16\u8f91\u5206\u7c7b">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div 
+                            class="site-grid"
+                            data-category-id="${category.id}"
+                            ondragover="handleSiteGridDragOver(event)"
+                            ondragleave="handleSiteGridDragLeave(event)"
+                            ondrop="handleSiteGridDrop(event, ${category.id})"
+                        >
+                            ${filteredSites.length === 0 
+                                ? '<div class="empty-category">暂无网站，点 + 添加</div>'
+                                : filteredSites.map(site => renderSiteCard(site, sortable)).join('')
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html || `
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <p>没有找到匹配的网站。</p>
+                </div>
+            `;
+            clearDragState();
+        }
+
+        function renderSiteCard(site, sortable = true) {
+            const faviconUrls = getFaviconUrls(site.url);
+            const firstLetter = site.name.charAt(0).toUpperCase();
+            const safeUrl = escapeJsString(site.url);
+            const safeFaviconUrls = escapeAttribute(JSON.stringify(faviconUrls));
+            return `
+                <div 
+                    class="site-card ${sortable ? 'is-draggable' : ''}" 
+                    data-site-id="${site.id}"
+                    draggable="${sortable}"
+                    onclick="openSite('${safeUrl}')"
+                    ondragstart="handleSiteDragStart(event, ${site.id}, ${site.categoryId})"
+                    ondragover="handleSiteDragOver(event)"
+                    ondragleave="handleSiteDragLeave(event)"
+                    ondrop="handleSiteDrop(event, ${site.id}, ${site.categoryId})"
+                    ondragend="handleAnyDragEnd()"
+                >
+                    <div class="site-favicon" style="background: ${getSiteColor(site.id)}" data-site-id="${site.id}">
+                        <img 
+                            src="${escapeAttribute(faviconUrls[0] || '')}" 
+                            onerror="tryNextFavicon(this, 0)" 
+                            data-favicon-urls='${safeFaviconUrls}'
+                            data-first-letter="${escapeAttribute(firstLetter)}"
+                            alt="${escapeAttribute(site.name)}"
+                        >
+                    </div>
+                    <div class="site-info">
+                        <div class="site-name">${escapeHtml(site.name)}</div>
+                        <div class="site-desc">${escapeHtml(site.desc || site.url)}</div>
+                    </div>
+                    <button class="site-edit-btn" onclick="event.stopPropagation(); openSiteModal(null, ${site.id})" title="\u7f16\u8f91">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }
+
+        // 按优先级列出 favicon 候选地址
+        function getFaviconUrls(url) {
+            try {
+                const urlObj = new URL(url);
+                const hostname = urlObj.hostname;
+                const protocol = urlObj.protocol;
+                
+                return [
+                    // 1. 站点根目录 favicon.ico
+                    `${protocol}//${hostname}/favicon.ico`,
+                    // 2. Google favicon 服务（需可访问外网）
+                    `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`,
+                    // 3. DuckDuckGo favicon 服务
+                    `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+                    // 4. Icon Horse 服务
+                    `https://icon.horse/icon/${hostname}`,
+                    // 5. Favicon Grabber API
+                    `https://favicongrabber.com/api/grab/${hostname}`,
+                ];
+            } catch {
+                return [];
+            }
+        }
+
+        // 依次尝试下一个 favicon 源
+        function tryNextFavicon(img, currentIndex) {
+            const urls = JSON.parse(img.dataset.faviconUrls || '[]');
+            const nextIndex = currentIndex + 1;
+            
+            if (nextIndex < urls.length) {
+                img.src = urls[nextIndex];
+                img.onerror = function() { tryNextFavicon(img, nextIndex); };
+            } else {
+                // 全部失败则显示站点名首字母
+                const container = img.parentElement;
+                img.style.display = 'none';
+                container.textContent = '';
+                const fallback = document.createElement('span');
+                fallback.className = 'favicon-letter';
+                fallback.textContent = img.dataset.firstLetter || '';
+                container.appendChild(fallback);
+            }
+        }
+
+        function getSiteColor(siteId) {
+            const colors = ['#f5efe6', '#e8e4df', '#f0e6dc', '#e6f0e8', '#f0e6e6'];
+            return colors[siteId % colors.length];
+        }
+
+        // ===== 弹窗 =====
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            // 重置表单状态
+            if (modalId === 'categoryModal') {
+                editingCategoryId = null;
+                document.getElementById('categoryName').value = '';
+                document.getElementById('categoryModalTitle').textContent = '\u6dfb\u52a0\u5206\u7c7b';
+                document.getElementById('categoryDeleteBtn').style.display = 'none';
+                resetIconSelector();
+                resetColorSelector();
+                updateCategoryPinState();
+            }
+            if (modalId === 'siteModal') {
+                editingSiteId = null;
+                document.getElementById('siteName').value = '';
+                document.getElementById('siteUrl').value = '';
+                document.getElementById('siteDesc').value = '';
+                document.getElementById('siteModalTitle').textContent = '\u6dfb\u52a0\u7f51\u7ad9';
+                document.getElementById('siteDeleteBtn').style.display = 'none';
+            }
+        }
+
+        function openCategoryModal(categoryId = null) {
+            if (categoryId) {
+                // 编辑模式
+                const category = categories.find(c => c.id === categoryId);
+                if (category) {
+                    editingCategoryId = categoryId;
+                    document.getElementById('categoryName').value = category.name;
+                    document.getElementById('categoryModalTitle').textContent = '\u7f16\u8f91\u5206\u7c7b';
+                    document.getElementById('categoryDeleteBtn').style.display = 'block';
+                    
+                    // 回填当前分类的图标与颜色
+                    selectedIcon = category.icon;
+                    selectedColor = category.color;
+                    updateIconSelector();
+                    updateColorSelector();
+                }
+            } else {
+                // 新建模式
+                editingCategoryId = null;
+                document.getElementById('categoryName').value = '';
+                document.getElementById('categoryModalTitle').textContent = '\u6dfb\u52a0\u5206\u7c7b';
+                document.getElementById('categoryDeleteBtn').style.display = 'none';
+                selectedIcon = '\ud83d\udcc1';
+                selectedColor = '#e74c3c';
+                updateIconSelector();
+                updateColorSelector();
+            }
+            updateCategoryPinState();
+            openModal('categoryModal');
+        }
+
+        function openSiteModal(defaultCategoryId = null, siteId = null) {
+            // 填充分类下拉选项
+            const select = document.getElementById('siteCategory');
+            select.innerHTML = categories.map(c => 
+                `<option value="${c.id}">${escapeHtml(c.icon)} ${escapeHtml(c.name)}</option>`
+            ).join('');
+            
+            if (siteId) {
+                // 编辑网站
+                const site = sites.find(s => s.id === siteId);
+                if (site) {
+                    editingSiteId = siteId;
+                    document.getElementById('siteName').value = site.name;
+                    document.getElementById('siteUrl').value = site.url;
+                    document.getElementById('siteDesc').value = site.desc || '';
+                    document.getElementById('siteCategory').value = site.categoryId;
+                    document.getElementById('siteModalTitle').textContent = '\u7f16\u8f91\u7f51\u7ad9';
+                    document.getElementById('siteDeleteBtn').style.display = 'block';
+                }
+            } else {
+                // 新建网站
+                editingSiteId = null;
+                document.getElementById('siteName').value = '';
+                document.getElementById('siteUrl').value = '';
+                document.getElementById('siteDesc').value = '';
+                if (defaultCategoryId) {
+                    document.getElementById('siteCategory').value = defaultCategoryId;
+                }
+                document.getElementById('siteModalTitle').textContent = '\u6dfb\u52a0\u7f51\u7ad9';
+                document.getElementById('siteDeleteBtn').style.display = 'none';
+            }
+            openModal('siteModal');
+        }
+
+        // ===== 图标与颜色选择 =====
+        function initializeIconButtons() {
+            document.querySelectorAll('#iconSelector .icon-btn').forEach(btn => {
+                if (btn.querySelector('.icon-btn-glyph')) return;
+                const icon = (btn.dataset.icon || btn.textContent || '').trim();
+                btn.dataset.icon = icon;
+                btn.textContent = '';
+                btn.setAttribute('aria-label', icon);
+
+                const glyph = document.createElement('span');
+                glyph.className = 'icon-btn-glyph';
+                glyph.textContent = icon;
+                btn.appendChild(glyph);
+            });
+        }
+
+        function selectIcon(btn) {
+            document.querySelectorAll('#iconSelector .icon-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedIcon = btn.dataset.icon;
+        }
+
+        function selectColor(btn) {
+            document.querySelectorAll('#colorSelector .color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedColor = btn.dataset.color;
+        }
+
+        function updateIconSelector() {
+            document.querySelectorAll('#iconSelector .icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.icon === selectedIcon);
+            });
+        }
+
+        function updateColorSelector() {
+            document.querySelectorAll('#colorSelector .color-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.color === selectedColor);
+            });
+        }
+
+        function resetIconSelector() {
+            selectedIcon = '📁';
+            updateIconSelector();
+        }
+
+        function resetColorSelector() {
+            selectedColor = '#e74c3c';
+            updateColorSelector();
+        }
+
+        function updateCategoryPinState() {
+            const pinBtn = document.getElementById('categoryPinBtn');
+            if (!pinBtn) return;
+
+            if (!editingCategoryId) {
+                pinBtn.style.display = 'none';
+                pinBtn.classList.remove('active');
+                pinBtn.title = '\u7f16\u8f91\u5206\u7c7b\u540e\u53ef\u7f6e\u9876';
+                return;
+            }
+
+            const isPinned = pinnedCategoryId === editingCategoryId;
+            pinBtn.style.display = 'inline-flex';
+            pinBtn.classList.toggle('active', isPinned);
+            pinBtn.title = isPinned ? '\u53d6\u6d88\u7f6e\u9876' : '\u7f6e\u9876\u5206\u7c7b';
+        }
+
+        function pinCurrentCategory() {
+            if (!editingCategoryId) return;
+            const previousCategoryRects = captureCategoryRects();
+
+            if (pinnedCategoryId === editingCategoryId) {
+                pinnedCategoryId = null;
+                savePinnedCategory();
+                renderCategories();
+                updateCategoryPinState();
+                return;
+            }
+
+            pinnedCategoryId = editingCategoryId;
+            const index = categories.findIndex(category => category.id === editingCategoryId);
+            if (index <= 0) {
+                ensurePinnedCategoryOnTop();
+                savePinnedCategory();
+                saveCategories();
+                renderCategories();
+                updateCategoryPinState();
+                return;
+            }
+
+            const [pinnedCategory] = categories.splice(index, 1);
+            categories.unshift(pinnedCategory);
+            ensurePinnedCategoryOnTop();
+            saveCategories();
+            savePinnedCategory();
+            renderCategoriesWithCategoryMoveAnimation(previousCategoryRects);
+            updateCategoryPinState();
+        }
+
+        // ===== 保存分类 =====
+        function saveCategory() {
+            const name = document.getElementById('categoryName').value.trim();
+            if (!name) {
+                alert('请输入分类名称');
+                return;
+            }
+            
+            if (editingCategoryId) {
+                // 更新已有分类
+                const index = categories.findIndex(c => c.id === editingCategoryId);
+                if (index !== -1) {
+                    categories[index] = {
+                        ...categories[index],
+                        name,
+                        icon: selectedIcon,
+                        color: selectedColor
+                    };
+                }
+            } else {
+                // 新增分类
+                const newId = categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1;
+                categories.push({
+                    id: newId,
+                    name,
+                    icon: selectedIcon,
+                    color: selectedColor
+                });
+            }
+            
+            saveCategories();
+            renderCategories();
+            closeModal('categoryModal');
+        }
+
+        function deleteCategory() {
+            if (!editingCategoryId) return;
+            
+            if (!confirm('\u786e\u5b9a\u5220\u9664\u8be5\u5206\u7c7b\uff1f\u5206\u7c7b\u4e0b\u7684\u6240\u6709\u7f51\u7ad9\u4e5f\u4f1a\u88ab\u5220\u9664\u3002')) return;
+            
+            // 从列表移除该分类
+            categories = categories.filter(c => c.id !== editingCategoryId);
+            // 同时删除该分类下所有站点
+            sites = sites.filter(s => s.categoryId !== editingCategoryId);
+            if (pinnedCategoryId === editingCategoryId) {
+                pinnedCategoryId = null;
+            }
+            
+            saveCategories();
+            saveSites();
+            savePinnedCategory();
+            renderCategories();
+            closeModal('categoryModal');
+        }
+
+        function saveSite() {
+            const name = document.getElementById('siteName').value.trim();
+            const url = document.getElementById('siteUrl').value.trim();
+            const desc = document.getElementById('siteDesc').value.trim();
+            const categoryId = parseInt(document.getElementById('siteCategory').value);
+            
+            if (!name) {
+                alert('请输入网站名称');
+                return;
+            }
+            if (!url) {
+                alert('请输入网站地址');
+                return;
+            }
+            
+            // 补全 URL 协议
+            let formattedUrl = url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                formattedUrl = 'https://' + url;
+            }
+            
+            if (editingSiteId) {
+                // 更新已有网站
+                const index = sites.findIndex(s => s.id === editingSiteId);
+                if (index !== -1) {
+                    sites[index] = {
+                        ...sites[index],
+                        name,
+                        url: formattedUrl,
+                        desc,
+                        categoryId
+                    };
+                }
+            } else {
+                // 新增网站
+                const newId = sites.length > 0 ? Math.max(...sites.map(s => s.id)) + 1 : 1;
+                sites.push({
+                    id: newId,
+                    name,
+                    url: formattedUrl,
+                    desc,
+                    categoryId
+                });
+            }
+            
+            saveSites();
+            renderCategories();
+            closeModal('siteModal');
+        }
+
+        function deleteSite() {
+            if (!editingSiteId) return;
+            
+            if (!confirm('\u786e\u5b9a\u5220\u9664\u8be5\u7f51\u7ad9\uff1f')) return;
+            
+            sites = sites.filter(s => s.id !== editingSiteId);
+            saveSites();
+            renderCategories();
+            closeModal('siteModal');
+        }
+
+        // ===== 打开链接 =====
+        function openSite(url) {
+            if (Date.now() < suppressSiteOpenUntil) return;
+            window.open(url, '_blank', 'noopener');
+        }
+
+        function filterSites() {
+            renderCategories();
+        }
+
+        // ===== 侧栏切换（占位）=====
+        function toggleSidebar() {
+            return;
+        }
+
+        // ===== 初始化 =====
+        document.addEventListener('DOMContentLoaded', () => {
+            // 侧栏等元素引用
+            const sidebar = document.getElementById('sidebar');
+            initializeIconButtons();
+            
+            // 顶栏显示当前日期
+            const dateEl = document.getElementById('currentDate');
+            if (dateEl) {
+                const now = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+                dateEl.textContent = now.toLocaleDateString('zh-CN', options);
+            }
+            
+            // 加载数据并渲染列表
+            loadData();
+            renderCategories();
+        });
+
+        window.addEventListener('planner-storage-synced', () => {
+            loadData();
+            renderCategories();
+        });
+
+        window.addEventListener('storage', (event) => {
+            const k = event.key || '';
+            const pref = window.PlannerAuth && PlannerAuth.getPlannerDataKeyPrefix && PlannerAuth.getPlannerDataKeyPrefix();
+            if (pref) {
+                if (!k || k.indexOf(pref) !== 0 || k.slice(pref.length).indexOf('life_') !== 0) return;
+            } else if (!k.startsWith('life_')) {
+                return;
+            }
+            loadData();
+            renderCategories();
+        });
+
+        // 点击遮罩关闭弹窗（分类弹窗除外）
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target !== overlay) return;
+                if (overlay.id === 'categoryModal') return;
+                closeModal(overlay.id);
+            });
+        });
+    
+    </script>
+    <script src="no-multiline.js"></script>
+    <script>
+        (() => {
+            const mainContent = document.querySelector('.main-content');
+            if (!mainContent) return;
+
+            const updateBaselineShadow = () => {
+                mainContent.classList.toggle('is-baseline-shadow-visible', mainContent.scrollTop > 2);
+            };
+
+            mainContent.addEventListener('scroll', updateBaselineShadow, { passive: true });
+            requestAnimationFrame(updateBaselineShadow);
+        })();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

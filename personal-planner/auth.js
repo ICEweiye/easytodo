@@ -1,7 +1,9 @@
-﻿(function () {
+(function () {
     'use strict';
 
     var AUTH_USER_KEY = 'planner_auth_user_v1';
+    var AUTH_USERS_KEY = 'planner_auth_users_v1';
+    var LEGACY_STORAGE_OWNER_KEY = 'planner_legacy_storage_owner_v1';
     var AUTH_SESSION_KEY = 'planner_auth_session_v1';
     var AUTH_PREFS_KEY = 'planner_auth_prefs_v1';
     var LOGIN_PAGE = 'login.html';
@@ -10,13 +12,79 @@
     var DEMO_PASSWORD = '123456';
     var ALLOWED_PAGES = {
         'index.html': true,
-        'life.html': true,
+        'nav.html': true,
         'stats.html': true,
         'review.html': true,
         'archive.html': true,
         'profile.html': true,
         'login.html': true
     };
+
+    var SERVER_SESSION_VALID = false;
+
+    function getApiBaseUrl() {
+        if (window.location && /^https?:$/i.test(window.location.protocol)) {
+            return window.location.origin;
+        }
+        return '';
+    }
+
+    function checkServerSessionAsync(callback) {
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', getApiBaseUrl() + '/api/auth/session', true);
+            xhr.withCredentials = true;
+            xhr.timeout = 5000;
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState !== 4) return;
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        var ok = data && data.ok === true;
+                        SERVER_SESSION_VALID = ok;
+                        callback(ok);
+                    } catch (e) { callback(false); }
+                    return;
+                }
+                if (xhr.status === 401 || xhr.status === 403) {
+                    SERVER_SESSION_VALID = false;
+                    callback(false);
+                    return;
+                }
+                callback(SERVER_SESSION_VALID);
+            };
+            xhr.onerror = function () { callback(SERVER_SESSION_VALID); };
+            xhr.ontimeout = function () { callback(SERVER_SESSION_VALID); };
+            xhr.send();
+        } catch (e) { callback(SERVER_SESSION_VALID); }
+    }
+
+    function serverAuthPost(apiPath, body, callback) {
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', getApiBaseUrl() + apiPath, true);
+            xhr.withCredentials = true;
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.timeout = 8000;
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState !== 4) return;
+                if (xhr.status === 200) {
+                    SERVER_SESSION_VALID = true;
+                    callback(true, null);
+                } else {
+                    var msg = '服务器错误 (' + xhr.status + ')';
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        if (data && data.error) msg = data.error;
+                    } catch (e) {}
+                    callback(false, msg);
+                }
+            };
+            xhr.onerror = function () { callback(false, '网络连接失败'); };
+            xhr.ontimeout = function () { callback(false, '请求超时'); };
+            xhr.send(JSON.stringify(body));
+        } catch (e) { callback(false, '请求异常'); }
+    }
 
     function readJson(key) {
         var raw = localStorage.getItem(key);
@@ -70,7 +138,7 @@
     function validatePassword(password) {
         var value = String(password || '');
         if (value.length < 6) {
-            return { ok: false, message: '密码至少 6 位。' };
+            return { ok: false, message: '请输入不少于6位数密码' };
         }
         if (value.length > 32) {
             return { ok: false, message: '密码最多 32 位。' };
@@ -78,12 +146,134 @@
         return { ok: true };
     }
 
-    function getStoredUser() {
-        var user = readJson(AUTH_USER_KEY);
-        if (!user || typeof user !== 'object') return null;
-        if (typeof user.account !== 'string' || typeof user.passwordHash !== 'string') return null;
-        if (!user.account) return null;
-        return user;
+    function readUsersMap() {
+        var map = readJson(AUTH_USERS_KEY);
+        if (!map || typeof map !== 'object') map = {};
+        var legacy = readJson(AUTH_USER_KEY);
+        if (legacy && typeof legacy.account === 'string' && legacy.account && !map[legacy.account]) {
+            map[legacy.account] = legacy;
+            writeJson(AUTH_USERS_KEY, map);
+        }
+        return map;
+    }
+
+    function writeUsersMap(map) {
+        writeJson(AUTH_USERS_KEY, map || {});
+    }
+
+    function findUserByAccount(account) {
+        var acc = normalizeAccount(account);
+        if (!acc) return null;
+        var map = readUsersMap();
+        var user = map[acc];
+        if (user && typeof user.passwordHash === 'string') return user;
+        return null;
+    }
+
+    function userExists(account) {
+        return Boolean(findUserByAccount(account));
+    }
+
+    function saveRegisteredUser(user) {
+        if (!user || typeof user.account !== 'string') return;
+        var map = readUsersMap();
+        map[user.account] = user;
+        writeUsersMap(map);
+    }
+
+    function getPlannerDataKeyPrefix() {
+        var id = getCurrentAuthIdentity();
+        if (!id) return '';
+        return 'planner_acc_' + accountStorageSegment(id.account) + '_';
+    }
+
+    function ensureLegacyStorageOwner() {
+        if (readJson(LEGACY_STORAGE_OWNER_KEY)) return;
+        var legacy = readJson(AUTH_USER_KEY);
+        if (legacy && legacy.account) {
+            writeJson(LEGACY_STORAGE_OWNER_KEY, { account: legacy.account });
+            return;
+        }
+        var map = readUsersMap();
+        var keys = Object.keys(map);
+        if (keys.length === 1 && map[keys[0]] && map[keys[0]].account) {
+            writeJson(LEGACY_STORAGE_OWNER_KEY, { account: map[keys[0]].account });
+        }
+    }
+
+    function accountStorageSegment(account) {
+        var a = normalizeAccount(account);
+        if (a === DEMO_ACCOUNT) return 'demo';
+        if (/^1\d{10}$/.test(a)) return a;
+        return 'u' + simpleHash(a);
+    }
+
+    function scopedStorageKey(logicalKey) {
+        var id = getCurrentAuthIdentity();
+        if (!id || !logicalKey) return logicalKey;
+        var seg = accountStorageSegment(id.account);
+        return 'planner_acc_' + seg + '_' + logicalKey;
+    }
+
+    function isUnscopedPlannerDataKey(key) {
+        if (!key || key.indexOf('planner_acc_') === 0) return false;
+        if (key.indexOf('planner_auth_') === 0) return false;
+        if (key === 'planner_user_profile_v1') return false;
+        if (key.indexOf('planner_legacy_') === 0) return false;
+        if (key.indexOf('__planner_') === 0) return false;
+        if (key === 'sidebarCollapsed' || key === 'reviews') return true;
+        if (key.indexOf('planner_') === 0) return true;
+        if (key.indexOf('life_') === 0) return true;
+        return false;
+    }
+
+    function runScopedStorageMigration(account, isDemo) {
+        if (isDemo) return;
+        ensureLegacyStorageOwner();
+        var seg = accountStorageSegment(account);
+        var doneKey = 'planner_acc_ns_done_v1_' + seg;
+        if (localStorage.getItem(doneKey)) return;
+
+        var owner = readJson(LEGACY_STORAGE_OWNER_KEY);
+        var ownerAccount = owner && owner.account;
+        if (!ownerAccount || normalizeAccount(account) !== normalizeAccount(ownerAccount)) {
+            localStorage.setItem(doneKey, '1');
+            return;
+        }
+
+        var hasLegacy = false;
+        var i;
+        for (i = 0; i < localStorage.length; i += 1) {
+            var k = localStorage.key(i);
+            if (isUnscopedPlannerDataKey(k)) {
+                var v = localStorage.getItem(k);
+                if (v != null && v !== '') {
+                    hasLegacy = true;
+                    break;
+                }
+            }
+        }
+        if (!hasLegacy) {
+            localStorage.setItem(doneKey, '1');
+            return;
+        }
+
+        var toRemove = [];
+        for (i = 0; i < localStorage.length; i += 1) {
+            var k2 = localStorage.key(i);
+            if (!isUnscopedPlannerDataKey(k2)) continue;
+            var v2 = localStorage.getItem(k2);
+            if (v2 == null) continue;
+            var scoped = 'planner_acc_' + seg + '_' + k2;
+            if (!localStorage.getItem(scoped)) {
+                localStorage.setItem(scoped, v2);
+            }
+            toRemove.push(k2);
+        }
+        toRemove.forEach(function (rk) {
+            localStorage.removeItem(rk);
+        });
+        localStorage.setItem(doneKey, '1');
     }
 
     function getStoredSession() {
@@ -164,19 +354,21 @@
         saveAuthPrefs(prefs);
     }
 
-    function canUseAutoLogin(user, prefs) {
-        if (!user) return false;
+    function canUseAutoLogin(prefs) {
         if (!prefs.autoLogin || !prefs.rememberPassword) return false;
         if (!prefs.rememberedAccount || !prefs.rememberedPassword) return false;
+        var user = findUserByAccount(prefs.rememberedAccount);
+        if (!user) return false;
         if (normalizeAccount(prefs.rememberedAccount) !== user.account) return false;
         return simpleHash(prefs.rememberedPassword) === user.passwordHash;
     }
 
     function tryRestoreSessionByAutoLogin() {
-        var user = getStoredUser();
         var prefs = getAuthPrefs();
-        if (!canUseAutoLogin(user, prefs)) return false;
+        if (!canUseAutoLogin(prefs)) return false;
+        var user = findUserByAccount(prefs.rememberedAccount);
         createSession(user);
+        runScopedStorageMigration(user.account, false);
         return true;
     }
 
@@ -188,8 +380,8 @@
         var session = getStoredSession();
         if (!session) return null;
 
-        var user = getStoredUser();
-        if (user && session.account === user.account && !session.isDemo) {
+        var user = findUserByAccount(session.account);
+        if (user && !session.isDemo) {
             return {
                 account: user.account,
                 accountType: user.accountType || 'username',
@@ -268,9 +460,7 @@
     }
 
     function redirectAfterLogin() {
-        var params = new URLSearchParams(window.location.search || '');
-        var redirectTarget = normalizeRedirectTarget(params.get('redirect'));
-        window.location.replace(redirectTarget);
+        window.location.replace('index.html');
     }
 
     function goToProfilePage() {
@@ -465,7 +655,7 @@
                     '</div>',
                     '<div class="planner-avatar-dropdown-list">',
                     '  <button type="button" class="planner-avatar-dropdown-item" data-menu-action="userinfo">用户信息</button>',
-                    '  <button type="button" class="planner-avatar-dropdown-item" data-menu-action="appearance">界面外观</button>',
+                    '  <button type="button" class="planner-avatar-dropdown-item" data-menu-action="appearance">个性化设置</button>',
                     '  <button type="button" class="planner-avatar-dropdown-item" data-menu-action="privacy">安全隐私</button>',
                     '  <button type="button" class="planner-avatar-dropdown-item is-danger" data-menu-action="logout">退出登录</button>',
                     '</div>'
@@ -642,17 +832,13 @@
                 }
 
                 if (action === 'appearance') {
-                    if (typeof window.openPlannerSettings === 'function') {
-                        window.openPlannerSettings();
-                    } else {
-                        window.alert('界面外观设置暂不可用。');
-                    }
+                    window.location.href = 'profile.html#profileAppearanceSection';
                     closeMenu(0);
                     return;
                 }
 
                 if (action === 'privacy') {
-                    window.alert('安全隐私设置即将支持。');
+                    window.location.href = 'profile.html#privacySecuritySection';
                     closeMenu(0);
                     return;
                 }
@@ -691,7 +877,7 @@
         statusEl.classList.toggle('is-success', Boolean(isSuccess));
     }
 
-    function setModeText(mode, storedUser) {
+    function setModeText(mode) {
         var titleEl = document.getElementById('authTitle');
         var subtitleEl = document.getElementById('authSubtitle');
         var submitEl = document.getElementById('authSubmit');
@@ -754,14 +940,18 @@
     }
 
     function initLoginPage() {
-        if (isAuthenticated()) {
-            redirectAfterLogin();
-            return;
-        }
+        var _loginParams = new URLSearchParams(window.location.search || '');
+        var _serverSessionExpired = _loginParams.get('server_session') === 'expired';
 
-        if (tryRestoreSessionByAutoLogin()) {
-            redirectAfterLogin();
-            return;
+        if (!_serverSessionExpired) {
+            if (isAuthenticated()) {
+                redirectAfterLogin();
+                return;
+            }
+            if (tryRestoreSessionByAutoLogin()) {
+                redirectAfterLogin();
+                return;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -778,9 +968,8 @@
                 return;
             }
 
-            var storedUser = getStoredUser();
             var mode = 'login';
-            setModeText(mode, storedUser);
+            setModeText(mode);
 
             var applyPrefsToForm = function () {
                 var prefs = getAuthPrefs();
@@ -811,6 +1000,10 @@
 
             applyPrefsToForm();
 
+            checkServerSessionAsync(function (valid) {
+                if (valid) SERVER_SESSION_VALID = true;
+            });
+
             rememberCheckbox.addEventListener('change', function () {
                 persistPrefsFromSelection();
             });
@@ -819,12 +1012,16 @@
                 persistPrefsFromSelection();
             });
 
+            var inviteCodeWrap = document.getElementById('authAccessCodeWrap');
+
             switchBtn.addEventListener('click', function () {
                 mode = mode === 'login' ? 'register' : 'login';
-                storedUser = getStoredUser();
-                setModeText(mode, storedUser);
+                setModeText(mode);
                 passwordInput.value = '';
                 confirmInput.value = '';
+                if (inviteCodeWrap) {
+                    inviteCodeWrap.style.display = mode === 'register' ? '' : 'none';
+                }
                 if (mode === 'login') {
                     applyPrefsToForm();
                 }
@@ -867,85 +1064,144 @@
 
                 submitBtn.disabled = true;
 
-                try {
-                    if (isDemoCredential(account, password)) {
-                        saveLoginPrefsFromInputs(account, password, rememberPassword, autoLogin);
-                        createSession({ account: DEMO_ACCOUNT }, { isDemo: true });
-                        setStatus('演示账号登录成功，正在进入系统...', true);
-                        setTimeout(redirectAfterLogin, 180);
+                function finishLogin(userObj, opts) {
+                    saveLoginPrefsFromInputs(account, password, rememberPassword, autoLogin);
+                    createSession(userObj, opts);
+                    runScopedStorageMigration(account, Boolean(opts && opts.isDemo));
+                    setStatus((opts && opts.isDemo ? '演示账号' : '') + '登录成功，正在进入系统...', true);
+                    setTimeout(redirectAfterLogin, 180);
+                }
+
+                if (mode === 'register') {
+                    if (password !== confirmPassword) {
+                        setError('两次输入的密码不一致。');
+                        submitBtn.disabled = false;
                         return;
                     }
-
-                    if (mode === 'register') {
-                        storedUser = getStoredUser();
-                        if (storedUser) {
-                            mode = 'login';
-                            setModeText(mode, storedUser);
-                            setError('系统已存在注册账号，请直接登录。');
+                    var inviteInput = document.getElementById('authAccessCode');
+                    var inviteCode = inviteInput ? inviteInput.value.trim() : '';
+                    serverAuthPost('/api/auth/register', { account: account, password: password, inviteCode: inviteCode }, function (ok, msg) {
+                        if (!ok) {
+                            setError(msg || '注册失败');
                             submitBtn.disabled = false;
                             return;
                         }
-
-                        if (password !== confirmPassword) {
-                            setError('两次输入的密码不一致。');
-                            submitBtn.disabled = false;
-                            return;
-                        }
-
                         var userToSave = {
                             account: account,
                             accountType: accountValidation.type,
                             passwordHash: simpleHash(password),
                             createdAt: Date.now()
                         };
-
-                        writeJson(AUTH_USER_KEY, userToSave);
-                        saveLoginPrefsFromInputs(account, password, rememberPassword, autoLogin);
-                        createSession(userToSave);
-                        setStatus('注册成功，正在进入系统...', true);
-                        setTimeout(redirectAfterLogin, 280);
-                        return;
-                    }
-
-                    storedUser = getStoredUser();
-                    if (!storedUser) {
-                        setError('当前尚未注册账号，请点击下方“去注册”。');
-                        submitBtn.disabled = false;
-                        return;
-                    }
-
-                    if (account !== storedUser.account) {
-                        setError('账号不存在，请输入已注册的用户名或手机号。');
-                        submitBtn.disabled = false;
-                        return;
-                    }
-
-                    if (simpleHash(password) !== storedUser.passwordHash) {
-                        setError('密码错误，请重试。');
-                        submitBtn.disabled = false;
-                        return;
-                    }
-
-                    saveLoginPrefsFromInputs(account, password, rememberPassword, autoLogin);
-                    createSession(storedUser);
-                    setStatus('登录成功，正在进入系统...', true);
-                    setTimeout(redirectAfterLogin, 180);
-                } catch (err) {
-                    setError('操作失败，请刷新后重试。');
-                    submitBtn.disabled = false;
+                        saveRegisteredUser(userToSave);
+                        ensureLegacyStorageOwner();
+                        finishLogin(userToSave, {});
+                    });
+                    return;
                 }
+
+                serverAuthPost('/api/auth/login', { account: account, password: password }, function (ok, msg) {
+                    if (!ok) {
+                        setError('用户名 / 手机号或密码错误');
+                        submitBtn.disabled = false;
+                        return;
+                    }
+                    var isDemo = isDemoCredential(account, password);
+                    if (!findUserByAccount(account)) {
+                        saveRegisteredUser({
+                            account: account,
+                            accountType: accountValidation.type,
+                            passwordHash: simpleHash(password),
+                            createdAt: Date.now()
+                        });
+                    }
+                    finishLogin({ account: isDemo ? DEMO_ACCOUNT : account }, isDemo ? { isDemo: true } : {});
+                });
             });
         });
+    }
+
+    function deregisterAccount(password, options) {
+        var id = getCurrentAuthIdentity();
+        if (!id) return;
+        var account = id.account;
+        var passwordText = String(password || '');
+        var onError = options && typeof options.onError === 'function' ? options.onError : null;
+        var reportError = function (msg) {
+            if (onError) onError(msg); else window.alert(msg);
+        };
+        if (!passwordText) {
+            reportError('请输入密码后再注销。');
+            return;
+        }
+        if (id.isDemo || account === DEMO_ACCOUNT) {
+            clearSession();
+            disableAutoLogin();
+            window.location.replace(buildLoginUrl());
+            return;
+        }
+        var apiBase = getApiBaseUrl();
+        var doLocalCleanup = function () {
+            var seg = accountStorageSegment(account);
+            var map = readUsersMap();
+            delete map[account];
+            writeUsersMap(map);
+            var legacy = readJson(AUTH_USER_KEY);
+            if (legacy && legacy.account && normalizeAccount(legacy.account) === normalizeAccount(account)) {
+                localStorage.removeItem(AUTH_USER_KEY);
+            }
+            clearSession();
+            var prefs = getAuthPrefs();
+            if (prefs.rememberedAccount && normalizeAccount(prefs.rememberedAccount) === normalizeAccount(account)) {
+                saveAuthPrefs({ rememberPassword: false, autoLogin: false, rememberedAccount: '', rememberedPassword: '' });
+            }
+            var owner = readJson(LEGACY_STORAGE_OWNER_KEY);
+            if (owner && owner.account && normalizeAccount(owner.account) === normalizeAccount(account)) {
+                localStorage.removeItem(LEGACY_STORAGE_OWNER_KEY);
+            }
+            var prefix = 'planner_acc_' + seg + '_';
+            var toRemove = [];
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k && k.indexOf(prefix) === 0) toRemove.push(k);
+            }
+            toRemove.forEach(function (k) { localStorage.removeItem(k); });
+            var profileStore = readJson('planner_user_profile_v1');
+            if (profileStore && typeof profileStore === 'object') {
+                delete profileStore[account];
+                writeJson('planner_user_profile_v1', profileStore);
+            }
+            window.location.replace(buildLoginUrl());
+        };
+        if (apiBase) {
+            serverAuthPost('/api/auth/deregister', { account: account, password: passwordText }, function (ok, msg) {
+                if (!ok) {
+                    reportError(msg || '密码错误或注销失败，请重试。');
+                    return;
+                }
+                doLocalCleanup();
+            });
+        } else {
+            var user = findUserByAccount(account);
+            if (user && user.passwordHash && simpleHash(passwordText) !== user.passwordHash) {
+                reportError('密码错误，无法注销账号。');
+                return;
+            }
+            doLocalCleanup();
+        }
     }
 
     window.PlannerAuth = {
         isAuthenticated: isAuthenticated,
         getCurrentUser: getCurrentAuthIdentity,
+        scopedStorageKey: scopedStorageKey,
+        getPlannerDataKeyPrefix: getPlannerDataKeyPrefix,
+        accountStorageSegment: accountStorageSegment,
         logout: function () {
             clearSession();
             disableAutoLogin();
             window.location.replace(buildLoginUrl());
-        }
+        },
+        deregister: deregisterAccount
     };
 
     if (getCurrentPageName() === LOGIN_PAGE) {
@@ -960,5 +1216,19 @@
         }
     }
 
+    ensureLegacyStorageOwner();
+    var __authIdentity = getCurrentAuthIdentity();
+    if (__authIdentity) {
+        runScopedStorageMigration(__authIdentity.account, Boolean(__authIdentity.isDemo));
+    }
+
     setupAvatarAndLogout();
+
+    checkServerSessionAsync(function (valid) {
+        if (!valid) {
+            document.documentElement.style.visibility = 'hidden';
+            var loginUrl = buildLoginUrl();
+            window.location.replace(loginUrl);
+        }
+    });
 })();

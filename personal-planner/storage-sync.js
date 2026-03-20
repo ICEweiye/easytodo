@@ -5,7 +5,8 @@
     const FAIL_UNTIL_KEY = '__planner_sync_fail_until';
     const PUSH_DELAY_MS = 350;
     const PULL_INTERVAL_MS = 5000;
-    const REQUEST_TIMEOUT_MS = 900;
+    /** 公网/FRP 链路较慢时适当加大 */
+    const REQUEST_TIMEOUT_MS = Math.max(900, Number(window.__PLANNER_SYNC_TIMEOUT_MS__) || 12000);
     const FAIL_COOLDOWN_MS = 30000;
 
     if (!window.localStorage) return;
@@ -82,14 +83,26 @@
         };
     }
 
+    let _redirectedFor401 = false;
+
     function requestJson(url, method, payload, callback) {
         try {
             const xhr = new XMLHttpRequest();
             xhr.open(method, url, true);
+            xhr.withCredentials = true;
             xhr.timeout = REQUEST_TIMEOUT_MS;
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.onreadystatechange = () => {
                 if (xhr.readyState !== 4) return;
+                if (xhr.status === 401 && !_redirectedFor401) {
+                    _redirectedFor401 = true;
+                    if (window.PlannerAuth && typeof PlannerAuth.logout === 'function') {
+                        PlannerAuth.logout();
+                    } else {
+                        window.location.replace('login.html');
+                    }
+                    return;
+                }
                 if (xhr.status >= 200 && xhr.status < 300) {
                     callback(normalizePayload(safeJsonParse(xhr.responseText)));
                 } else {
@@ -127,16 +140,16 @@
             candidates.push(window.__PLANNER_SYNC_ENDPOINT__);
         }
 
+        // 与当前页面同源优先（经 FRP/域名 访问时 API 必须走同一入口）
+        if (window.location && /^https?:$/i.test(window.location.protocol)) {
+            candidates.push(`${window.location.origin}/api/storage`);
+        }
+
         try {
             const cached = sessionStorage.getItem(ENDPOINT_CACHE_KEY);
             if (cached) candidates.push(cached);
         } catch (err) {
             // ignore
-        }
-
-        if (window.location && /^https?:$/i.test(window.location.protocol)) {
-            const currentOriginEndpoint = `${window.location.origin}/api/storage`;
-            candidates.push(currentOriginEndpoint);
         }
 
         candidates.push('http://127.0.0.1:8787/api/storage');
@@ -187,7 +200,10 @@
 
         const opts = options || {};
         let changed = false;
-        const remoteData = remote.data || {};
+        let remoteData = remote.data || {};
+        if (window.Utf8Utils && typeof window.Utf8Utils.repairStorageData === 'function') {
+            remoteData = window.Utf8Utils.repairStorageData(remoteData);
+        }
 
         applyingRemoteData = true;
         try {

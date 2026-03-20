@@ -1,16 +1,29 @@
-﻿// ===== 数据存储 =====
+// ===== 数据存储（按登录账号隔离，见 auth.js scopedStorageKey）=====
+function plannerScopedLogicalKey(logicalKey) {
+    if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
+        return PlannerAuth.scopedStorageKey(logicalKey);
+    }
+    return logicalKey;
+}
+
 const Storage = {
-    get(key) {
-        const data = localStorage.getItem(key);
+    get(logicalKey) {
+        const data = localStorage.getItem(plannerScopedLogicalKey(logicalKey));
         if (!data) return null;
         try {
-            return JSON.parse(data);
+            const parsed = JSON.parse(data);
+            if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' &&
+                (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' ||
+                 logicalKey === 'planner_review_archive_entries' || logicalKey === 'planner_todos')) {
+                return window.Utf8Utils.ensureValidUtf8(parsed);
+            }
+            return parsed;
         } catch (err) {
             return null;
         }
     },
-    set(key, value) {
-        localStorage.setItem(key, JSON.stringify(value));
+    set(logicalKey, value) {
+        localStorage.setItem(plannerScopedLogicalKey(logicalKey), JSON.stringify(value));
     }
 };
 
@@ -23,7 +36,7 @@ function getPlannerStoredValue(key, fallback) {
     return stored !== null ? stored : clonePlannerValue(fallback);
 }
 
-// ===== 鍒濆鍖栨暟鎹?=====
+// ===== 初始化数据 =====
 const defaultData = {
     projects: [
         { id: 1, name: 'Personal Website Refactor', start: '2026-01-15', end: '2026-03-30', progress: 65, color: 'brown' },
@@ -59,10 +72,23 @@ const defaultData = {
     ]
 };
 
+function getPlannerEmptyDemoData() {
+    return { projects: [], okrs: [], books: [] };
+}
+
+function getPlannerInitialFallbacks() {
+    try {
+        var u = window.PlannerAuth && PlannerAuth.getCurrentUser && PlannerAuth.getCurrentUser();
+        if (u && u.isDemo) return getPlannerEmptyDemoData();
+    } catch (e) { /* ignore */ }
+    return defaultData;
+}
+
+const __plannerFb = getPlannerInitialFallbacks();
 let data = {
-    projects: getPlannerStoredValue('planner_projects', defaultData.projects),
-    okrs: getPlannerStoredValue('planner_okrs', defaultData.okrs),
-    books: getPlannerStoredValue('planner_books', defaultData.books)
+    projects: getPlannerStoredValue('planner_projects', __plannerFb.projects),
+    okrs: getPlannerStoredValue('planner_okrs', __plannerFb.okrs),
+    books: getPlannerStoredValue('planner_books', __plannerFb.books)
 };
 
 // ===== 颜色主题 =====
@@ -98,10 +124,11 @@ function escapePlannerJsString(value) {
 }
 
 function reloadPlannerDataFromStorage() {
+    const fb = getPlannerInitialFallbacks();
     data = {
-        projects: getPlannerStoredValue('planner_projects', defaultData.projects),
-        okrs: getPlannerStoredValue('planner_okrs', defaultData.okrs),
-        books: getPlannerStoredValue('planner_books', defaultData.books)
+        projects: getPlannerStoredValue('planner_projects', fb.projects),
+        okrs: getPlannerStoredValue('planner_okrs', fb.okrs),
+        books: getPlannerStoredValue('planner_books', fb.books)
     };
 }
 
@@ -417,7 +444,7 @@ function updateDate() {
     dateEl.textContent = now.toLocaleDateString('zh-CN', options);
 }
 
-// ===== 椤圭洰鏃堕棿杞?=====
+// ===== 项目时间轴 =====
 function renderTimeline() {
     const header = document.getElementById('timelineHeader');
     const body = document.getElementById('timelineBody');
@@ -560,7 +587,7 @@ function renderTimeline() {
         const safeName = escapePlannerHtml(item.name);
         const safeDateText = escapePlannerHtml(`${formatDate(item.start)} - ${formatDate(item.end)}`);
         
-        // 鍒ゆ柇椤圭洰鐘舵€侊細鏄惁宸插紑濮?
+        // 判断项目状态：是否已开始
         const isStarted = start <= now;
         
         // 计算项目在时间轴上的位置（与月份标签、分隔线共用坐标系）
@@ -573,7 +600,7 @@ function renderTimeline() {
         let startOffset = getMonthScaledOffset(start, { snapToMonthBoundary: true });
         let endOffset = getMonthScaledOffset(end, { snapToMonthBoundary: true });
         
-        // 寮哄埗绾︽潫鍦?0-100 鑼冨洿鍐?
+        // 强制约束在 0-100 范围内
         startOffset = Math.max(0, Math.min(100, parseFloat(startOffset.toFixed(2))));
         endOffset = Math.max(0, Math.min(100, parseFloat(endOffset.toFixed(2))));
         
@@ -659,7 +686,7 @@ ${barHtml}
     marker.style.setProperty('--today-offset', `${todayOffset}%`);
 }
 
-// ===== OKR 浠〃鐩?=====
+// ===== OKR 模块 =====
 function renderOKRs() {
     const grid = document.getElementById('okrGrid');
 
@@ -689,7 +716,7 @@ function renderOKRs() {
         const circumference = 2 * Math.PI * 35;
         const offset = circumference - (progress / 100) * circumference;
 
-        // 鏍煎紡鍖栨棩鏈熸樉绀?
+        // 格式化日期显示
         const dateRange = okr.startDate && okr.endDate 
             ? `${formatDate(okr.startDate)} - ${formatDate(okr.endDate)}`
             : (okr.period || '');
@@ -929,12 +956,12 @@ function saveProject() {
 
     if (editingId) {
         // 编辑模式：查找并更新现有项目
-        // 浣跨敤瀛楃涓叉瘮杈冪‘淇?ID 鍖归厤
+        // 使用字符串比较确保 ID 匹配
         const editingIdStr = editingId.toString();
         const projectIndex = data.projects.findIndex(p => p.id.toString() === editingIdStr);
         
         if (projectIndex !== -1) {
-            // 鐩存帴鏇存柊鍘熼」鐩紝淇濈暀鍘熸湁鐨?id 鍜?color 灞炴€?
+            // 直接更新原项目，保留原有 id 与 color
             const existingProject = data.projects[projectIndex];
             data.projects[projectIndex] = {
                 id: existingProject.id,  // 保持原有 ID
@@ -948,7 +975,7 @@ function saveProject() {
             console.error('未找到要编辑的项目，ID:', editingId);
         }
     } else {
-        // 鏂板妯″紡锛氬垱寤烘柊椤圭洰骞跺垎閰嶉鑹?
+        // 新增模式：创建新项目并分配颜色
         const color = colors[data.projects.length % colors.length];
         data.projects.push({
             id: generateId(),
@@ -975,7 +1002,7 @@ function editProject(id) {
     // 重置表单
     document.querySelectorAll('#projectModal .form-input').forEach(input => input.value = '');
     
-    // 璁剧疆缂栬緫鐘舵€侊紙鍦ㄦ墦寮€寮圭獥涔嬪墠璁剧疆锛?
+    // 设置编辑状态（在打开弹窗之前设置）
     editingId = project.id;  // 使用项目中存储的原始 ID
     editingType = 'project';
     
@@ -1031,10 +1058,10 @@ function openOkrModal() {
     document.getElementById('okrModalTitle').textContent = '添加目标 (O)';
     document.getElementById('okrDeleteBtn').style.display = 'none';
     
-    // 娓呯┖KR缂栬緫鍣?
+    // 清空 KR 编辑器
     document.getElementById('krEditorContainer').innerHTML = '';
     
-    // 榛樿閫変腑绗竴涓鑹?
+    // 默认选中第一个颜色
     selectOkrColor('brown');
     
     // 添加日期变化监听
@@ -1162,7 +1189,7 @@ function sortKrEditors() {
     editors.sort((a, b) => {
         const weightA = getKrWeightInputValue(a.querySelector('.kr-weight-input'));
         const weightB = getKrWeightInputValue(b.querySelector('.kr-weight-input'));
-        return weightB - weightA; // 闄嶅簭鎺掑垪锛屾潈閲嶉珮鐨勫湪鍓?
+        return weightB - weightA; // 降序排列，权重高的在前
     });
     
     editors.forEach(editor => container.appendChild(editor));
@@ -1254,7 +1281,7 @@ function saveOkr() {
     if (editingId) {
         const index = data.okrs.findIndex(o => o.id == editingId);
         if (index !== -1) {
-            // 淇濈暀鍘熸湁KR鐨勫畬鎴愮姸鎬?
+            // 保留原有 KR 的完成状态
             const existingKrs = data.okrs[index].krs;
             okrData.krs = krs.map(kr => {
                 const existing = existingKrs.find(ek => ek.id === kr.id);
@@ -1273,7 +1300,7 @@ function saveOkr() {
 
     Storage.set('planner_okrs', data.okrs);
     renderOKRs();
-    renderTimeline(); // 鏇存柊椤圭洰鏃堕棿杞?
+    renderTimeline(); // 更新项目时间轴
     closeOkrModal();
 }
 
@@ -1296,13 +1323,13 @@ function editOkr(id) {
     // 设置颜色选择
     selectOkrColor(currentOkrColor);
     
-    // 娓呯┖骞堕噸鏂板～鍏匥R缂栬緫鍣?
+    // 清空并重新填充 KR 编辑器
     document.getElementById('krEditorContainer').innerHTML = '';
     if (okr.krs && okr.krs.length > 0) {
         okr.krs.forEach(kr => addKrEditor(kr));
     }
     
-    // 璁剧疆鏃ユ湡鐩戝惉骞惰绠楁寔缁ぉ鏁?
+    // 设置日期监听并计算持续天数
     setupOkrDateListeners();
 
     openModal('okrModal', true);
@@ -1325,8 +1352,19 @@ function toggleKr(okrId, krId) {
     const kr = okr.krs.find(k => k.id == krId);
     if (kr) {
         normalizeKr(kr);
+        const wasCompleted = kr.completed;
         kr.current = kr.completed ? 0 : kr.target;
         kr.completed = kr.current >= kr.target;
+        if (window.RewardPool && !wasCompleted && kr.completed) {
+            window.RewardPool.awardYellowStar('kr-' + okr.id + '-' + kr.id);
+            const allDone = okr.krs.every(k => (k.id === kr.id ? kr : k).current >= (k.id === kr.id ? kr : k).target);
+            if (allDone) window.RewardPool.awardColorfulStar('okr-' + okr.id);
+            if (typeof renderRewardPool === 'function') renderRewardPool();
+        } else if (window.RewardPool && wasCompleted && !kr.completed) {
+            window.RewardPool.revokeYellowStar('kr-' + okr.id + '-' + kr.id);
+            window.RewardPool.revokeColorfulStar('okr-' + okr.id);
+            if (typeof renderRewardPool === 'function') renderRewardPool();
+        }
         Storage.set('planner_okrs', data.okrs);
         renderOKRs();
     }
@@ -1376,8 +1414,19 @@ function adjustKrCount(okrId, krId, delta) {
     if (!kr) return;
 
     normalizeKr(kr);
+    const wasCompleted = kr.completed;
     kr.current = Math.min(kr.target, Math.max(0, kr.current + delta));
     kr.completed = kr.current >= kr.target;
+    if (window.RewardPool && !wasCompleted && kr.completed) {
+        window.RewardPool.awardYellowStar('kr-' + okr.id + '-' + kr.id);
+        const allDone = okr.krs.every(k => (k.id === kr.id ? kr : k).current >= (k.id === kr.id ? kr : k).target);
+        if (allDone) window.RewardPool.awardColorfulStar('okr-' + okr.id);
+        if (typeof renderRewardPool === 'function') renderRewardPool();
+    } else if (window.RewardPool && wasCompleted && !kr.completed) {
+        window.RewardPool.revokeYellowStar('kr-' + okr.id + '-' + kr.id);
+        window.RewardPool.revokeColorfulStar('okr-' + okr.id);
+        if (typeof renderRewardPool === 'function') renderRewardPool();
+    }
     Storage.set('planner_okrs', data.okrs);
     renderOKRs();
     renderTimeline();
@@ -1410,19 +1459,33 @@ function saveBook() {
     if (editingId) {
         const book = data.books.find(b => b.id == editingId);
         if (book) {
+            const wasFinished = (book.current || 0) >= (book.total || 1);
             book.title = title;
             book.author = author;
             book.current = Math.min(current, total);
             book.total = total;
+            const nowFinished = book.current >= book.total;
+            if (window.RewardPool && !wasFinished && nowFinished) {
+                window.RewardPool.awardColorfulStar('book-' + book.id);
+                if (typeof renderRewardPool === 'function') renderRewardPool();
+            } else if (window.RewardPool && wasFinished && !nowFinished) {
+                window.RewardPool.revokeColorfulStar('book-' + book.id);
+                if (typeof renderRewardPool === 'function') renderRewardPool();
+            }
         }
     } else {
-        data.books.push({
+        const newBook = {
             id: generateId(),
             title,
             author,
             current: Math.min(current, total),
             total
-        });
+        };
+        data.books.push(newBook);
+        if (window.RewardPool && newBook.current >= newBook.total) {
+            window.RewardPool.awardColorfulStar('book-' + newBook.id);
+            if (typeof renderRewardPool === 'function') renderRewardPool();
+        }
     }
 
     Storage.set('planner_books', data.books);
@@ -1452,7 +1515,16 @@ function editBookProgress(id) {
 
     const newProgress = prompt(`输入当前页数 (0-${book.total}):`, book.current);
     if (newProgress !== null) {
+        const wasFinished = (book.current || 0) >= (book.total || 1);
         book.current = Math.min(book.total, Math.max(0, parseInt(newProgress) || 0));
+        const nowFinished = book.current >= book.total;
+        if (window.RewardPool && !wasFinished && nowFinished) {
+            window.RewardPool.awardColorfulStar('book-' + book.id);
+            if (typeof renderRewardPool === 'function') renderRewardPool();
+        } else if (window.RewardPool && wasFinished && !nowFinished) {
+            window.RewardPool.revokeColorfulStar('book-' + book.id);
+            if (typeof renderRewardPool === 'function') renderRewardPool();
+        }
         Storage.set('planner_books', data.books);
         renderBooks();
     }
@@ -1467,7 +1539,7 @@ function deleteBook(id) {
     }
 }
 
-// ===== 鍒濆鍖?=====
+// ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
     updateDate();
     renderTimeline();
@@ -1483,7 +1555,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('storage', (event) => {
-        if (event.key && !event.key.startsWith('planner_')) return;
+        var pref = window.PlannerAuth && PlannerAuth.getPlannerDataKeyPrefix && PlannerAuth.getPlannerDataKeyPrefix();
+        if (event.key && pref && event.key.indexOf(pref) !== 0) return;
+        if (event.key && !pref && !event.key.startsWith('planner_')) return;
         reloadPlannerDataFromStorage();
         renderTimeline();
         renderOKRs();
