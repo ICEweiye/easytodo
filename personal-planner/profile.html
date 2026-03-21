@@ -21,6 +21,7 @@
     <script src="utf8-utils.js"></script>
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
+    <script src="reward-pool.js"></script>
     <style>
         .profile-shell {
             max-width: 920px;
@@ -101,7 +102,8 @@
 
         .profile-field textarea {
             min-height: 108px;
-            resize: vertical;
+            resize: none;
+            overflow-y: hidden;
         }
 
         .profile-field input:focus,
@@ -196,6 +198,68 @@
             padding-top: 0;
         }
 
+        #profileAppearanceSection {
+            --profile-appearance-select-w: 108px;
+        }
+
+        #profileAppearanceSection .privacy-toggle-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) var(--profile-appearance-select-w);
+            align-items: center;
+            column-gap: 12px;
+            justify-content: stretch;
+        }
+
+        #profileAppearanceSection .privacy-card:first-of-type .privacy-toggle-row {
+            padding: 14px 0;
+        }
+
+        #profileAppearanceSection .privacy-toggle-row > label {
+            justify-self: end;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        #profileAppearanceSection .profile-appearance-select {
+            width: 100%;
+            min-width: 0;
+            max-width: var(--profile-appearance-select-w);
+            justify-self: end;
+            box-sizing: border-box;
+            padding: 5px 26px 5px 8px;
+            font-size: 12px;
+            line-height: 1.35;
+            text-align: left;
+            text-align-last: left;
+        }
+
+        #profileAppearanceSection .profile-reward-ratio-input {
+            width: 100%;
+            min-width: 0;
+            max-width: var(--profile-appearance-select-w);
+            justify-self: end;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            font-size: 13px;
+            border: 1px solid var(--warm-gray-200);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--warm-gray-900);
+        }
+
+        #profileAppearanceSection .profile-reward-ratio-input:focus {
+            outline: none;
+            border-color: #ad8a67;
+            box-shadow: 0 0 0 3px rgba(173, 138, 103, 0.18);
+        }
+
+        #profileAppearanceSection .profile-reward-settings-hint {
+            font-size: 12px;
+            color: var(--warm-gray-500);
+            margin: 0 0 14px 0;
+            line-height: 1.5;
+        }
+
         .privacy-toggle-text {
             display: grid;
             gap: 3px;
@@ -224,6 +288,10 @@
 
         .privacy-status.is-success {
             color: #2f7d3e;
+        }
+
+        #profileAppearanceSection .profile-appearance-status-sink {
+            display: none !important;
         }
 
         .profile-avatar-menu-wrap {
@@ -502,67 +570,26 @@
                 <section class="module profile-module" id="profileAppearanceSection">
                     <div class="profile-header">
                         <div class="profile-title-group">
-                            <h2>界面外观</h2>
-                            <p>自定义侧边栏与启动页，让界面更符合使用习惯。</p>
+                            <h2>个性化设置</h2>
                         </div>
                     </div>
 
                     <div class="privacy-shell">
                         <article class="privacy-card">
-                            <h3>语言与显示</h3>
-                            <p>语言、字号及内容过长时的展示方式。</p>
-                            <div class="privacy-toggle-row">
-                                <div class="privacy-toggle-text">
-                                    <strong>语言</strong>
-                                    <span>界面显示语言。</span>
-                                </div>
-                                <select class="form-input" id="appearanceLanguage" style="min-width: 120px;">
-                                    <option value="zh-CN">简体中文</option>
-                                    <option value="en">English</option>
-                                </select>
-                            </div>
-                            <div class="privacy-toggle-row">
-                                <div class="privacy-toggle-text">
-                                    <strong>字号</strong>
-                                    <span>全局文字大小。</span>
-                                </div>
-                                <select class="form-input" id="appearanceFontSize" style="min-width: 120px;">
-                                    <option value="small">小</option>
-                                    <option value="standard" selected>标准</option>
-                                    <option value="medium">中</option>
-                                    <option value="large">大</option>
-                                    <option value="xlarge">加大</option>
-                                </select>
-                            </div>
+                            <h3>布局</h3>
                             <div class="privacy-toggle-row">
                                 <div class="privacy-toggle-text">
                                     <strong>内容过长折叠</strong>
-                                    <span>标题、卡片等内容过长时的展示方式。</span>
-                                </div>
-                                <select class="form-input" id="appearanceContentOverflow" style="min-width: 120px;">
-                                    <option value="ellipsis">单行省略</option>
-                                    <option value="wrap">多行换行</option>
-                                </select>
-                            </div>
-                        </article>
-                        <article class="privacy-card">
-                            <h3>布局与导航</h3>
-                            <p>调整侧边栏默认状态与登录后的起始页面。</p>
-                            <div class="privacy-toggle-row">
-                                <div class="privacy-toggle-text">
-                                    <strong>默认折叠左侧导航栏</strong>
-                                    <span>勾选后，进入各页面时侧边栏默认收起，可点击展开。</span>
                                 </div>
                                 <label>
-                                    <input type="checkbox" id="appearanceSidebarCollapsed">
+                                    <input type="checkbox" id="appearanceFoldLongContent">
                                 </label>
                             </div>
                             <div class="privacy-toggle-row">
                                 <div class="privacy-toggle-text">
                                     <strong>启动页</strong>
-                                    <span>登录后或从主页访问时，将跳转到的默认页面。</span>
                                 </div>
-                                <select class="form-input" id="appearanceStartPage" style="min-width: 140px;">
+                                <select class="form-input profile-appearance-select" id="appearanceStartPage">
                                     <option value="index.html">主页</option>
                                     <option value="nav.html">导航</option>
                                     <option value="stats.html">统计</option>
@@ -570,10 +597,33 @@
                                     <option value="archive.html">归档</option>
                                 </select>
                             </div>
-                            <div class="profile-actions" style="margin-top: 14px;">
-                                <button class="btn btn-primary" type="button" id="appearanceSaveBtn">保存设置</button>
+                            <div class="privacy-status profile-appearance-status-sink" id="appearanceStatus" aria-live="polite" aria-hidden="true"></div>
+                        </article>
+                        <article class="privacy-card">
+                            <h3>积分设置</h3>
+                            <p class="profile-reward-settings-hint">设置各类黄星兑换炫彩星的比例（几颗黄星 = 1 颗炫彩）。修改后在主页积分区立即生效。</p>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>事项</strong>
+                                    <span>事项黄星 / 炫彩</span>
+                                </div>
+                                <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioTodo" min="1" value="5" inputmode="numeric" aria-label="事项黄星兑换比例">
                             </div>
-                            <div class="privacy-status" id="appearanceStatus" aria-live="polite"></div>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>关键结果</strong>
+                                    <span>KR 黄星 / 炫彩</span>
+                                </div>
+                                <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioKr" min="1" value="5" inputmode="numeric" aria-label="KR 黄星兑换比例">
+                            </div>
+                            <div class="privacy-toggle-row">
+                                <div class="privacy-toggle-text">
+                                    <strong>复盘</strong>
+                                    <span>复盘黄星 / 炫彩</span>
+                                </div>
+                                <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioReview" min="1" value="5" inputmode="numeric" aria-label="复盘黄星兑换比例">
+                            </div>
+                            <div class="privacy-status" id="appearanceRewardRatiosStatus" aria-live="polite"></div>
                         </article>
                     </div>
                 </section>
@@ -778,6 +828,11 @@
                     phoneEl.value = normalizeText(safeProfile.phone);
                     emailEl.value = normalizeText(safeProfile.email);
                     bioEl.value = String(safeProfile.bio || '').trim();
+                    if (window.PlannerBackup && typeof window.PlannerBackup.autosizeTextareasInRoot === 'function') {
+                        queueMicrotask(function () {
+                            window.PlannerBackup.autosizeTextareasInRoot(bioEl);
+                        });
+                    }
 
                     var mark = getAvatarSeed(account, nicknameEl.value);
                     avatarPreviewEl.textContent = mark;
@@ -1309,9 +1364,7 @@
                     showPanel('userinfo');
                 }
 
-                var appearanceSidebarEl = document.getElementById('appearanceSidebarCollapsed');
                 var appearanceStartPageEl = document.getElementById('appearanceStartPage');
-                var appearanceSaveBtn = document.getElementById('appearanceSaveBtn');
                 var appearanceStatusEl = document.getElementById('appearanceStatus');
 
                 function setAppearanceStatus(msg, kind) {
@@ -1321,78 +1374,64 @@
                     if (kind) appearanceStatusEl.classList.add(kind);
                 }
 
-                var appearanceLanguageEl = document.getElementById('appearanceLanguage');
-                var appearanceFontSizeEl = document.getElementById('appearanceFontSize');
-                var appearanceContentOverflowEl = document.getElementById('appearanceContentOverflow');
+                var appearanceFoldLongContentEl = document.getElementById('appearanceFoldLongContent');
+                var appearanceRewardRatioTodoEl = document.getElementById('appearanceRewardRatioTodo');
+                var appearanceRewardRatioKrEl = document.getElementById('appearanceRewardRatioKr');
+                var appearanceRewardRatioReviewEl = document.getElementById('appearanceRewardRatioReview');
+                var appearanceRewardRatiosStatusEl = document.getElementById('appearanceRewardRatiosStatus');
+
+                function setRewardRatiosStatus(msg, kind) {
+                    if (!appearanceRewardRatiosStatusEl) return;
+                    appearanceRewardRatiosStatusEl.textContent = msg || '';
+                    appearanceRewardRatiosStatusEl.classList.remove('is-error', 'is-success');
+                    if (kind) appearanceRewardRatiosStatusEl.classList.add(kind);
+                }
+
+                function loadRewardRatioPrefs() {
+                    if (!window.RewardPool) return;
+                    var pool = window.RewardPool.getPool();
+                    if (appearanceRewardRatioTodoEl) appearanceRewardRatioTodoEl.value = String(pool.ratioTodo || 5);
+                    if (appearanceRewardRatioKrEl) appearanceRewardRatioKrEl.value = String(pool.ratioKr || 5);
+                    if (appearanceRewardRatioReviewEl) appearanceRewardRatioReviewEl.value = String(pool.ratioReview || 5);
+                }
+
+                function saveRewardRatioPrefs() {
+                    if (!window.RewardPool) {
+                        setRewardRatiosStatus('积分数据暂不可用。', 'is-error');
+                        return;
+                    }
+                    window.RewardPool.updateRatios({
+                        todo: appearanceRewardRatioTodoEl && appearanceRewardRatioTodoEl.value,
+                        kr: appearanceRewardRatioKrEl && appearanceRewardRatioKrEl.value,
+                        review: appearanceRewardRatioReviewEl && appearanceRewardRatioReviewEl.value
+                    });
+                    setRewardRatiosStatus('积分兑换比例已保存。', 'is-success');
+                }
 
                 function loadAppearancePrefs() {
                     if (window.PlannerBackup) {
-                        if (appearanceSidebarEl) appearanceSidebarEl.checked = window.PlannerBackup.getSidebarCollapsedPreference();
                         if (appearanceStartPageEl) appearanceStartPageEl.value = window.PlannerBackup.getStartPage();
-                        if (appearanceLanguageEl) appearanceLanguageEl.value = window.PlannerBackup.getLanguagePreference();
-                        if (appearanceFontSizeEl) appearanceFontSizeEl.value = window.PlannerBackup.getFontSizePreference();
-                        if (appearanceContentOverflowEl) appearanceContentOverflowEl.value = window.PlannerBackup.getContentOverflowPreference();
+                        if (appearanceFoldLongContentEl) appearanceFoldLongContentEl.checked = window.PlannerBackup.getFoldLongContentEnabled();
                     }
+                    loadRewardRatioPrefs();
                 }
 
-                function saveAppearancePrefs() {
-                    if (!window.PlannerBackup) {
-                        setAppearanceStatus('外观设置暂不可用。', 'is-error');
-                        return;
-                    }
-                    var collapsed = !!(appearanceSidebarEl && appearanceSidebarEl.checked);
-                    var startPage = appearanceStartPageEl ? appearanceStartPageEl.value : 'index.html';
-                    window.PlannerBackup.applySidebarCollapsedPreference(collapsed);
-                    window.PlannerBackup.setStartPage(startPage);
-                    if (appearanceLanguageEl) window.PlannerBackup.setLanguagePreference(appearanceLanguageEl.value);
-                    if (appearanceFontSizeEl) {
-                        window.PlannerBackup.setFontSizePreference(appearanceFontSizeEl.value);
-                        window.PlannerBackup.applyFontSizePreference();
-                    }
-                    if (appearanceContentOverflowEl) {
-                        window.PlannerBackup.setContentOverflowPreference(appearanceContentOverflowEl.value);
-                        window.PlannerBackup.applyAppearancePrefs();
-                    }
-                    setAppearanceStatus('界面外观已保存。', 'is-success');
-                }
-
-                if (appearanceSidebarEl) loadAppearancePrefs();
-                if (appearanceSaveBtn) {
-                    appearanceSaveBtn.addEventListener('click', function () {
-                        saveAppearancePrefs();
-                    });
-                }
-                appearanceSidebarEl && appearanceSidebarEl.addEventListener('change', function () {
-                    if (window.PlannerBackup) {
-                        window.PlannerBackup.applySidebarCollapsedPreference(appearanceSidebarEl.checked);
-                        setAppearanceStatus('侧边栏设置已生效。', 'is-success');
-                    }
-                });
+                loadAppearancePrefs();
                 appearanceStartPageEl && appearanceStartPageEl.addEventListener('change', function () {
                     if (window.PlannerBackup) {
                         window.PlannerBackup.setStartPage(appearanceStartPageEl.value);
                         setAppearanceStatus('启动页已保存，下次进入将生效。', 'is-success');
                     }
                 });
-                appearanceFontSizeEl && appearanceFontSizeEl.addEventListener('change', function () {
+                appearanceFoldLongContentEl && appearanceFoldLongContentEl.addEventListener('change', function () {
                     if (window.PlannerBackup) {
-                        window.PlannerBackup.setFontSizePreference(appearanceFontSizeEl.value);
-                        window.PlannerBackup.applyFontSizePreference();
-                        setAppearanceStatus('字号已生效。', 'is-success');
-                    }
-                });
-                appearanceContentOverflowEl && appearanceContentOverflowEl.addEventListener('change', function () {
-                    if (window.PlannerBackup) {
-                        window.PlannerBackup.setContentOverflowPreference(appearanceContentOverflowEl.value);
-                        window.PlannerBackup.applyAppearancePrefs();
+                        window.PlannerBackup.setFoldLongContentEnabled(appearanceFoldLongContentEl.checked);
+                        window.PlannerBackup.applyFoldLongContentPreference();
                         setAppearanceStatus('内容折叠设置已生效。', 'is-success');
                     }
                 });
-                appearanceLanguageEl && appearanceLanguageEl.addEventListener('change', function () {
-                    if (window.PlannerBackup) {
-                        window.PlannerBackup.setLanguagePreference(appearanceLanguageEl.value);
-                        setAppearanceStatus('语言设置已保存，部分页面需刷新后生效。', 'is-success');
-                    }
+                [appearanceRewardRatioTodoEl, appearanceRewardRatioKrEl, appearanceRewardRatioReviewEl].forEach(function (el) {
+                    if (el) el.addEventListener('change', saveRewardRatioPrefs);
                 });
             });
         })();

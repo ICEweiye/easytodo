@@ -1500,7 +1500,11 @@
 
             syncReviewCategorySelectStyle();
 
-            document.getElementById('reviewModal').classList.add('active');
+            const reviewModalEl = document.getElementById('reviewModal');
+            reviewModalEl.classList.add('active');
+            if (window.PlannerBackup && typeof window.PlannerBackup.scheduleOverlayTextareaAutosize === 'function') {
+                window.PlannerBackup.scheduleOverlayTextareaAutosize(reviewModalEl);
+            }
         }
 
         function closeReviewModal() {
@@ -1827,6 +1831,13 @@
             `;
         }
 
+        function reviewEntryCombinedUserPlainText(entry) {
+            return ['summary', 'keep', 'improve', 'stop', 'tasks']
+                .map((k) => normalizeInlineText(entry[k]))
+                .filter(Boolean)
+                .join('\n');
+        }
+
         function getScoreToneKey(score) {
             const scoreNum = Number.parseFloat(score);
             const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
@@ -1863,7 +1874,17 @@
                 const safeEntryId = escapeJsString(entry.id);
                 const safeEntryIdAttr = escapeHtml(String(entry.id || ''));
                 const summaryHtml = sectionHtml('总结', entry.summary);
-                const todayTaskText = escapeHtml(normalizeInlineText(entry.tasks) || '今日事项');
+                const tasksPlain = normalizeInlineText(entry.tasks) || '';
+                const todayTaskText = escapeHtml(tasksPlain || '今日事项');
+                const combinedUser = reviewEntryCombinedUserPlainText(entry);
+                const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
+                    ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
+                    : '';
+                const reviewCompactInnerClass = reviewBodyFold ? `review-compact-inner ${reviewBodyFold}` : 'review-compact-inner';
+                const taskFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
+                    ? PlannerBackup.userContentFoldClass(tasksPlain)
+                    : '';
+                const todayTaskClass = taskFold ? `review-today-task-text ${taskFold}` : 'review-today-task-text';
                 const scoreToneClass = getScoreToneClass(entry.score);
                 const cheerText = escapeHtml(getScoreCheerText(entry.score));
                 const intensity = normalizeEmotionIntensity(entry.emotionIntensity || entry.energy) || '中';
@@ -1886,6 +1907,20 @@
                     sectionPreviewHtml('🚫 停止', entry.stop)
                 ].filter(Boolean).join('');
                 const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+                const compactBodyHtml = reviewBodyFold
+                    ? `<div class="review-compact-wrap">
+                        <div class="${reviewCompactInnerClass}">
+                        ${summaryHtml}
+                        ${dividerHtml}
+                        ${kissHtml}
+                        </div>
+                        <button type="button" class="review-card-expand-btn" aria-expanded="false" aria-label="展开或收起复盘正文" onclick="handleReviewCardExpandClick(this, event)"><span class="review-card-expand-label">展开</span><span class="review-card-expand-icon" aria-hidden="true">▼</span></button>
+                    </div>`
+                    : `<div class="${reviewCompactInnerClass}">
+                        ${summaryHtml}
+                        ${dividerHtml}
+                        ${kissHtml}
+                        </div>`;
                 return `
                 <article class="review-card review-record-card" data-review-id="${safeEntryIdAttr}" onclick="openReviewModal('${safeEntryId}')">
                     <div class="review-header">
@@ -1895,14 +1930,12 @@
                                 <span class="review-score-circle ${scoreToneClass}" title="评分 ${entry.score}/10">${entry.score}</span>
                                 <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
                             </div>
-                            <span class="review-today-note"><strong>今天</strong><span class="review-today-task-text">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                            <span class="review-today-note"><strong>今天</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
                         </div>
                         <button class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
                     </div>
                     <div class="review-content review-content-compact">
-                        ${summaryHtml}
-                        ${dividerHtml}
-                        ${kissHtml}
+                        ${compactBodyHtml}
                     </div>
                 </article>
             `;

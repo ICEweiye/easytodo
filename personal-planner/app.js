@@ -27,6 +27,14 @@ const Storage = {
     }
 };
 
+function plannerUserContentFoldClass(rawText) {
+    if (window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function') {
+        const c = PlannerBackup.userContentFoldClass(rawText);
+        return c ? ` ${c}` : '';
+    }
+    return '';
+}
+
 function clonePlannerValue(value) {
     return JSON.parse(JSON.stringify(value));
 }
@@ -639,7 +647,7 @@ function renderTimeline() {
         return `
             <div class="timeline-row">
                 <div class="project-info">
-                    <div class="project-name" onclick="${item.isOkr ? `editOkr('${safeId}')` : `editProject('${safeId}')`}">
+                    <div class="project-name${plannerUserContentFoldClass(item.name)}" onclick="${item.isOkr ? `editOkr('${safeId}')` : `editProject('${safeId}')`}">
                         ${safeName}
                     </div>
                     <div class="project-date">${safeDateText}</div>
@@ -760,7 +768,7 @@ function renderOKRs() {
                 <button class="okr-delete" onclick="deleteOkr('${safeOkrId}')">×</button>
                 <div class="okr-header">
                     <div class="okr-header-main">
-                        <div class="okr-title" onclick="editOkr('${safeOkrId}')">${safeTitle}</div>
+                        <div class="okr-title${plannerUserContentFoldClass(okr.title)}" onclick="editOkr('${safeOkrId}')">${safeTitle}</div>
                         <div class="okr-period">${safeDateRange}</div>
                         ${safeRemainingHtml ? `<div class="okr-remaining ${remainingClass}">${safeRemainingHtml}</div>` : ''}
                     </div>
@@ -783,7 +791,7 @@ function renderOKRs() {
                         return `
                         <div class="kr-item ${isCompleted ? 'kr-completed' : ''}">
                             <div class="kr-main">
-                                <span class="kr-text ${isCompleted ? 'completed' : ''}"
+                                <span class="kr-text${isCompleted ? ' completed' : ''}${plannerUserContentFoldClass(kr.text)}"
                                       onclick="editKr('${safeOkrId}', '${safeKrId}')" title="点击编辑">${safeKrText}</span>
                                 <div class="kr-meta">
                                     <span class="kr-weight-badge">权重 ${getKrWeightValue(kr)}%</span>
@@ -888,8 +896,8 @@ function renderBooks() {
         return `
             <div class="reading-item">
                 <div class="book-info">
-                    <div class="book-title-row">
-                        <div class="book-title${finishedClass}" title="${safeTitle}" onclick="editBook('${safeBookId}')">${safeTitle}</div>
+                        <div class="book-title-row">
+                        <div class="book-title${finishedClass}${plannerUserContentFoldClass(displayTitle)}" title="${safeTitle}" onclick="editBook('${safeBookId}')">${safeTitle}</div>
                         <span class="book-status-pill status-pill-${status}">${safeStatusText}</span>
                     </div>
                     <div class="book-meta">${safeAuthor}</div>
@@ -914,7 +922,16 @@ let editingType = null;
 let okrDateListenersBound = false;
 
 function openModal(id, preserveEditing = false) {
-    document.getElementById(id).classList.add('active');
+    const overlay = document.getElementById(id);
+    if (!overlay) return;
+    overlay.classList.add('active');
+    if (
+        window.PlannerBackup &&
+        typeof window.PlannerBackup.scheduleOverlayTextareaAutosize === 'function' &&
+        overlay.classList.contains('modal-overlay')
+    ) {
+        window.PlannerBackup.scheduleOverlayTextareaAutosize(overlay);
+    }
     if (!preserveEditing) {
         editingId = null;
         editingType = null;

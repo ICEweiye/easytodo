@@ -71,7 +71,7 @@
                 <!-- 周财务统计 -->
                 <section class="module" id="financeModule">
                     <div class="module-header">
-                        <h2 class="module-title">财务统计</h2>
+                        <h2 class="module-title">财务统计 <span class="finance-period-label" id="financePeriodLabel" aria-hidden="true"></span></h2>
                         <div class="finance-header-actions">
                             <div class="finance-switch" id="financeSwitch">
                                 <span class="finance-switch-indicator" aria-hidden="true"></span>
@@ -79,6 +79,10 @@
                                 <button class="finance-switch-btn" data-period="month" onclick="switchExpensePeriod('month')">月度</button>
                             </div>
                             <button class="finance-report-btn" type="button" onclick="showFinanceReport()" aria-label="查看财报">财报</button>
+                            <button class="finance-eye-btn" type="button" id="financeEyeBtn" onclick="toggleFinanceDataVisible()" aria-label="切换数据可见" title="数据可见">
+                                <svg class="finance-eye-icon finance-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                <svg class="finance-eye-icon finance-eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>
+                            </button>
                         </div>
                     </div>
                     <div class="expense-entry" id="financeEntry">
@@ -117,14 +121,15 @@
                     </div>
                     <div class="expense-entry reconcile-entry" id="reconcileEntry" hidden>
                         <div class="reconcile-entry-row">
-                            <input type="text" class="form-input reconcile-display" id="reconcileStatAmount" value="统计金额 ¥0" readonly>
-                            <input type="text" inputmode="decimal" class="form-input" id="reconcileActualInput" step="0.01" placeholder="实际金额">
-                            <input type="text" class="form-input reconcile-display" id="reconcileDiffAmount" value="平账差额 ¥0" readonly>
-                            <button class="btn btn-secondary" type="button" onclick="saveReconcileActual()">平账</button>
+                            <input type="text" class="form-input reconcile-display" id="reconcileStatAmount" value="账面流动资产 ¥0" readonly>
+                            <input type="text" inputmode="decimal" class="form-input" id="reconcileActualInput" step="0.01" placeholder="实际流动资产">
+                            <input type="text" class="form-input reconcile-display" id="reconcileDiffAmount" value="校对差额 ¥0" readonly>
+                            <button class="btn btn-secondary" type="button" onclick="saveReconcileActual()">校对</button>
+                            <button class="btn btn-secondary" type="button" onclick="clearReconcileForCurrentMonth()" aria-label="撤销当月校对">撤销</button>
                         </div>
                     </div>
                     <div class="finance-assets-row">
-                        <div class="finance-summary-item finance-balance-item" id="totalAssetsCard" onclick="startTotalAssetsEdit()">
+                        <div class="finance-summary-item finance-balance-item" id="totalAssetsCard">
                             <div class="finance-summary-left">
                                 <span class="finance-summary-icon is-assets" aria-hidden="true">
                                     <svg viewBox="0 0 24 24">
@@ -136,30 +141,29 @@
                                 </span>
                                 <div class="finance-summary-main">
                                     <div class="finance-summary-label">总资产</div>
-                                    <div class="finance-balance-stack">
-                                        <div class="finance-balance-main-value assets" id="totalAssetsDisplay">¥0</div>
-                                        <div class="finance-balance-subline finance-summary-sub-value">
-                                            <div class="finance-balance-value-wrap assets">
-                                                <span class="finance-balance-currency">¥</span>
-                                                <input type="text" inputmode="decimal" class="form-input finance-balance-input assets" id="totalAssetsInput" step="0.01" placeholder="0">
-                                                <button
-                                                    type="button"
-                                                    class="finance-category-icon-btn finance-balance-category-icon-btn"
-                                                    id="totalAssetsCategoryBtn"
-                                                    onclick="toggleTotalAssetsCategory(event)"
-                                                    aria-label="切换资产分类"
-                                                    title="流动资产"
-                                                >
-                                                    <span class="finance-category-icon-text" id="totalAssetsCategoryIcon">流</span>
-                                                </button>
-                                                <input type="hidden" id="totalAssetsCategory" value="cash_deposit">
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div class="finance-balance-main-value assets" id="totalAssetsDisplay">¥0</div>
+                                </div>
+                            </div>
+                            <div class="finance-balance-category-values">
+                                <div class="finance-balance-value-row balance-editable-row" data-card="assets" data-category="cash_deposit" onclick="startBalanceCategoryEdit('cash_deposit','assets')">
+                                    <span class="finance-balance-amount-wrap">
+                                        <span class="finance-balance-currency">¥</span>
+                                        <span class="finance-balance-value-text assets" id="cashDepositDisplay">0</span>
+                                        <input type="text" inputmode="decimal" class="form-input finance-balance-input finance-balance-category-input" id="cashDepositInput" data-card="assets" data-category="cash_deposit" step="0.01" placeholder="0">
+                                    </span>
+                                    <span class="finance-category-icon-badge" data-category="cash_deposit" title="流动资产">流</span>
+                                </div>
+                                <div class="finance-balance-value-row balance-editable-row" data-card="assets" data-category="physical_asset" onclick="startBalanceCategoryEdit('physical_asset','assets')">
+                                    <span class="finance-balance-amount-wrap">
+                                        <span class="finance-balance-currency">¥</span>
+                                        <span class="finance-balance-value-text assets" id="physicalAssetDisplay">0</span>
+                                        <input type="text" inputmode="decimal" class="form-input finance-balance-input finance-balance-category-input" id="physicalAssetInput" data-card="assets" data-category="physical_asset" step="0.01" placeholder="0">
+                                    </span>
+                                    <span class="finance-category-icon-badge" data-category="physical_asset" title="实物资产">实</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="finance-summary-item finance-balance-item" id="totalLiabilitiesCard" onclick="startTotalLiabilitiesEdit()">
+                        <div class="finance-summary-item finance-balance-item" id="totalLiabilitiesCard">
                             <div class="finance-summary-left">
                                 <span class="finance-summary-icon is-liabilities" aria-hidden="true">
                                     <svg viewBox="0 0 24 24">
@@ -171,32 +175,31 @@
                                 </span>
                                 <div class="finance-summary-main">
                                     <div class="finance-summary-label">总负债</div>
-                                    <div class="finance-balance-stack">
-                                        <div class="finance-balance-main-value liabilities" id="totalLiabilitiesDisplay">¥0</div>
-                                        <div class="finance-balance-subline finance-summary-sub-value">
-                                            <div class="finance-balance-value-wrap liabilities">
-                                                <span class="finance-balance-currency">¥</span>
-                                                <input type="text" inputmode="decimal" class="form-input finance-balance-input liabilities" id="totalLiabilitiesInput" step="0.01" placeholder="0">
-                                                <button
-                                                    type="button"
-                                                    class="finance-category-icon-btn finance-balance-category-icon-btn"
-                                                    id="totalLiabilitiesCategoryBtn"
-                                                    onclick="toggleTotalLiabilitiesCategory(event)"
-                                                    aria-label="切换负债分类"
-                                                    title="短期负债"
-                                                >
-                                                    <span class="finance-category-icon-text" id="totalLiabilitiesCategoryIcon">短</span>
-                                                </button>
-                                                <input type="hidden" id="totalLiabilitiesCategory" value="short_term_liability">
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div class="finance-balance-main-value liabilities" id="totalLiabilitiesDisplay">¥0</div>
+                                </div>
+                            </div>
+                            <div class="finance-balance-category-values">
+                                <div class="finance-balance-value-row balance-editable-row" data-card="liabilities" data-category="short_term_liability" onclick="startBalanceCategoryEdit('short_term_liability','liabilities')">
+                                    <span class="finance-balance-amount-wrap">
+                                        <span class="finance-balance-currency">¥</span>
+                                        <span class="finance-balance-value-text liabilities" id="shortTermLiabilityDisplay">0</span>
+                                        <input type="text" inputmode="decimal" class="form-input finance-balance-input finance-balance-category-input" id="shortTermLiabilityInput" data-card="liabilities" data-category="short_term_liability" step="0.01" placeholder="0">
+                                    </span>
+                                    <span class="finance-category-icon-badge" data-category="short_term_liability" title="短期负债">短</span>
+                                </div>
+                                <div class="finance-balance-value-row balance-editable-row" data-card="liabilities" data-category="long_term_liability" onclick="startBalanceCategoryEdit('long_term_liability','liabilities')">
+                                    <span class="finance-balance-amount-wrap">
+                                        <span class="finance-balance-currency">¥</span>
+                                        <span class="finance-balance-value-text liabilities" id="longTermLiabilityDisplay">0</span>
+                                        <input type="text" inputmode="decimal" class="form-input finance-balance-input finance-balance-category-input" id="longTermLiabilityInput" data-card="liabilities" data-category="long_term_liability" step="0.01" placeholder="0">
+                                    </span>
+                                    <span class="finance-category-icon-badge" data-category="long_term_liability" title="长期负债">长</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="finance-summary">
-                        <div class="finance-summary-item">
+                        <div class="finance-summary-item finance-balance-item is-expense-card">
                             <div class="finance-summary-left">
                                 <span class="finance-summary-icon is-expense" aria-hidden="true">
                                     <svg viewBox="0 0 24 24">
@@ -209,15 +212,21 @@
                                 </span>
                                 <div class="finance-summary-main">
                                     <div class="finance-summary-label">总支出</div>
-                                    <div class="finance-summary-value expense" id="expenseTotal">¥0</div>
+                                    <div class="finance-balance-main-value expense" id="expenseTotal">¥0</div>
                                 </div>
                             </div>
-                            <div class="finance-trends">
-                                <div class="finance-trend-line"><span class="finance-trend-label">同比</span><span class="finance-trend-value" id="expenseYoY">--</span></div>
-                                <div class="finance-trend-line"><span class="finance-trend-label">环比</span><span class="finance-trend-value" id="expenseMoM">--</span></div>
+                            <div class="finance-balance-category-values">
+                                <div class="finance-balance-value-row">
+                                    <span class="finance-balance-value-text expense" id="fixedExpenseDisplay">¥0</span>
+                                    <span class="finance-category-icon-badge" data-category="fixed_expense" title="固定支出">固</span>
+                                </div>
+                                <div class="finance-balance-value-row">
+                                    <span class="finance-balance-value-text expense" id="variableExpenseDisplay">¥0</span>
+                                    <span class="finance-category-icon-badge" data-category="variable_expense" title="可变支出">变</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="finance-summary-item">
+                        <div class="finance-summary-item finance-balance-item is-income-card">
                             <div class="finance-summary-left">
                                 <span class="finance-summary-icon is-income" aria-hidden="true">
                                     <svg viewBox="0 0 24 24">
@@ -227,12 +236,18 @@
                                 </span>
                                 <div class="finance-summary-main">
                                     <div class="finance-summary-label">总收入</div>
-                                    <div class="finance-summary-value income" id="incomeTotal">¥0</div>
+                                    <div class="finance-balance-main-value income" id="incomeTotal">¥0</div>
                                 </div>
                             </div>
-                            <div class="finance-trends">
-                                <div class="finance-trend-line"><span class="finance-trend-label">同比</span><span class="finance-trend-value" id="incomeYoY">--</span></div>
-                                <div class="finance-trend-line"><span class="finance-trend-label">环比</span><span class="finance-trend-value" id="incomeMoM">--</span></div>
+                            <div class="finance-balance-category-values">
+                                <div class="finance-balance-value-row">
+                                    <span class="finance-balance-value-text income" id="salaryIncomeDisplay">¥0</span>
+                                    <span class="finance-category-icon-badge" data-category="salary_income" title="工资收入">工</span>
+                                </div>
+                                <div class="finance-balance-value-row">
+                                    <span class="finance-balance-value-text income" id="otherIncomeDisplay">¥0</span>
+                                    <span class="finance-category-icon-badge" data-category="other_income" title="其他收入">其</span>
+                                </div>
                             </div>
                         </div>
                         <div class="finance-summary-item" id="investmentReturnCard" onclick="startInvestmentReturnEdit()">
@@ -249,8 +264,10 @@
                                         <span id="investmentTotal">¥0</span>
                                         <span class="finance-balance-subline finance-summary-sub-value na" id="investmentReturnWrap">
                                             <span class="finance-summary-sub-prefix">收益</span>
-                                            <span class="finance-balance-currency">¥</span>
-                                            <input type="text" inputmode="decimal" class="form-input finance-balance-input investment-return" id="investmentReturnInput" step="0.01" placeholder="--">
+                                            <span class="finance-balance-amount-wrap">
+                                                <span class="finance-balance-currency">¥</span>
+                                                <input type="text" inputmode="decimal" class="form-input finance-balance-input investment-return" id="investmentReturnInput" step="0.01" placeholder="--">
+                                            </span>
                                         </span>
                                     </div>
                                 </div>
@@ -275,10 +292,6 @@
                                     <div class="finance-summary-label">净结余</div>
                                     <div class="finance-summary-value" id="netBalance">¥0</div>
                                 </div>
-                            </div>
-                            <div class="finance-trends">
-                                <div class="finance-trend-line"><span class="finance-trend-label">同比</span><span class="finance-trend-value" id="balanceYoY">--</span></div>
-                                <div class="finance-trend-line"><span class="finance-trend-label">环比</span><span class="finance-trend-value" id="balanceMoM">--</span></div>
                             </div>
                         </div>
                     </div>
@@ -473,11 +486,6 @@
             applyCategoryIcon('weeklyIncomeCategory', 'weeklyIncomeCategoryBtn', 'weeklyIncomeCategoryIcon', INCOME_CATEGORY_KEYS);
         }
 
-        function syncBalanceCategoryIcons() {
-            applyCategoryIcon('totalAssetsCategory', 'totalAssetsCategoryBtn', 'totalAssetsCategoryIcon', ASSET_CATEGORY_KEYS);
-            applyCategoryIcon('totalLiabilitiesCategory', 'totalLiabilitiesCategoryBtn', 'totalLiabilitiesCategoryIcon', LIABILITY_CATEGORY_KEYS);
-        }
-
         function toggleWeeklyExpenseCategory() {
             rotateCategory('weeklyExpenseCategory', EXPENSE_CATEGORY_KEYS);
             syncWeeklyCategoryIcons();
@@ -488,23 +496,6 @@
             syncWeeklyCategoryIcons();
         }
 
-        function toggleTotalAssetsCategory(event) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault();
-            }
-            rotateCategory('totalAssetsCategory', ASSET_CATEGORY_KEYS);
-            renderTotalAssets();
-        }
-
-        function toggleTotalLiabilitiesCategory(event) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault();
-            }
-            rotateCategory('totalLiabilitiesCategory', LIABILITY_CATEGORY_KEYS);
-            renderTotalLiabilities();
-        }
 
         // 更新日期
         function updateDate() {
@@ -570,6 +561,45 @@
                 return PlannerAuth.scopedStorageKey(logicalKey);
             }
             return logicalKey;
+        }
+
+        const FINANCE_DATA_MASK = '***';
+        function getFinanceDataVisible() {
+            const v = localStorage.getItem(plannerStatsScopedKey('planner_finance_data_visible'));
+            if (v === '0' || v === 'false') return false;
+            return true;
+        }
+        function setFinanceDataVisible(visible) {
+            localStorage.setItem(plannerStatsScopedKey('planner_finance_data_visible'), visible ? '1' : '0');
+        }
+        function formatFinanceDisplay(num) {
+            return getFinanceDataVisible() ? formatCurrency(num) : `¥${FINANCE_DATA_MASK}`;
+        }
+        function formatFinanceDisplayLabel(prefix, num) {
+            return getFinanceDataVisible() ? `${prefix} ${formatCurrency(num)}` : `${prefix} ¥${FINANCE_DATA_MASK}`;
+        }
+        function toggleFinanceDataVisible() {
+            const next = !getFinanceDataVisible();
+            setFinanceDataVisible(next);
+            if (!next) {
+                document.querySelectorAll('.finance-balance-item, #investmentReturnCard').forEach(function (el) {
+                    if (el) el.classList.remove('is-editing');
+                });
+                const active = document.activeElement;
+                if (active && (active.closest('#financeModule') || active.id === 'reconcileActualInput')) {
+                    active.blur();
+                }
+            }
+            syncFinanceEyeButton();
+            renderExpenseStats();
+        }
+        function syncFinanceEyeButton() {
+            const btn = document.getElementById('financeEyeBtn');
+            if (!btn) return;
+            const masked = !getFinanceDataVisible();
+            btn.classList.toggle('is-masked', masked);
+            btn.setAttribute('aria-label', masked ? '显示数据' : '隐藏数据');
+            btn.setAttribute('title', masked ? '数据已隐藏，点击显示' : '数据可见，点击隐藏');
         }
 
         function getReconcileStorageKey() {
@@ -808,12 +838,16 @@
             const diffEl = document.getElementById('reconcileDiffAmount');
             if (!inputEl || !diffEl) return;
 
+            if (!getFinanceDataVisible()) {
+                diffEl.value = formatFinanceDisplayLabel('校对差额', 0);
+                return;
+            }
             const raw = inputEl.value.trim();
             const parsed = parseFinancialAmount(raw, { allowNegative: true, allowBlank: true });
             const safeActual = parsed.ok && !parsed.empty ? parsed.value : 0;
             const diff = safeActual - statAmount;
 
-            diffEl.value = `平账差额 ${formatCurrency(diff)}`;
+            diffEl.value = formatFinanceDisplayLabel('校对差额', diff);
             diffEl.classList.toggle('balance-positive', diff > 0);
             diffEl.classList.toggle('balance-negative', diff < 0);
         }
@@ -832,35 +866,54 @@
             const monthKey = getCurrentMonthKey(new Date());
             const displayRecord = getReconcileDisplayRecords()[monthKey];
 
+            const masked = !getFinanceDataVisible();
+            inputEl.readOnly = masked;
             if (displayRecord) {
-                statEl.value = `统计金额 ${formatCurrency(displayRecord.statAmount)}`;
+                statEl.value = formatFinanceDisplayLabel('账面流动资产', displayRecord.statAmount);
                 if (document.activeElement !== inputEl) {
-                    inputEl.value = normalizeAmountForInput(displayRecord.actualAmount);
+                    inputEl.value = masked ? `¥${FINANCE_DATA_MASK}` : normalizeAmountForInput(displayRecord.actualAmount);
                 }
                 if (diffEl) {
-                    diffEl.value = `平账差额 ${formatCurrency(displayRecord.diffAmount)}`;
+                    diffEl.value = formatFinanceDisplayLabel('校对差额', displayRecord.diffAmount);
                     diffEl.classList.toggle('balance-positive', displayRecord.diffAmount > 0);
                     diffEl.classList.toggle('balance-negative', displayRecord.diffAmount < 0);
                 }
                 return;
             }
 
-            statEl.value = `统计金额 ${formatCurrency(currentNetBalance)}`;
+            const bookLiquid = getLiquidAssets();
+            statEl.value = formatFinanceDisplayLabel('账面流动资产', bookLiquid);
             if (document.activeElement !== inputEl) {
-                inputEl.value = normalizeAmountForInput(getReconcileActualAmount());
+                inputEl.value = masked ? `¥${FINANCE_DATA_MASK}` : normalizeAmountForInput(getReconcileActualAmount());
             }
-            updateReconcileDiff(currentNetBalance);
+            updateReconcileDiff(bookLiquid);
+        }
+
+        function clearReconcileForCurrentMonth() {
+            const monthKey = getCurrentMonthKey(new Date());
+            const displayRecords = getReconcileDisplayRecords();
+            const adjustments = getReconcileAdjustments();
+            if (!(monthKey in displayRecords) && !(monthKey in adjustments)) return;
+            delete displayRecords[monthKey];
+            delete adjustments[monthKey];
+            localStorage.setItem(getReconcileDisplayStorageKey(), JSON.stringify(displayRecords));
+            localStorage.setItem(getReconcileAdjustmentStorageKey(), JSON.stringify(adjustments));
+            const inputEl = document.getElementById('reconcileActualInput');
+            if (inputEl) inputEl.value = '0.00';
+            setReconcileActualAmount(0);
+            renderExpenseStats();
         }
 
         function saveReconcileActual() {
             const inputEl = document.getElementById('reconcileActualInput');
             if (!inputEl) return;
+            if (!getFinanceDataVisible()) return;
 
             const raw = inputEl.value.trim();
             if (raw === '') {
                 setReconcileActualAmount(0);
                 inputEl.value = '0.00';
-                updateReconcileDiff(currentNetBalance);
+                updateReconcileDiff(getLiquidAssets());
                 return;
             }
 
@@ -877,7 +930,7 @@
             const monthKey = getCurrentMonthKey(new Date());
             const adjustments = getReconcileAdjustments();
             const currentDelta = roundFinanceAmount(adjustments[monthKey]);
-            const statAmount = roundFinanceAmount(currentNetBalance);
+            const statAmount = roundFinanceAmount(getLiquidAssets());
             const diff = roundFinanceAmount(value - statAmount);
             const nextDelta = roundFinanceAmount(currentDelta - diff);
             setReconcileDisplayRecord(monthKey, {
@@ -898,7 +951,7 @@
             inputEl.addEventListener('input', () => {
                 const monthKey = getCurrentMonthKey(new Date());
                 const displayRecord = getReconcileDisplayRecords()[monthKey];
-                const baseStatAmount = displayRecord ? displayRecord.statAmount : currentNetBalance;
+                const baseStatAmount = displayRecord ? displayRecord.statAmount : getLiquidAssets();
                 updateReconcileDiff(baseStatAmount);
             });
 
@@ -927,6 +980,11 @@
         function getTotalAssetsBase() {
             const categories = getTotalAssetsCategories();
             return sumCategoryValues(categories, ASSET_CATEGORY_KEYS);
+        }
+
+        function getLiquidAssets() {
+            const categories = getTotalAssetsCategories();
+            return roundFinanceAmount(Number(categories.cash_deposit) || 0);
         }
 
         function getTotalAssetsCategories() {
@@ -983,53 +1041,120 @@
             inputEl.style.width = `${widthCh}ch`;
         }
 
+        function formatAmountNumberPart(num) {
+            const rounded = roundFinanceAmount(num);
+            const absText = formatAmountWithTwoDecimals(Math.abs(rounded));
+            return rounded < 0 ? '-' + absText : absText;
+        }
+
         function renderTotalAssets() {
-            const inputEl = document.getElementById('totalAssetsInput');
+            const cashEl = document.getElementById('cashDepositDisplay');
+            const physicalEl = document.getElementById('physicalAssetDisplay');
             const totalEl = document.getElementById('totalAssetsDisplay');
-            if (!inputEl) return;
+            const cashInput = document.getElementById('cashDepositInput');
+            const physicalInput = document.getElementById('physicalAssetInput');
+            if (!cashEl || !physicalEl) return;
+            const masked = !getFinanceDataVisible();
             const categories = getTotalAssetsCategories();
-            const selectedCategory = resolveSelectedCategory('totalAssetsCategory', ASSET_CATEGORY_KEYS);
-            inputEl.value = normalizeAmountForInput(categories[selectedCategory]);
-            if (totalEl) totalEl.textContent = formatCurrency(getTotalAssets());
-            syncAmountInputWidth(inputEl);
-            syncBalanceCategoryIcons();
+            const cashVal = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.cash_deposit);
+            const physicalVal = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.physical_asset);
+            cashEl.textContent = cashVal;
+            physicalEl.textContent = physicalVal;
+            if (cashInput && document.activeElement !== cashInput) cashInput.value = masked ? '' : normalizeAmountForInput(categories.cash_deposit);
+            if (physicalInput && document.activeElement !== physicalInput) physicalInput.value = masked ? '' : normalizeAmountForInput(categories.physical_asset);
+            if (totalEl) totalEl.textContent = formatFinanceDisplay(getTotalAssets());
+            renderReconcileEntry();
         }
 
         function renderTotalLiabilities() {
-            const inputEl = document.getElementById('totalLiabilitiesInput');
+            const shortEl = document.getElementById('shortTermLiabilityDisplay');
+            const longEl = document.getElementById('longTermLiabilityDisplay');
             const totalEl = document.getElementById('totalLiabilitiesDisplay');
-            if (!inputEl) return;
+            const shortInput = document.getElementById('shortTermLiabilityInput');
+            const longInput = document.getElementById('longTermLiabilityInput');
+            if (!shortEl || !longEl) return;
+            const masked = !getFinanceDataVisible();
             const categories = getTotalLiabilitiesCategories();
-            const selectedCategory = resolveSelectedCategory('totalLiabilitiesCategory', LIABILITY_CATEGORY_KEYS);
-            inputEl.value = normalizeAmountForInput(categories[selectedCategory]);
-            if (totalEl) totalEl.textContent = formatCurrency(getTotalLiabilities());
-            syncAmountInputWidth(inputEl);
-            syncBalanceCategoryIcons();
+            const shortVal = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.short_term_liability);
+            const longVal = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.long_term_liability);
+            shortEl.textContent = shortVal;
+            longEl.textContent = longVal;
+            if (shortInput && document.activeElement !== shortInput) shortInput.value = masked ? '' : normalizeAmountForInput(categories.short_term_liability);
+            if (longInput && document.activeElement !== longInput) longInput.value = masked ? '' : normalizeAmountForInput(categories.long_term_liability);
+            if (totalEl) totalEl.textContent = formatFinanceDisplay(getTotalLiabilities());
         }
 
-        function startTotalAssetsEdit() {
-            const cardEl = document.getElementById('totalAssetsCard');
-            const inputEl = document.getElementById('totalAssetsInput');
-            if (!cardEl || !inputEl) return;
-
-            cardEl.classList.add('is-editing');
+        function startBalanceCategoryEdit(category, cardType) {
+            if (!getFinanceDataVisible()) return;
+            const inputId = cardType === 'assets'
+                ? (category === 'cash_deposit' ? 'cashDepositInput' : 'physicalAssetInput')
+                : (category === 'short_term_liability' ? 'shortTermLiabilityInput' : 'longTermLiabilityInput');
+            const inputEl = document.getElementById(inputId);
+            const row = inputEl && inputEl.closest('.balance-editable-row');
+            if (!inputEl || !row) return;
+            const categories = cardType === 'assets' ? getTotalAssetsCategories() : getTotalLiabilitiesCategories();
+            inputEl.value = normalizeAmountForInput(Number(categories[category]) || 0);
             syncAmountInputWidth(inputEl);
+            row.classList.add('is-editing');
             inputEl.focus();
             inputEl.select();
         }
 
-        function startTotalLiabilitiesEdit() {
-            const cardEl = document.getElementById('totalLiabilitiesCard');
-            const inputEl = document.getElementById('totalLiabilitiesInput');
-            if (!cardEl || !inputEl) return;
+        function saveBalanceCategoryFromInput(inputEl) {
+            if (!inputEl) return;
+            const cardType = inputEl.dataset.card;
+            const category = inputEl.dataset.category;
+            const row = inputEl.closest('.balance-editable-row');
+            if (!cardType || !category || !row) return;
 
-            cardEl.classList.add('is-editing');
-            syncAmountInputWidth(inputEl);
-            inputEl.focus();
-            inputEl.select();
+            const raw = inputEl.value.trim();
+            const parsed = parseFinancialAmount(raw, { allowNegative: false, allowBlank: true });
+            const value = parsed.ok && !parsed.empty ? roundFinanceAmount(parsed.value) : 0;
+
+            if (cardType === 'assets') {
+                const categories = getTotalAssetsCategories();
+                categories[category] = value;
+                setTotalAssetsCategories(categories);
+            } else if (cardType === 'liabilities') {
+                const categories = getTotalLiabilitiesCategories();
+                categories[category] = value;
+                setTotalLiabilitiesCategories(categories);
+            }
+
+            row.classList.remove('is-editing');
+            renderTotalAssets();
+            renderTotalLiabilities();
+            renderReconcileEntry();
+            renderExpenseStats();
+        }
+
+        function initBalanceCategoryEditors() {
+            const inputIds = ['cashDepositInput', 'physicalAssetInput', 'shortTermLiabilityInput', 'longTermLiabilityInput'];
+            inputIds.forEach(id => {
+                const inputEl = document.getElementById(id);
+                if (!inputEl) return;
+                inputEl.addEventListener('click', e => e.stopPropagation());
+                inputEl.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyArithmeticToInputValue(inputEl, { allowNegative: false, syncWidth: true });
+                        inputEl.blur();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        const row = inputEl.closest('.balance-editable-row');
+                        if (row) row.classList.remove('is-editing');
+                        renderTotalAssets();
+                        renderTotalLiabilities();
+                        inputEl.blur();
+                    }
+                });
+                inputEl.addEventListener('blur', () => saveBalanceCategoryFromInput(inputEl));
+                inputEl.addEventListener('input', () => syncAmountInputWidth(inputEl));
+            });
         }
 
         function startInvestmentReturnEdit() {
+            if (!getFinanceDataVisible()) return;
             const cardEl = document.getElementById('investmentReturnCard');
             const inputEl = document.getElementById('investmentReturnInput');
             if (!cardEl || !inputEl) return;
@@ -1038,52 +1163,6 @@
             syncAmountInputWidth(inputEl);
             inputEl.focus();
             inputEl.select();
-        }
-
-        function saveTotalAssetsFromInput() {
-            const cardEl = document.getElementById('totalAssetsCard');
-            const inputEl = document.getElementById('totalAssetsInput');
-            if (!cardEl || !inputEl) return;
-            const selectedCategory = resolveSelectedCategory('totalAssetsCategory', ASSET_CATEGORY_KEYS);
-            const categories = getTotalAssetsCategories();
-
-            const rawValue = inputEl.value.trim();
-            if (rawValue === '') {
-                renderTotalAssets();
-                cardEl.classList.remove('is-editing');
-                return;
-            }
-
-            const parsed = parseFinancialAmount(rawValue, { allowNegative: false, allowBlank: false });
-            if (parsed.ok && !parsed.empty) {
-                categories[selectedCategory] = parsed.value;
-                setTotalAssetsCategories(categories);
-            }
-            renderTotalAssets();
-            cardEl.classList.remove('is-editing');
-        }
-
-        function saveTotalLiabilitiesFromInput() {
-            const cardEl = document.getElementById('totalLiabilitiesCard');
-            const inputEl = document.getElementById('totalLiabilitiesInput');
-            if (!cardEl || !inputEl) return;
-            const selectedCategory = resolveSelectedCategory('totalLiabilitiesCategory', LIABILITY_CATEGORY_KEYS);
-            const categories = getTotalLiabilitiesCategories();
-
-            const rawValue = inputEl.value.trim();
-            if (rawValue === '') {
-                renderTotalLiabilities();
-                cardEl.classList.remove('is-editing');
-                return;
-            }
-
-            const parsed = parseFinancialAmount(rawValue, { allowNegative: false, allowBlank: false });
-            if (parsed.ok && !parsed.empty) {
-                categories[selectedCategory] = parsed.value;
-                setTotalLiabilitiesCategories(categories);
-            }
-            renderTotalLiabilities();
-            cardEl.classList.remove('is-editing');
         }
 
         function saveInvestmentReturnFromInput() {
@@ -1181,14 +1260,6 @@
             });
 
             syncAmountInputWidth(inputEl);
-        }
-
-        function initTotalAssetsEditor() {
-            initEditableAmountCard('totalAssetsCard', 'totalAssetsInput', saveTotalAssetsFromInput, renderTotalAssets, { allowNegative: false });
-        }
-
-        function initTotalLiabilitiesEditor() {
-            initEditableAmountCard('totalLiabilitiesCard', 'totalLiabilitiesInput', saveTotalLiabilitiesFromInput, renderTotalLiabilities, { allowNegative: false });
         }
 
         function initInvestmentReturnEditor() {
@@ -1399,6 +1470,13 @@
                 subtitle = '周度财务概览';
                 summary = getCurrentWeekFinanceSummary(records, now);
                 expenseTotal = summary.expense;
+            } else if (expensePeriod === 'year') {
+                const yearLabel = `${now.getFullYear()}年`;
+                title = `财报 · ${yearLabel}`;
+                subtitle = '年度财务概览';
+                summary = getCurrentYearFinanceSummary(records, now);
+                expenseTotal = summary.expenseWithAdjustment;
+                reconcileDelta = summary.reconcileDelta;
             } else {
                 const monthLabel = `${now.getFullYear()}年${now.getMonth() + 1}月`;
                 title = `财报 · ${monthLabel}`;
@@ -1409,6 +1487,7 @@
             }
 
             const netBalance = summary.income - expenseTotal - summary.investment;
+            const trends = getFinanceTrendData(records, now);
             const titleEl = document.getElementById('financeReportTitle');
             const subtitleEl = document.getElementById('financeReportSubtitle');
             const kpisEl = document.getElementById('financeReportKpis');
@@ -1419,19 +1498,30 @@
             subtitleEl.textContent = subtitle;
 
             const kpis = [
-                { label: '支出', value: formatCurrency(expenseTotal), toneClass: 'is-expense' },
-                { label: '收入', value: formatCurrency(summary.income), toneClass: 'is-income' },
+                { label: '支出', value: formatCurrency(expenseTotal), toneClass: 'is-expense', yoY: trends.expenseYoY, moM: trends.expenseMoM, yoYLabel: '同比', moMLabel: '环比' },
+                { label: '收入', value: formatCurrency(summary.income), toneClass: 'is-income', yoY: trends.incomeYoY, moM: trends.incomeMoM, yoYLabel: '同比', moMLabel: '环比' },
                 { label: '投资', value: formatCurrency(summary.investment), toneClass: 'is-investment' },
                 { label: '收益', value: formatSignedCurrency(summary.investmentReturn), toneClass: summary.investmentReturn >= 0 ? 'is-income' : 'is-expense' },
-                { label: '净结余', value: formatCurrency(netBalance), toneClass: netBalance >= 0 ? 'is-balance' : 'is-expense' }
+                { label: '净结余', value: formatCurrency(netBalance), toneClass: netBalance >= 0 ? 'is-balance' : 'is-expense', yoY: trends.balanceYoY, moM: trends.balanceMoM, yoYLabel: '同比', moMLabel: '环比' }
             ];
 
-            kpisEl.innerHTML = kpis.map(item => `
+            kpisEl.innerHTML = kpis.map(item => {
+                const trendHtml = item.yoY ? `
+                    <div class="finance-report-kpi-trends">
+                        <span class="finance-report-kpi-trend ${item.yoY.trendClass}">${item.yoYLabel} ${item.yoY.text}</span>
+                        <span class="finance-report-kpi-trend ${item.moM.trendClass}">${item.moMLabel} ${item.moM.text}</span>
+                    </div>
+                ` : '';
+                return `
                 <div class="finance-report-kpi ${item.toneClass}">
-                    <div class="finance-report-kpi-label">${item.label}</div>
-                    <div class="finance-report-kpi-value">${item.value}</div>
+                    <div class="finance-report-kpi-main">
+                        <div class="finance-report-kpi-label">${item.label}</div>
+                        <div class="finance-report-kpi-value">${item.value}</div>
+                    </div>
+                    ${trendHtml}
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             const expenseItems = [
                 { label: '固定支出', value: summary.expenseByCategory.fixed_expense, segmentClass: 'is-expense-fixed', dotClass: 'is-expense-fixed' },
@@ -1449,7 +1539,7 @@
 
             const monthNote = reconcileDelta === null
                 ? ''
-                : `<div class="finance-report-note">平账调整: <strong>${formatSignedCurrency(reconcileDelta)}</strong></div>`;
+                : `<div class="finance-report-note">校对差额: <strong>${formatSignedCurrency(reconcileDelta)}</strong></div>`;
 
             visualsEl.innerHTML = `
                 <div class="finance-report-card">
@@ -1540,26 +1630,72 @@
             return ((current - base) / Math.abs(base)) * 100;
         }
 
+        function formatTrendRate(rate) {
+            if (rate === null) return { text: '--', trendClass: 'na' };
+            if (Math.abs(rate) < 0.05) return { text: '0.0%', trendClass: 'flat' };
+            const sign = rate > 0 ? '+' : '';
+            return { text: `${sign}${rate.toFixed(1)}%`, trendClass: rate > 0 ? 'up' : 'down' };
+        }
+
         function setTrendValue(id, rate) {
             const el = document.getElementById(id);
             if (!el) return;
 
             el.classList.remove('up', 'down', 'flat', 'na');
-            if (rate === null) {
-                el.textContent = '--';
-                el.classList.add('na');
+            if (!getFinanceDataVisible()) {
+                el.textContent = FINANCE_DATA_MASK;
                 return;
             }
+            const fmt = formatTrendRate(rate);
+            el.textContent = fmt.text;
+            el.classList.add(fmt.trendClass);
+        }
 
-            if (Math.abs(rate) < 0.05) {
-                el.textContent = '0.0%';
-                el.classList.add('flat');
-                return;
+        function getFinanceTrendData(records, now) {
+            let currentMetric = createMetric();
+            let yoyMetric = createMetric();
+            let momMetric = createMetric();
+            let investmentGrowthValues = [];
+            let periodInvestmentReturn = 0;
+
+            if (expensePeriod === 'week') {
+                const weekMap = getWeeklyMetricMap(records);
+                const currentKey = getWeekKey(now);
+                const prevDate = new Date(now);
+                prevDate.setDate(prevDate.getDate() - 7);
+                const yoyDate = new Date(now);
+                yoyDate.setDate(yoyDate.getDate() - 364);
+                currentMetric = getMetricFromMap(weekMap, currentKey);
+                yoyMetric = getMetricFromMap(weekMap, getWeekKey(yoyDate));
+                momMetric = getMetricFromMap(weekMap, getWeekKey(prevDate));
+                investmentGrowthValues = getRecentWeekBuckets(records).map(item => Number(item.investmentReturn) || 0);
+            } else if (expensePeriod === 'year') {
+                const yearMap = getYearlyMetricMap(records);
+                const currentKey = String(now.getFullYear());
+                currentMetric = getMetricFromMap(yearMap, currentKey);
+                yoyMetric = getMetricFromMap(yearMap, String(now.getFullYear() - 2));
+                momMetric = getMetricFromMap(yearMap, String(now.getFullYear() - 1));
+                investmentGrowthValues = getYearBuckets(records, now).map(item => Number(item.investmentReturn) || 0);
+            } else {
+                const monthMap = getMonthlyMetricMap(records);
+                const currentKey = getMonthKey(now);
+                currentMetric = getMetricFromMap(monthMap, currentKey);
+                yoyMetric = getMetricFromMap(monthMap, getMonthKey(new Date(now.getFullYear() - 1, now.getMonth(), 1)));
+                momMetric = getMetricFromMap(monthMap, getMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1)));
+                investmentGrowthValues = getMonthBuckets(records, now).map(item => Number(item.investmentReturn) || 0);
             }
+            periodInvestmentReturn = getCurrentPeriodInvestmentReturn(records, now, expensePeriod);
 
-            const sign = rate > 0 ? '+' : '';
-            el.textContent = `${sign}${rate.toFixed(1)}%`;
-            el.classList.add(rate > 0 ? 'up' : 'down');
+            return {
+                expenseYoY: formatTrendRate(calcChangeRate(currentMetric.expense, yoyMetric.expense)),
+                expenseMoM: formatTrendRate(calcChangeRate(currentMetric.expense, momMetric.expense)),
+                incomeYoY: formatTrendRate(calcChangeRate(currentMetric.income, yoyMetric.income)),
+                incomeMoM: formatTrendRate(calcChangeRate(currentMetric.income, momMetric.income)),
+                investmentYoY: formatTrendRate(calcAverageGrowthRate(investmentGrowthValues)),
+                investmentMoM: formatTrendRate(calcInvestmentReturnRate(currentMetric.investment, periodInvestmentReturn)),
+                balanceYoY: formatTrendRate(calcChangeRate(currentMetric.netBalance, yoyMetric.netBalance)),
+                balanceMoM: formatTrendRate(calcChangeRate(currentMetric.netBalance, momMetric.netBalance))
+            };
         }
 
         function calcAverageGrowthRate(values) {
@@ -1623,7 +1759,13 @@
             const amount = Number(totalReturn);
             const isValidAmount = Number.isFinite(amount);
             if (!cardEl || !cardEl.classList.contains('is-editing')) {
-                inputEl.value = normalizeAmountForInput(isValidAmount ? amount : 0, { allowBlank: !hasData });
+                if (getFinanceDataVisible()) {
+                    inputEl.value = normalizeAmountForInput(isValidAmount ? amount : 0, { allowBlank: !hasData });
+                    inputEl.readOnly = false;
+                } else {
+                    inputEl.value = FINANCE_DATA_MASK;
+                    inputEl.readOnly = true;
+                }
                 syncAmountInputWidth(inputEl);
             }
 
@@ -1744,6 +1886,60 @@
                 investment: item.investment,
                 investmentReturn: Number(item.investmentReturn) || 0
             }));
+        }
+
+        function getExpenseIncomeCategoryBreakdown(records, now) {
+            const expenseByCategory = createCategorySummary(EXPENSE_CATEGORY_KEYS);
+            const incomeByCategory = createCategorySummary(INCOME_CATEGORY_KEYS);
+
+            if (expensePeriod === 'week') {
+                const weekKey = getWeekKey(now);
+                records.forEach(record => {
+                    if (record.weekKey !== weekKey) return;
+                    const exp = sanitizeCategoryValues(record.expenseByCategory, EXPENSE_CATEGORY_KEYS);
+                    const inc = sanitizeCategoryValues(record.incomeByCategory, INCOME_CATEGORY_KEYS);
+                    EXPENSE_CATEGORY_KEYS.forEach(k => { expenseByCategory[k] += Number(exp[k]) || 0; });
+                    INCOME_CATEGORY_KEYS.forEach(k => { incomeByCategory[k] += Number(inc[k]) || 0; });
+                });
+            } else if (expensePeriod === 'month') {
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const monthKey = getMonthKey(now);
+                const adjustments = getReconcileAdjustments();
+                const reconcileDelta = Number(adjustments[monthKey]) || 0;
+                records.forEach(record => {
+                    const date = getDateFromWeekKey(record.weekKey) || new Date(record.createdAt);
+                    if (Number.isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() !== month) return;
+                    const exp = sanitizeCategoryValues(record.expenseByCategory, EXPENSE_CATEGORY_KEYS);
+                    const inc = sanitizeCategoryValues(record.incomeByCategory, INCOME_CATEGORY_KEYS);
+                    EXPENSE_CATEGORY_KEYS.forEach(k => { expenseByCategory[k] += Number(exp[k]) || 0; });
+                    INCOME_CATEGORY_KEYS.forEach(k => { incomeByCategory[k] += Number(inc[k]) || 0; });
+                });
+                expenseByCategory.variable_expense = (expenseByCategory.variable_expense || 0) + reconcileDelta;
+            } else {
+                const year = now.getFullYear();
+                const adjustments = getReconcileAdjustments();
+                records.forEach(record => {
+                    const date = getDateFromWeekKey(record.weekKey) || new Date(record.createdAt);
+                    if (Number.isNaN(date.getTime()) || date.getFullYear() !== year) return;
+                    const exp = sanitizeCategoryValues(record.expenseByCategory, EXPENSE_CATEGORY_KEYS);
+                    const inc = sanitizeCategoryValues(record.incomeByCategory, INCOME_CATEGORY_KEYS);
+                    EXPENSE_CATEGORY_KEYS.forEach(k => { expenseByCategory[k] += Number(exp[k]) || 0; });
+                    INCOME_CATEGORY_KEYS.forEach(k => { incomeByCategory[k] += Number(inc[k]) || 0; });
+                });
+                if (expensePeriod === 'year') {
+                    let reconcileTotal = 0;
+                    Object.keys(adjustments).forEach(key => {
+                        if ((key || '').startsWith(String(year))) reconcileTotal += Number(adjustments[key]) || 0;
+                    });
+                    expenseByCategory.variable_expense = (expenseByCategory.variable_expense || 0) + reconcileTotal;
+                }
+            }
+
+            return {
+                expenseByCategory: Object.fromEntries(EXPENSE_CATEGORY_KEYS.map(k => [k, roundFinanceAmount(expenseByCategory[k] || 0)])),
+                incomeByCategory: Object.fromEntries(INCOME_CATEGORY_KEYS.map(k => [k, roundFinanceAmount(incomeByCategory[k] || 0)]))
+            };
         }
 
         function getMonthBuckets(records, now) {
@@ -2227,6 +2423,12 @@
         function renderExpenseStats() {
             const now = new Date();
             const records = getWeeklyExpenseRecords();
+            const periodLabelEl = document.getElementById('financePeriodLabel');
+            if (periodLabelEl) {
+                periodLabelEl.textContent = expensePeriod === 'week'
+                    ? `· ${now.getFullYear()}年第${getISOWeekInfo(now).week}周`
+                    : `· ${now.getFullYear()}年${now.getMonth() + 1}月`;
+            }
             const financeEntryEl = document.getElementById('financeEntry');
             const reconcileEntryEl = document.getElementById('reconcileEntry');
             const chartWrapEl = document.getElementById('expenseChartWrap');
@@ -2240,30 +2442,45 @@
                 reconcileEntryEl.hidden = expensePeriod !== 'month';
             }
 
-            const weekBuckets = getRecentWeekBuckets(records);
             const monthBuckets = getMonthBuckets(records, now);
-            const buckets = expensePeriod === 'week' ? weekBuckets : monthBuckets;
-
-            const totalExpense = roundFinanceAmount(buckets.reduce((sum, item) => sum + item.expense, 0));
-            const totalIncome = roundFinanceAmount(buckets.reduce((sum, item) => sum + item.income, 0));
-            const totalInvestment = roundFinanceAmount(buckets.reduce((sum, item) => sum + item.investment, 0));
-            const totalInvestmentReturn = roundFinanceAmount(buckets.reduce((sum, item) => sum + (Number(item.investmentReturn) || 0), 0));
+            let totalExpense, totalIncome, totalInvestment, totalInvestmentReturn, currentPeriodHasData;
+            if (expensePeriod === 'week') {
+                const summary = getCurrentWeekFinanceSummary(records, now);
+                totalExpense = roundFinanceAmount(summary.expense);
+                totalIncome = roundFinanceAmount(summary.income);
+                totalInvestment = roundFinanceAmount(summary.investment);
+                totalInvestmentReturn = roundFinanceAmount(summary.investmentReturn || 0);
+                currentPeriodHasData = (summary.expense || 0) !== 0 || (summary.income || 0) !== 0 || (summary.investment || 0) !== 0 || (summary.investmentReturn || 0) !== 0;
+            } else {
+                const summary = getCurrentMonthFinanceSummary(records, now);
+                totalExpense = roundFinanceAmount(summary.expenseWithAdjustment ?? summary.expense);
+                totalIncome = roundFinanceAmount(summary.income);
+                totalInvestment = roundFinanceAmount(summary.investment);
+                totalInvestmentReturn = roundFinanceAmount(summary.investmentReturn || 0);
+                const expAdj = summary.expenseWithAdjustment ?? summary.expense;
+                currentPeriodHasData = (expAdj || 0) !== 0 || (summary.income || 0) !== 0 || (summary.investment || 0) !== 0 || (summary.investmentReturn || 0) !== 0;
+            }
             const netBalance = roundFinanceAmount(totalIncome - totalExpense - totalInvestment);
             currentNetBalance = roundFinanceAmount(netBalance);
             currentInvestmentReturnTotal = roundFinanceAmount(totalInvestmentReturn);
 
-            document.getElementById('expenseTotal').textContent = formatCurrency(totalExpense);
-            document.getElementById('incomeTotal').textContent = formatCurrency(totalIncome);
-            document.getElementById('investmentTotal').textContent = formatCurrency(totalInvestment);
-            const hasFinanceData = buckets.some(item =>
-                (item.expense || 0) !== 0 ||
-                (item.income || 0) !== 0 ||
-                (item.investment || 0) !== 0 ||
-                (item.investmentReturn || 0) !== 0
-            );
-            setInvestmentReturnHint(totalInvestmentReturn, hasFinanceData);
+            const breakdown = getExpenseIncomeCategoryBreakdown(records, now);
+            document.getElementById('expenseTotal').textContent = formatFinanceDisplay(totalExpense);
+            document.getElementById('incomeTotal').textContent = formatFinanceDisplay(totalIncome);
+            const fixedExpEl = document.getElementById('fixedExpenseDisplay');
+            const variableExpEl = document.getElementById('variableExpenseDisplay');
+            const salaryIncEl = document.getElementById('salaryIncomeDisplay');
+            const otherIncEl = document.getElementById('otherIncomeDisplay');
+            const masked = !getFinanceDataVisible();
+            const fmtCat = (val) => masked ? `¥${FINANCE_DATA_MASK}` : formatFinanceDisplay(val);
+            if (fixedExpEl) fixedExpEl.textContent = fmtCat(breakdown.expenseByCategory.fixed_expense);
+            if (variableExpEl) variableExpEl.textContent = fmtCat(breakdown.expenseByCategory.variable_expense);
+            if (salaryIncEl) salaryIncEl.textContent = fmtCat(breakdown.incomeByCategory.salary_income);
+            if (otherIncEl) otherIncEl.textContent = fmtCat(breakdown.incomeByCategory.other_income);
+            document.getElementById('investmentTotal').textContent = formatFinanceDisplay(totalInvestment);
+            setInvestmentReturnHint(totalInvestmentReturn, currentPeriodHasData);
             const netBalanceEl = document.getElementById('netBalance');
-            netBalanceEl.textContent = formatCurrency(netBalance);
+            netBalanceEl.textContent = formatFinanceDisplay(netBalance);
             netBalanceEl.classList.toggle('balance-positive', netBalance > 0);
             netBalanceEl.classList.toggle('balance-negative', netBalance < 0);
             renderFinanceTrends(records, now);
@@ -2307,6 +2524,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             updateDate();
+            syncFinanceEyeButton();
             const switchEl = document.getElementById('financeSwitch');
             if (switchEl) {
                 switchEl.classList.toggle('is-month', expensePeriod === 'month');
@@ -2314,9 +2532,8 @@
             syncWeeklyCategoryIcons();
             renderTotalAssets();
             renderTotalLiabilities();
-            initTotalAssetsEditor();
-            initTotalLiabilitiesEditor();
             initInvestmentReturnEditor();
+            initBalanceCategoryEditors();
             initFinanceExpressionInputs();
             initReconcileEntry();
             initFinanceHistoryEditor();
@@ -2338,6 +2555,12 @@
             renderTotalAssets();
             renderTotalLiabilities();
             renderExpenseStats();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                renderExpenseStats();
+            }
         });
 
         window.addEventListener('storage', (event) => {
@@ -2480,6 +2703,41 @@
             border-color: #a97810;
         }
 
+        .finance-eye-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--warm-gray-300);
+            background: var(--warm-gray-50);
+            color: var(--warm-gray-600);
+            padding: 0;
+            border-radius: 999px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .finance-eye-btn:hover {
+            background: var(--warm-gray-100);
+            color: var(--warm-gray-800);
+        }
+
+        .finance-eye-icon {
+            width: 18px;
+            height: 18px;
+            position: absolute;
+        }
+
+        .finance-eye-open { display: block; }
+        .finance-eye-closed { display: none; }
+        .finance-eye-btn.is-masked .finance-eye-open { display: none; }
+        .finance-eye-btn.is-masked .finance-eye-closed { display: block; }
+
+        .finance-eye-btn {
+            position: relative;
+        }
+
         .finance-report-title {
             margin: 0;
         }
@@ -2583,6 +2841,14 @@
             padding: 10px 12px;
             background: var(--warm-gray-50);
             border: 1px solid var(--warm-gray-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .finance-report-kpi-main {
+            min-width: 0;
         }
 
         .finance-report-kpi-label {
@@ -2612,6 +2878,36 @@
 
         .finance-report-kpi.is-balance .finance-report-kpi-value {
             color: #1f9ca8;
+        }
+
+        .finance-report-kpi-trends {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            font-size: 11px;
+            flex-shrink: 0;
+            text-align: left;
+        }
+
+        .finance-report-kpi-trend {
+            color: var(--warm-gray-600);
+        }
+
+        .finance-report-kpi-trend.up {
+            color: #2f9e44;
+        }
+
+        .finance-report-kpi-trend.down {
+            color: #c92a2a;
+        }
+
+        .finance-report-kpi-trend.flat {
+            color: var(--warm-gray-600);
+        }
+
+        .finance-report-kpi-trend.na {
+            color: var(--warm-gray-400);
         }
 
         .finance-report-visuals {
@@ -2887,6 +3183,67 @@
             color: #3d3834;
         }
 
+        .finance-category-icon-badge {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            border-radius: 7px;
+            border: 1px solid transparent;
+        }
+
+        .finance-category-icon-badge[data-category="cash_deposit"] {
+            background: rgba(31, 156, 168, 0.14);
+            border-color: rgba(31, 156, 168, 0.32);
+            color: #1b7f88;
+        }
+
+        .finance-category-icon-badge[data-category="physical_asset"] {
+            background: rgba(155, 122, 26, 0.16);
+            border-color: rgba(155, 122, 26, 0.35);
+            color: #7f6414;
+        }
+
+        .finance-category-icon-badge[data-category="short_term_liability"] {
+            background: rgba(92, 86, 81, 0.14);
+            border-color: rgba(92, 86, 81, 0.32);
+            color: #5c5651;
+        }
+
+        .finance-category-icon-badge[data-category="long_term_liability"] {
+            background: rgba(61, 56, 52, 0.14);
+            border-color: rgba(61, 56, 52, 0.32);
+            color: #3d3834;
+        }
+
+        .finance-category-icon-badge[data-category="fixed_expense"] {
+            background: rgba(201, 42, 42, 0.12);
+            border-color: rgba(201, 42, 42, 0.3);
+            color: #b02a2a;
+        }
+
+        .finance-category-icon-badge[data-category="variable_expense"] {
+            background: rgba(184, 134, 11, 0.14);
+            border-color: rgba(184, 134, 11, 0.35);
+            color: #8b6508;
+        }
+
+        .finance-category-icon-badge[data-category="salary_income"] {
+            background: rgba(47, 158, 68, 0.14);
+            border-color: rgba(47, 158, 68, 0.32);
+            color: #22773a;
+        }
+
+        .finance-category-icon-badge[data-category="other_income"] {
+            background: rgba(28, 126, 214, 0.14);
+            border-color: rgba(28, 126, 214, 0.3);
+            color: #1a65ad;
+        }
+
         .finance-category-icon-text {
             font-size: 12px;
             font-weight: 700;
@@ -2907,9 +3264,11 @@
         #weeklyIncomeInput,
         #weeklyInvestmentInput,
         #weeklyInvestmentReturnInput,
-        #totalAssetsInput,
-        #totalLiabilitiesInput,
         #investmentReturnInput,
+        #cashDepositInput,
+        #physicalAssetInput,
+        #shortTermLiabilityInput,
+        #longTermLiabilityInput,
         #reconcileActualInput,
         #historyInvestmentInput,
         #historyFixedExpenseInput,
@@ -2929,10 +3288,14 @@
         #weeklyInvestmentInput::-webkit-inner-spin-button,
         #weeklyInvestmentReturnInput::-webkit-outer-spin-button,
         #weeklyInvestmentReturnInput::-webkit-inner-spin-button,
-        #totalAssetsInput::-webkit-outer-spin-button,
-        #totalAssetsInput::-webkit-inner-spin-button,
-        #totalLiabilitiesInput::-webkit-outer-spin-button,
-        #totalLiabilitiesInput::-webkit-inner-spin-button,
+        #cashDepositInput::-webkit-outer-spin-button,
+        #cashDepositInput::-webkit-inner-spin-button,
+        #physicalAssetInput::-webkit-outer-spin-button,
+        #physicalAssetInput::-webkit-inner-spin-button,
+        #shortTermLiabilityInput::-webkit-outer-spin-button,
+        #shortTermLiabilityInput::-webkit-inner-spin-button,
+        #longTermLiabilityInput::-webkit-outer-spin-button,
+        #longTermLiabilityInput::-webkit-inner-spin-button,
         #investmentReturnInput::-webkit-outer-spin-button,
         #investmentReturnInput::-webkit-inner-spin-button,
         #reconcileActualInput::-webkit-outer-spin-button,
@@ -2955,7 +3318,7 @@
 
         .reconcile-entry-row {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto;
             align-items: center;
             gap: var(--spacing-sm);
         }
@@ -2999,20 +3362,89 @@
             margin-bottom: var(--spacing-md);
         }
 
+        .finance-balance-category-values {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+            align-items: stretch;
+            min-width: 100px;
+            padding-right: 6px;
+        }
+
+        .finance-balance-value-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .finance-balance-value-row .finance-category-icon-badge {
+            margin-left: auto;
+        }
+
+        .finance-balance-amount-wrap {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0;
+        }
+
+        .balance-editable-row {
+            cursor: pointer;
+        }
+
+        .balance-editable-row .finance-balance-category-input {
+            display: none;
+            width: 5ch;
+            min-width: 3ch;
+            padding: 2px 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .balance-editable-row.is-editing .finance-balance-value-text {
+            display: none;
+        }
+
+        .balance-editable-row.is-editing .finance-balance-category-input {
+            display: inline-block;
+        }
+
+        .balance-editable-row[data-card="assets"] .finance-balance-currency,
+        .balance-editable-row[data-card="assets"] .finance-balance-category-input {
+            color: #b8922e;
+        }
+
+        .balance-editable-row[data-card="liabilities"] .finance-balance-currency,
+        .balance-editable-row[data-card="liabilities"] .finance-balance-category-input {
+            color: var(--warm-gray-700);
+        }
+
+        .finance-balance-value-text {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .finance-balance-value-text.assets {
+            color: #b8922e;
+        }
+
+        .finance-balance-value-text.liabilities {
+            color: var(--warm-gray-700);
+        }
+
+        .finance-balance-value-text.expense {
+            color: #c92a2a;
+        }
+
+        .finance-balance-value-text.income {
+            color: #2f9e44;
+        }
+
         .finance-balance-item {
-            cursor: text;
             align-items: flex-start;
             justify-content: flex-start;
-        }
-
-        .finance-balance-item:hover {
-            background: var(--warm-gray-50);
-            box-shadow: none;
-        }
-
-        .finance-balance-item.is-editing {
-            background: #fff;
-            box-shadow: 0 0 0 1px var(--primary-brown) inset;
         }
 
         #investmentReturnCard {
@@ -3042,11 +3474,19 @@
         }
 
         .finance-balance-main-value.assets {
-            color: #9b7a1a;
+            color: #b8922e;
         }
 
         .finance-balance-main-value.liabilities {
             color: var(--warm-gray-700);
+        }
+
+        .finance-balance-main-value.expense {
+            color: #c92a2a;
+        }
+
+        .finance-balance-main-value.income {
+            color: #2f9e44;
         }
 
         .finance-balance-subline {
@@ -3065,7 +3505,7 @@
         }
 
         .finance-balance-value-wrap.assets {
-            color: #9b7a1a;
+            color: #b8922e;
         }
 
         .finance-balance-value-wrap.liabilities {
@@ -3129,10 +3569,14 @@
             background: var(--warm-gray-50);
             border-radius: var(--radius-md);
             padding: var(--spacing-sm) var(--spacing-md);
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 110px;
             align-items: center;
             gap: 14px;
+        }
+
+        .finance-summary-item:has(> :only-child) {
+            grid-template-columns: 1fr;
         }
 
         .finance-summary-main {
@@ -3196,13 +3640,13 @@
         }
 
         .finance-trends {
-            margin-left: auto;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
             gap: 8px;
             white-space: nowrap;
             text-align: left;
+            padding-right: 6px;
         }
 
         .finance-trend-line {
@@ -3646,8 +4090,12 @@
             }
 
             .finance-summary > .finance-summary-item {
-                flex-direction: row;
+                grid-template-columns: minmax(0, 1fr) 110px;
                 align-items: center;
+            }
+
+            .finance-summary > .finance-summary-item:has(> :only-child) {
+                grid-template-columns: 1fr;
             }
 
             .finance-summary > .finance-summary-item .finance-summary-left {
@@ -3656,7 +4104,6 @@
             }
 
             .finance-summary > .finance-summary-item .finance-trends {
-                margin-left: auto;
                 align-items: flex-start;
             }
 

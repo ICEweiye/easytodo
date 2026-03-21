@@ -26,21 +26,32 @@
     }
 
     function save(pool) {
-        localStorage.setItem(getScopedKey(), JSON.stringify(pool || {}));
+        const next = pool && typeof pool === 'object' ? { ...pool } : {};
+        delete next.yellowStars;
+        localStorage.setItem(getScopedKey(), JSON.stringify(next));
     }
 
     function getPool() {
         const p = load();
-        var todo = Number(p && p.yellowStarsTodo);
-        var kr = Number(p && p.yellowStarsKr);
-        var review = Number(p && p.yellowStarsReview);
-        if (!todo && !kr && !review && (p && p.yellowStars != null)) {
+        const hasSplitFields =
+            !!p &&
+            ('yellowStarsTodo' in p || 'yellowStarsKr' in p || 'yellowStarsReview' in p);
+
+        let todo = Number(p && p.yellowStarsTodo);
+        let kr = Number(p && p.yellowStarsKr);
+        let review = Number(p && p.yellowStarsReview);
+        if (!Number.isFinite(todo)) todo = 0;
+        if (!Number.isFinite(kr)) kr = 0;
+        if (!Number.isFinite(review)) review = 0;
+
+        if (!hasSplitFields && p && p.yellowStars != null) {
             todo = Number(p.yellowStars) || 0;
         }
+
         return {
-            yellowStarsTodo: todo || 0,
-            yellowStarsKr: kr || 0,
-            yellowStarsReview: review || 0,
+            yellowStarsTodo: todo,
+            yellowStarsKr: kr,
+            yellowStarsReview: review,
             colorfulStars: Number(p && p.colorfulStars) || 0,
             ratioTodo: Math.max(1, Number(p && p.ratioTodo) || DEFAULT_RATIO),
             ratioKr: Math.max(1, Number(p && p.ratioKr) || DEFAULT_RATIO),
@@ -69,6 +80,56 @@
         return 'todo';
     }
 
+    function dispatchStarAwarded(detail) {
+        try {
+            if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
+                document.dispatchEvent(new CustomEvent('planner-star-awarded', {
+                    detail: detail,
+                    bubbles: true
+                }));
+            }
+        } catch (e) { /* ignore */ }
+        if (typeof document === 'undefined' || !document.body) return;
+
+        const hasRewardPoolRow = !!document.querySelector('[data-reward-pool-target]');
+        if (hasRewardPoolRow) {
+            try {
+                if (typeof sessionStorage !== 'undefined') {
+                    sessionStorage.removeItem('__planner_pending_star_collect_v1');
+                }
+            } catch (err) { /* ignore */ }
+            return;
+        }
+
+        try {
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem(
+                    '__planner_pending_star_collect_v1',
+                    JSON.stringify({
+                        kind: detail && detail.kind,
+                        source: detail && detail.source,
+                        key: detail && detail.key
+                    })
+                );
+            }
+        } catch (err) { /* ignore */ }
+
+        var toast = document.createElement('div');
+        toast.className = 'planner-star-collect-toast';
+        toast.setAttribute('role', 'status');
+        toast.textContent = detail && detail.kind === 'colorful' ? '✨ 炫彩星 +1' : '★ 黄星 +1';
+        document.body.appendChild(toast);
+        requestAnimationFrame(function () {
+            toast.classList.add('is-visible');
+        });
+        setTimeout(function () {
+            toast.classList.remove('is-visible');
+            setTimeout(function () {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 320);
+        }, 1500);
+    }
+
     function awardYellowStar(key) {
         if (hasAwarded(key)) return false;
         const pool = getPool();
@@ -78,6 +139,7 @@
         else pool.yellowStarsReview = (pool.yellowStarsReview || 0) + 1;
         pool.awardedKeys = (pool.awardedKeys || []).concat([key]);
         save(pool);
+        dispatchStarAwarded({ kind: 'yellow', source: src, key: key });
         return true;
     }
 
@@ -87,6 +149,7 @@
         pool.colorfulStars = (pool.colorfulStars || 0) + 1;
         pool.awardedKeys = (pool.awardedKeys || []).concat([key]);
         save(pool);
+        dispatchStarAwarded({ kind: 'colorful', key: key });
         return true;
     }
 
@@ -180,6 +243,23 @@
         return getPool();
     }
 
+    /** 事项 / KR / 复盘 黄星归零，并移除对应 awardedKeys，便于再次完成时重新获得；炫彩星与其它 awardedKeys 保留 */
+    function clearYellowStars() {
+        const pool = getPool();
+        pool.yellowStarsTodo = 0;
+        pool.yellowStarsKr = 0;
+        pool.yellowStarsReview = 0;
+        const keys = pool.awardedKeys || [];
+        pool.awardedKeys = keys.filter((k) => {
+            if (typeof k !== 'string') return true;
+            if (k.startsWith('todo-') || k.startsWith('kr-') || k.startsWith('review-')) return false;
+            return true;
+        });
+        delete pool.yellowStars;
+        save(pool);
+        return getPool();
+    }
+
     window.RewardPool = {
         getPool,
         setPool,
@@ -187,6 +267,7 @@
         awardColorfulStar,
         revokeYellowStar,
         revokeColorfulStar,
+        clearYellowStars,
         exchangeYellowToColorful,
         redeemPrize,
         addPrize,

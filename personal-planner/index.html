@@ -102,30 +102,25 @@
 
                     <div class="home-col home-col-side">
                         <div class="home-review-stack">
-                            <!-- 积分奖池模块 -->
                             <section class="module home-module home-reward-pool-module">
-                                <div class="module-header">
-                                    <h2 class="module-title">积分奖池</h2>
-                                    <button type="button" class="add-btn" onclick="openRewardPoolSettings()" title="设置">⚙</button>
-                                </div>
                                 <div class="reward-pool-content" id="rewardPoolContent">
                                     <div class="reward-pool-stars">
-                                        <div class="reward-pool-star-row" title="事项">
+                                        <div class="reward-pool-star-row" data-reward-pool-target="yellow-todo" title="事项">
                                             <span class="reward-star reward-star-yellow">★</span>
                                             <span class="reward-pool-label">事项</span>
                                             <span class="reward-pool-count" id="rewardYellowTodo">0</span>
                                         </div>
-                                        <div class="reward-pool-star-row" title="关键结果">
+                                        <div class="reward-pool-star-row" data-reward-pool-target="yellow-kr" title="关键结果">
                                             <span class="reward-star reward-star-yellow">★</span>
                                             <span class="reward-pool-label">KR</span>
                                             <span class="reward-pool-count" id="rewardYellowKr">0</span>
                                         </div>
-                                        <div class="reward-pool-star-row" title="复盘">
+                                        <div class="reward-pool-star-row" data-reward-pool-target="yellow-review" title="复盘">
                                             <span class="reward-star reward-star-yellow">★</span>
                                             <span class="reward-pool-label">复盘</span>
                                             <span class="reward-pool-count" id="rewardYellowReview">0</span>
                                         </div>
-                                        <div class="reward-pool-star-row">
+                                        <div class="reward-pool-star-row" data-reward-pool-target="colorful" title="炫彩星">
                                             <span class="reward-star reward-star-colorful">★</span>
                                             <span class="reward-pool-count" id="rewardColorfulCount">0</span>
                                         </div>
@@ -325,30 +320,6 @@
         </div>
     </div>
 
-    <!-- 积分奖池设置弹窗 -->
-    <div class="modal-overlay" id="rewardPoolSettingsModal">
-        <div class="modal">
-            <h3 class="modal-title">奖池设置</h3>
-            <p class="reward-pool-ratio-hint">各类黄星兑换炫彩的比例（几颗 = 1 颗炫彩）</p>
-            <div class="form-group">
-                <label class="form-label">事项</label>
-                <input type="number" class="form-input" id="rewardRatioTodo" min="1" value="5" placeholder="事项黄星">
-            </div>
-            <div class="form-group">
-                <label class="form-label">关键结果</label>
-                <input type="number" class="form-input" id="rewardRatioKr" min="1" value="5" placeholder="KR黄星">
-            </div>
-            <div class="form-group">
-                <label class="form-label">复盘</label>
-                <input type="number" class="form-input" id="rewardRatioReview" min="1" value="5" placeholder="复盘黄星">
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal('rewardPoolSettingsModal')">取消</button>
-                <button class="btn btn-primary" onclick="saveRewardPoolSettings()">保存</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 奖品添加/编辑弹窗 -->
     <div class="modal-overlay" id="prizeModal">
         <div class="modal">
@@ -457,6 +428,17 @@
             </div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="todoDeleteConfirmModal" onclick="if (event.target === this) closeTodoDeleteConfirm()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="todoDeleteConfirmTitle" onclick="event.stopPropagation()">
+            <h3 class="modal-title" id="todoDeleteConfirmTitle">删除事项</h3>
+            <p class="todo-delete-confirm-text" id="todoDeleteConfirmMessage"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeTodoDeleteConfirm()">取消</button>
+                <button type="button" class="btn btn-danger" onclick="executeTodoDelete()">删除</button>
+            </div>
+        </div>
+    </div>
     <div class="todo-date-modal-overlay" id="todoDateModal" onclick="handleTodoDateOverlayClick(event)">
         <div class="modal modal-large todo-date-modal">
             <div class="todo-date-modal-header">
@@ -479,6 +461,49 @@
         const REVIEW_ARCHIVE_STORAGE_KEY = 'planner_review_archive_entries';
         const REVIEW_RECENT_LIMIT = 8;
         const REVIEW_EMOTION_INTENSITY_OPTIONS = ['很高', '高', '中', '低', '很低'];
+        let pendingTodoDeleteId = null;
+        let pendingTodoDeleteStarKey = null;
+
+        function findTodoStarAwardKey(todo) {
+            if (!window.RewardPool || !todo) return null;
+            const pool = window.RewardPool.getPool();
+            const keys = pool.awardedKeys || [];
+            const canonical = 'todo-' + String(todo.id);
+            if (keys.indexOf(canonical) >= 0) return canonical;
+            const idStr = String(todo.id);
+            for (let i = 0; i < keys.length; i++) {
+                const k = keys[i];
+                if (typeof k !== 'string' || k.indexOf('todo-') !== 0) continue;
+                const rest = k.slice(5);
+                if (rest === idStr || rest == todo.id) return k;
+            }
+            return null;
+        }
+
+        function closeTodoDeleteConfirm() {
+            pendingTodoDeleteId = null;
+            pendingTodoDeleteStarKey = null;
+            const el = document.getElementById('todoDeleteConfirmModal');
+            if (el) el.classList.remove('active');
+        }
+
+        function executeTodoDelete() {
+            const id = pendingTodoDeleteId;
+            const starKey = pendingTodoDeleteStarKey;
+            const el = document.getElementById('todoDeleteConfirmModal');
+            if (el) el.classList.remove('active');
+            pendingTodoDeleteId = null;
+            pendingTodoDeleteStarKey = null;
+            if (id == null) return;
+            if (starKey && window.RewardPool) {
+                window.RewardPool.revokeYellowStar(starKey);
+                if (typeof renderRewardPool === 'function') renderRewardPool();
+            }
+            todos = todos.filter(t => t.id != id);
+            Storage.set('planner_todos', todos);
+            renderTodoList();
+            refreshTodoDateModalIfOpen();
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const calendarPanel = document.getElementById('todoCalendarPanel');
@@ -495,6 +520,7 @@
             }
             renderTodoList();
             renderRewardPool();
+            flushPendingPlannerStarCollectAnimation();
             renderDailyReviewCard();
             initOkrSelect();
         });
@@ -818,6 +844,13 @@
             `;
         }
 
+        function reviewEntryCombinedUserPlainText(entry) {
+            return ['summary', 'keep', 'improve', 'stop', 'tasks']
+                .map((k) => normalizeInlineText(entry[k]))
+                .filter(Boolean)
+                .join('\n');
+        }
+
         function getScoreToneKey(score) {
             const scoreNum = Number.parseFloat(score);
             const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
@@ -860,14 +893,28 @@
             ];
 
             if (entries.length === 0) {
-                container.innerHTML = '<p class="daily-review-empty">暂无复盘记录</p>';
+                const dailyEmptyMsg =
+                    window.PlannerBackup && window.PlannerBackup.t
+                        ? window.PlannerBackup.t('home.dailyReviewEmpty')
+                        : '暂无复盘记录';
+                container.innerHTML = '<p class="daily-review-empty">' + escapeHtml(dailyEmptyMsg) + '</p>';
                 return;
             }
 
             const pickedKey = getDailyPickedReviewKey(entries);
             const picked = entries.find(entry => String(entry.poolKey) === pickedKey) || entries[0];
             const summaryHtml = sectionPreviewHtml('总结', picked.summary, 9999);
-            const todayTaskText = escapeHtml(normalizeInlineText(picked.tasks) || '今日事项');
+            const tasksPlain = normalizeInlineText(picked.tasks) || '';
+            const todayTaskText = escapeHtml(tasksPlain || '今日事项');
+            const combinedUser = reviewEntryCombinedUserPlainText(picked);
+            const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
+                ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
+                : '';
+            const reviewCompactInnerClass = reviewBodyFold ? `review-compact-inner ${reviewBodyFold}` : 'review-compact-inner';
+            const taskFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
+                ? PlannerBackup.userContentFoldClass(tasksPlain)
+                : '';
+            const todayTaskClass = taskFold ? `review-today-task-text ${taskFold}` : 'review-today-task-text';
             const scoreToneClass = getScoreToneClass(picked.score);
             const cheerText = escapeHtml(getScoreCheerText(picked.score));
             const intensity = normalizeEmotionIntensity(picked.emotionIntensity || picked.energy) || '中';
@@ -890,6 +937,26 @@
                 sectionPreviewHtml('🚫 停止', picked.stop, 9999)
             ].filter(Boolean).join('');
             const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const revExpandLabel =
+                window.PlannerBackup && window.PlannerBackup.t ? window.PlannerBackup.t('review.expand') : '展开';
+            const revExpandAria =
+                window.PlannerBackup && window.PlannerBackup.t
+                    ? window.PlannerBackup.t('review.expandCollapseAria')
+                    : '展开或收起复盘正文';
+            const compactBodyHtml = reviewBodyFold
+                ? `<div class="review-compact-wrap">
+                            <div class="${reviewCompactInnerClass}">
+                            ${summaryHtml}
+                            ${dividerHtml}
+                            ${kissHtml}
+                            </div>
+                            <button type="button" class="review-card-expand-btn" aria-expanded="false" aria-label="${escapeHtml(revExpandAria)}" onclick="handleReviewCardExpandClick(this, event)"><span class="review-card-expand-label">${escapeHtml(revExpandLabel)}</span><span class="review-card-expand-icon" aria-hidden="true">▼</span></button>
+                        </div>`
+                : `<div class="${reviewCompactInnerClass}">
+                            ${summaryHtml}
+                            ${dividerHtml}
+                            ${kissHtml}
+                            </div>`;
 
             container.innerHTML = `
                 <div class="daily-review-link">
@@ -901,13 +968,11 @@
                                     <span class="review-score-circle ${scoreToneClass}" title="评分 ${picked.score}/10">${picked.score}</span>
                                     <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
                                 </div>
-                                <span class="review-today-note"><strong>今天</strong><span class="review-today-task-text">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                                <span class="review-today-note"><strong>今天</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
                             </div>
                         </div>
                         <div class="review-content review-content-compact">
-                            ${summaryHtml}
-                            ${dividerHtml}
-                            ${kissHtml}
+                            ${compactBodyHtml}
                         </div>
                     </article>
                 </div>
@@ -936,7 +1001,11 @@
             if (prizesEl) {
                 const prizes = pool.prizes || [];
                 if (prizes.length === 0) {
-                    prizesEl.innerHTML = '<p class="reward-pool-prizes-empty">暂无奖品，点击下方添加</p>';
+                    const prizesEmptyMsg =
+                        window.PlannerBackup && window.PlannerBackup.t
+                            ? window.PlannerBackup.t('home.rewardPrizesEmpty')
+                            : '暂无奖品，点击下方添加';
+                    prizesEl.innerHTML = '<p class="reward-pool-prizes-empty">' + escapeHtml(prizesEmptyMsg) + '</p>';
                 } else {
                     prizesEl.innerHTML = prizes.map(p => {
                         const cost = Number(p.cost) || 0;
@@ -944,10 +1013,14 @@
                         const realPrice = String(p.realPrice || '').trim();
                         const imgData = p.imageData ? ('data:image/png;base64,' + String(p.imageData).replace(/"/g, '')) : '';
                         const imgStyle = imgData ? 'background-image:url(\'' + imgData.replace(/'/g, "\\'") + '\')' : '';
+                        const prizeFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
+                            ? PlannerBackup.userContentFoldClass(p.name || '未命名')
+                            : '';
+                        const prizeNameClass = prizeFold ? `reward-prize-name ${prizeFold}` : 'reward-prize-name';
                         return `<div class="reward-prize-card" data-prize-id="${escapeHtml(String(p.id))}" onclick="editPrize('${escapeJsString(String(p.id))}')" role="button" tabindex="0">
                             <div class="reward-prize-img" style="${imgStyle}">${!imgData ? '📦' : ''}</div>
                             <div class="reward-prize-info">
-                                <span class="reward-prize-name">${escapeHtml(p.name || '未命名')}</span>
+                                <span class="${prizeNameClass}">${escapeHtml(p.name || '未命名')}</span>
                                 <span class="reward-prize-cost"><span class="reward-star reward-star-colorful">★</span>${cost}</span>
                                 ${realPrice ? '<span class="reward-prize-realprice">' + escapeHtml(realPrice) + '</span>' : ''}
                             </div>
@@ -958,34 +1031,44 @@
             }
         }
 
+        function handlePlannerStarAwarded(e) {
+            const d = e && e.detail;
+            if (!d) return;
+            const sel = d.kind === 'colorful'
+                ? '[data-reward-pool-target="colorful"]'
+                : '[data-reward-pool-target="yellow-' + d.source + '"]';
+            const row = document.querySelector(sel);
+            if (!row) return;
+            row.classList.remove('reward-star-collect-active');
+            void row.offsetWidth;
+            row.classList.add('reward-star-collect-active');
+            if (row._rewardStarCollectTimer) clearTimeout(row._rewardStarCollectTimer);
+            row._rewardStarCollectTimer = setTimeout(function () {
+                row.classList.remove('reward-star-collect-active');
+                row._rewardStarCollectTimer = null;
+            }, 720);
+        }
+        document.addEventListener('planner-star-awarded', handlePlannerStarAwarded);
+
+        function flushPendingPlannerStarCollectAnimation() {
+            try {
+                if (typeof sessionStorage === 'undefined') return;
+                const raw = sessionStorage.getItem('__planner_pending_star_collect_v1');
+                if (!raw) return;
+                sessionStorage.removeItem('__planner_pending_star_collect_v1');
+                const o = JSON.parse(raw);
+                if (!o || !o.kind) return;
+                document.dispatchEvent(new CustomEvent('planner-star-awarded', {
+                    detail: { kind: o.kind, source: o.source, key: o.key },
+                    bubbles: true
+                }));
+            } catch (err) {
+                /* ignore */
+            }
+        }
+
         let prizeEditingId = null;
         let prizeImageData = null;
-
-        function openRewardPoolSettings() {
-            if (!window.RewardPool) return;
-            const pool = window.RewardPool.getPool();
-            var el = document.getElementById('rewardRatioTodo');
-            if (el) el.value = pool.ratioTodo || 5;
-            el = document.getElementById('rewardRatioKr');
-            if (el) el.value = pool.ratioKr || 5;
-            el = document.getElementById('rewardRatioReview');
-            if (el) el.value = pool.ratioReview || 5;
-            openModal('rewardPoolSettingsModal');
-        }
-
-        function saveRewardPoolSettings() {
-            if (!window.RewardPool) return;
-            var todoEl = document.getElementById('rewardRatioTodo');
-            var krEl = document.getElementById('rewardRatioKr');
-            var reviewEl = document.getElementById('rewardRatioReview');
-            window.RewardPool.updateRatios({
-                todo: todoEl && todoEl.value,
-                kr: krEl && krEl.value,
-                review: reviewEl && reviewEl.value
-            });
-            closeModal('rewardPoolSettingsModal');
-            renderRewardPool();
-        }
 
         function openPrizeModal(editingId) {
             prizeEditingId = editingId || null;
@@ -1513,13 +1596,17 @@
             const cornerDate = isPriorityLayout && todo.dueDate
                 ? `<span class="todo-priority-date-corner">${formatDate(todo.dueDate)}</span>`
                 : '';
+            const todoFoldCls = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
+                ? PlannerBackup.userContentFoldClass(todo.title || '')
+                : '';
+            const todoTitleTextClass = todoFoldCls ? `todo-title-text ${todoFoldCls}` : 'todo-title-text';
 
             return `
                 <div class="todo-item${noMetaClass}${isPriorityLayout ? ' priority-layout' : ''} ${todo.completed ? 'completed' : ''} ${isOverdue ? 'todo-item-overdue' : ''}${draggable ? ' is-draggable' : ''}"${draggable ? ' draggable="true"' : ''} data-todo-id="${escapeHtml(String(todo.id))}">
                     <div class="todo-checkbox ${todo.completed ? 'checked' : ''}"
                          onclick="toggleTodo('${safeTodoId}')"></div>
                     <div class="todo-content">
-                        <div class="todo-title" onclick="editTodo('${safeTodoId}')"><span class="todo-title-text">${safeTodoTitle}</span>${titleBadges}</div>
+                        <div class="todo-title" onclick="editTodo('${safeTodoId}')"><span class="${todoTitleTextClass}">${safeTodoTitle}</span>${titleBadges}</div>
                         <div class="todo-meta">
                             ${dueDateInMeta ? `
                                 <span class="todo-date">
@@ -1702,11 +1789,25 @@
         }
 
         function deleteTodo(id) {
-            if (confirm('确定删除这个事项吗？')) {
-                todos = todos.filter(t => t.id != id);
-                Storage.set('planner_todos', todos);
-                renderTodoList();
-                refreshTodoDateModalIfOpen();
+            const todo = todos.find(t => t.id == id);
+            if (!todo) return;
+            const starKey = findTodoStarAwardKey(todo);
+            pendingTodoDeleteId = id;
+            pendingTodoDeleteStarKey = starKey;
+            const message = starKey
+                ? '该事项已完成并获得过「事项」黄星积分。删除后相应积分会被收回，确定删除吗？'
+                : '确定删除这个事项吗？';
+            const msgEl = document.getElementById('todoDeleteConfirmMessage');
+            const modal = document.getElementById('todoDeleteConfirmModal');
+            if (msgEl) msgEl.textContent = message;
+            if (modal) {
+                modal.classList.add('active');
+                return;
+            }
+            if (confirm(message)) {
+                executeTodoDelete();
+            } else {
+                closeTodoDeleteConfirm();
             }
         }
 
@@ -1765,11 +1866,11 @@
                 if (!wasCompleted && todo.completed) {
                     maybeSyncTodoKrProgress(todo);
                     if (window.RewardPool) {
-                        window.RewardPool.awardYellowStar('todo-' + todo.id);
+                        window.RewardPool.awardYellowStar('todo-' + String(todo.id));
                         if (typeof renderRewardPool === 'function') renderRewardPool();
                     }
                 } else if (wasCompleted && !todo.completed && window.RewardPool) {
-                    window.RewardPool.revokeYellowStar('todo-' + todo.id);
+                    window.RewardPool.revokeYellowStar('todo-' + String(todo.id));
                     if (typeof renderRewardPool === 'function') renderRewardPool();
                 }
                 Storage.set('planner_todos', todos);

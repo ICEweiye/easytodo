@@ -11,6 +11,8 @@
     const FONT_SIZE_KEY = '__planner_font_size';
     const LANGUAGE_KEY = '__planner_language';
     const CONTENT_OVERFLOW_KEY = '__planner_content_overflow';
+    const FOLD_LONG_CONTENT_KEY = '__planner_fold_long_content';
+    const USER_CONTENT_FOLD_THRESHOLD = 300;
 
     function getSidebarCollapsedStorageKey() {
         if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
@@ -18,6 +20,25 @@
         }
         return 'sidebarCollapsed';
     }
+
+    function getSidebarRetractedStorageKey() {
+        if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
+            return PlannerAuth.scopedStorageKey('planner_sidebar_retracted');
+        }
+        return 'planner_sidebar_retracted';
+    }
+
+    (function applyPlannerSidebarRetractedClassFromStorage() {
+        try {
+            if (typeof localStorage === 'undefined') return;
+            if (localStorage.getItem(getSidebarRetractedStorageKey()) === '1') {
+                document.documentElement.classList.add('planner-sidebar-retracted');
+            }
+        } catch (e) {
+            /* ignore */
+        }
+    })();
+
     const ALLOWED_START_PAGES = ['index.html', 'nav.html', 'stats.html', 'review.html', 'archive.html'];
 
     const SETTINGS_MODAL_ID = 'plannerSettingsModal';
@@ -73,6 +94,57 @@
         localStorage.setItem(getSidebarCollapsedStorageKey(), collapsed ? 'true' : 'false');
     }
 
+    function isPlannerSidebarRetracted() {
+        return document.documentElement.classList.contains('planner-sidebar-retracted');
+    }
+
+    function setPlannerSidebarRetracted(retracted) {
+        const on = !!retracted;
+        document.documentElement.classList.toggle('planner-sidebar-retracted', on);
+        try {
+            localStorage.setItem(getSidebarRetractedStorageKey(), on ? '1' : '0');
+        } catch (e) {
+            /* ignore */
+        }
+        syncGlobalTopbarLogoForSidebarRetracted();
+    }
+
+    function togglePlannerSidebarRetracted() {
+        setPlannerSidebarRetracted(!isPlannerSidebarRetracted());
+    }
+
+    function syncGlobalTopbarLogoForSidebarRetracted() {
+        if (typeof document === 'undefined' || !document.querySelectorAll) return;
+        const expanded = !isPlannerSidebarRetracted();
+        document.querySelectorAll('a.global-topbar-logo').forEach((el) => {
+            el.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            const side = document.getElementById('sidebar');
+            if (side) el.setAttribute('aria-controls', side.id);
+            el.title = expanded ? '收起主导航' : '展开主导航';
+            el.setAttribute('aria-label', expanded ? '收起主导航' : '展开主导航');
+        });
+    }
+
+    let plannerTopbarLogoToggleBound = false;
+    function initPlannerTopbarLogoSidebarToggle() {
+        if (!plannerTopbarLogoToggleBound) {
+            plannerTopbarLogoToggleBound = true;
+            document.addEventListener(
+                'click',
+                (ev) => {
+                    const logo = ev.target.closest('a.global-topbar-logo');
+                    if (!logo) return;
+                    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    togglePlannerSidebarRetracted();
+                },
+                true
+            );
+        }
+        syncGlobalTopbarLogoForSidebarRetracted();
+    }
+
     const FONT_SIZE_VALUES = { small: 0.875, standard: 1, medium: 1.1, large: 1.2, xlarge: 1.3 };
     function getFontSizePreference() {
         const v = localStorage.getItem(FONT_SIZE_KEY) || 'standard';
@@ -102,25 +174,43 @@
         return valid;
     }
 
-    const ALLOWED_OVERFLOW = ['ellipsis', 'wrap'];
-    function getContentOverflowPreference() {
-        const v = localStorage.getItem(CONTENT_OVERFLOW_KEY) || 'ellipsis';
-        return ALLOWED_OVERFLOW.includes(v) ? v : 'ellipsis';
+    function userRecordedCharCount(text) {
+        return Array.from(String(text || '')).length;
     }
-    function setContentOverflowPreference(v) {
-        const valid = ALLOWED_OVERFLOW.includes(v) ? v : 'ellipsis';
-        localStorage.setItem(CONTENT_OVERFLOW_KEY, valid);
-        return valid;
+
+    function getFoldLongContentEnabled() {
+        const v = localStorage.getItem(FOLD_LONG_CONTENT_KEY);
+        if (v === '1' || v === 'true') return true;
+        if (v === '0' || v === 'false') return false;
+        const old = localStorage.getItem(CONTENT_OVERFLOW_KEY);
+        if (old === 'wrap') return false;
+        return true;
     }
-    function applyContentOverflowPreference() {
-        const v = getContentOverflowPreference();
-        document.documentElement.classList.toggle('planner-content-overflow-wrap', v === 'wrap');
-        document.documentElement.classList.toggle('planner-content-overflow-ellipsis', v === 'ellipsis');
+
+    function setFoldLongContentEnabled(enabled) {
+        localStorage.setItem(FOLD_LONG_CONTENT_KEY, enabled ? '1' : '0');
+        return !!enabled;
+    }
+
+    function userContentFoldClass(text) {
+        if (!getFoldLongContentEnabled()) return '';
+        if (userRecordedCharCount(text) <= USER_CONTENT_FOLD_THRESHOLD) return '';
+        return 'is-user-text-overlong';
+    }
+
+    function userReviewBodyFoldClass(combinedText) {
+        if (!getFoldLongContentEnabled()) return '';
+        if (userRecordedCharCount(combinedText) <= USER_CONTENT_FOLD_THRESHOLD) return '';
+        return 'is-user-review-body-folded';
+    }
+
+    function applyFoldLongContentPreference() {
+        document.documentElement.classList.remove('planner-content-overflow-wrap', 'planner-content-overflow-ellipsis');
+        document.documentElement.classList.toggle('planner-fold-long-enabled', getFoldLongContentEnabled());
     }
 
     function applyAppearancePrefs() {
-        applyFontSizePreference();
-        applyContentOverflowPreference();
+        applyFoldLongContentPreference();
     }
 
     function moveToolsAboveCollapseButton() {
@@ -146,6 +236,7 @@
 
         applySidebarCollapsedPreference(getSidebarCollapsedPreference());
         applyAppearancePrefs();
+        initPlannerTopbarLogoSidebarToggle();
     }
 
     if (document.readyState === 'loading') {
@@ -504,6 +595,9 @@
     window.PlannerBackup = {
         getSidebarCollapsedPreference,
         applySidebarCollapsedPreference,
+        isPlannerSidebarRetracted,
+        setPlannerSidebarRetracted,
+        togglePlannerSidebarRetracted,
         getStartPage,
         setStartPage,
         getFontSizePreference,
@@ -511,8 +605,164 @@
         applyFontSizePreference,
         getLanguagePreference,
         setLanguagePreference,
-        getContentOverflowPreference,
-        setContentOverflowPreference,
-        applyAppearancePrefs
+        getFoldLongContentEnabled,
+        setFoldLongContentEnabled,
+        userContentFoldClass,
+        userReviewBodyFoldClass,
+        userRecordedCharCount,
+        applyAppearancePrefs,
+        applyFoldLongContentPreference
     };
+
+    function handleReviewCardExpandClick(btn, ev) {
+        if (!btn) return;
+        if (ev) {
+            ev.stopPropagation();
+            ev.preventDefault();
+        }
+        const wrap = btn.closest('.review-compact-wrap');
+        if (!wrap) return;
+        const expanded = wrap.classList.toggle('is-expanded');
+        btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        const label = btn.querySelector('.review-card-expand-label');
+        const icon = btn.querySelector('.review-card-expand-icon');
+        if (label) label.textContent = expanded ? '收起' : '展开';
+        if (icon) icon.textContent = expanded ? '▲' : '▼';
+    }
+
+    window.handleReviewCardExpandClick = handleReviewCardExpandClick;
+
+    function plannerShouldAutosizeTextarea(el) {
+        if (!el || el.tagName !== 'TEXTAREA') return false;
+        if (el.closest('.modal-overlay')) return true;
+        return el.id === 'profileBio';
+    }
+
+    function plannerModalOverlayIsUsable(overlay) {
+        return overlay && overlay.classList && overlay.classList.contains('active');
+    }
+
+    function plannerAutosizeTextarea(el) {
+        if (!plannerShouldAutosizeTextarea(el)) return;
+        const overlay = el.closest('.modal-overlay');
+        if (overlay && !plannerModalOverlayIsUsable(overlay)) {
+            el.style.removeProperty('height');
+            return;
+        }
+        el.style.overflowY = 'hidden';
+        el.style.height = '0px';
+        void el.offsetHeight;
+        el.style.height = `${el.scrollHeight}px`;
+    }
+
+    function plannerAutosizeTextareasInRoot(root) {
+        const scope = root && root.querySelectorAll ? root : document;
+        scope.querySelectorAll('textarea').forEach((ta) => {
+            if (!plannerShouldAutosizeTextarea(ta)) return;
+            const overlay = ta.closest('.modal-overlay');
+            if (overlay && !plannerModalOverlayIsUsable(overlay)) {
+                ta.style.removeProperty('height');
+                return;
+            }
+            plannerAutosizeTextarea(ta);
+        });
+    }
+
+    /** 弹层带 visibility + modal transform 动画，首帧测高常偏小，需多拍与 transition 结束后重测 */
+    function schedulePlannerOverlayTextareaAutosize(overlay) {
+        if (!overlay || !plannerModalOverlayIsUsable(overlay)) return;
+        const run = () => {
+            if (!plannerModalOverlayIsUsable(overlay)) return;
+            plannerAutosizeTextareasInRoot(overlay);
+        };
+        requestAnimationFrame(() => requestAnimationFrame(run));
+        window.setTimeout(run, 0);
+        window.setTimeout(run, 50);
+        window.setTimeout(run, 240);
+        window.setTimeout(run, 400);
+    }
+
+    function initPlannerEditTextareaAutosize() {
+        document.addEventListener(
+            'input',
+            (e) => {
+                const t = e.target;
+                if (t && t.tagName === 'TEXTAREA' && plannerShouldAutosizeTextarea(t)) {
+                    queueMicrotask(() => plannerAutosizeTextarea(t));
+                }
+            },
+            true
+        );
+        document.addEventListener(
+            'focusin',
+            (e) => {
+                const t = e.target;
+                if (t && t.tagName === 'TEXTAREA' && plannerShouldAutosizeTextarea(t)) {
+                    queueMicrotask(() => plannerAutosizeTextarea(t));
+                }
+            },
+            true
+        );
+
+        const overlayObserver = new MutationObserver((mutations) => {
+            for (let i = 0; i < mutations.length; i += 1) {
+                const m = mutations[i];
+                if (m.type !== 'attributes' || m.attributeName !== 'class') continue;
+                const node = m.target;
+                if (!(node instanceof Element) || !node.classList.contains('modal-overlay')) continue;
+                if (!node.classList.contains('active')) {
+                    plannerAutosizeTextareasInRoot(node);
+                    continue;
+                }
+                schedulePlannerOverlayTextareaAutosize(node);
+            }
+        });
+
+        function wireModalOverlay(el) {
+            if (!(el instanceof Element) || !el.classList.contains('modal-overlay')) return;
+            if (el.dataset.plannerTextareaAutosizeObserved === '1') return;
+            el.dataset.plannerTextareaAutosizeObserved = '1';
+            overlayObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+            if (el.dataset.plannerModalTransitionAutosize !== '1') {
+                el.dataset.plannerModalTransitionAutosize = '1';
+                el.addEventListener('transitionend', (ev) => {
+                    if (!plannerModalOverlayIsUsable(el)) return;
+                    if (ev.propertyName !== 'transform') return;
+                    const tgt = ev.target;
+                    if (!(tgt instanceof Element) || !tgt.classList.contains('modal')) return;
+                    plannerAutosizeTextareasInRoot(el);
+                });
+            }
+        }
+
+        let plannerModalTextareaBodyObserverStarted = false;
+        function wirePlannerModalTextareaObserversWhenDomReady() {
+            document.querySelectorAll('.modal-overlay').forEach(wireModalOverlay);
+            if (!document.body || plannerModalTextareaBodyObserverStarted) return;
+            plannerModalTextareaBodyObserverStarted = true;
+            const bodyObserver = new MutationObserver(() => {
+                document.querySelectorAll('.modal-overlay').forEach(wireModalOverlay);
+            });
+            bodyObserver.observe(document.body, { childList: true, subtree: true });
+        }
+
+        function kickAutosizeVisibleTextareas() {
+            plannerAutosizeTextareasInRoot(document);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                wirePlannerModalTextareaObserversWhenDomReady();
+                kickAutosizeVisibleTextareas();
+            });
+        } else {
+            wirePlannerModalTextareaObserversWhenDomReady();
+            kickAutosizeVisibleTextareas();
+        }
+    }
+
+    initPlannerEditTextareaAutosize();
+
+    window.PlannerBackup.autosizeTextareasInRoot = plannerAutosizeTextareasInRoot;
+    window.PlannerBackup.scheduleOverlayTextareaAutosize = schedulePlannerOverlayTextareaAutosize;
 })();

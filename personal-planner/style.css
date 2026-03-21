@@ -68,13 +68,17 @@ html.font-size-medium { font-size: 17.6px; }
 html.font-size-large { font-size: 19.2px; }
 html.font-size-xlarge { font-size: 20.8px; }
 
-/* 内容过长：ellipsis 单行省略（默认），wrap 多行换行 */
-html.planner-content-overflow-ellipsis .todo-title-text,
-html.planner-content-overflow-ellipsis .reward-prize-name,
-html.planner-content-overflow-ellipsis .module-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html.planner-content-overflow-wrap .todo-title-text,
-html.planner-content-overflow-wrap .reward-prize-name,
-html.planner-content-overflow-wrap .module-title { white-space: normal; overflow-wrap: break-word; }
+/* 勾选「内容过长折叠」且单条用户文本超过 300 字时单行省略（由 .is-user-text-overlong 标记） */
+html.planner-fold-long-enabled .todo-title-text.is-user-text-overlong,
+html.planner-fold-long-enabled .reward-prize-name.is-user-text-overlong,
+html.planner-fold-long-enabled .okr-title.is-user-text-overlong,
+html.planner-fold-long-enabled .kr-text.is-user-text-overlong,
+html.planner-fold-long-enabled .book-title.is-user-text-overlong,
+html.planner-fold-long-enabled .project-name.is-user-text-overlong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 * {
     margin: 0;
@@ -115,7 +119,12 @@ body:has(.todo-date-modal-overlay.active) {
     left: 0;
     top: 0;
     z-index: 10;
-    transition: width 0.3s ease;
+    clip-path: inset(0 0 0 0);
+    transition:
+        width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        clip-path 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.32s ease;
 }
 
 .sidebar.collapsed {
@@ -650,6 +659,12 @@ body:has(.todo-date-modal-overlay.active) {
     color: var(--warm-gray-900);
 }
 
+.finance-period-label {
+    font-weight: 400;
+    color: var(--warm-gray-600);
+    font-size: 0.9em;
+}
+
 .add-btn {
     background: var(--warm-gray-100);
     border: none;
@@ -875,14 +890,20 @@ body:has(.todo-date-modal-overlay.active) {
     display: flex;
     flex-direction: column;
     gap: 0;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .home-daily-review-module .review-record-card {
     min-height: 0;
     max-height: none;
+    min-width: 0;
+    max-width: 100%;
     overflow: visible;
     border: 1px solid rgba(212, 206, 199, 0.25);
     box-shadow: 0 2px 8px rgba(45, 41, 38, 0.06);
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .daily-review-empty {
@@ -892,6 +913,8 @@ body:has(.todo-date-modal-overlay.active) {
 
 .daily-review-link {
     display: block;
+    min-width: 0;
+    max-width: 100%;
     text-decoration: none;
     color: inherit;
 }
@@ -970,11 +993,12 @@ body:has(.todo-date-modal-overlay.active) {
     color: var(--warm-gray-900);
 }
 
-/* 积分奖池 */
+/* 积分奖池（无标题栏时与侧栏其它模块顶对齐略作内边距） */
 .home-reward-pool-module .reward-pool-content {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-top: 4px;
 }
 
 .reward-pool-stars {
@@ -987,6 +1011,10 @@ body:has(.todo-date-modal-overlay.active) {
     display: flex;
     align-items: center;
     gap: 6px;
+    border-radius: 8px;
+    padding: 2px 4px;
+    margin: 0 -4px;
+    transition: background-color 0.2s ease;
 }
 
 .reward-pool-label {
@@ -1021,6 +1049,105 @@ body:has(.todo-date-modal-overlay.active) {
     font-size: 18px;
     font-weight: 600;
     color: var(--warm-gray-900);
+}
+
+@keyframes reward-star-row-collect {
+    0% {
+        transform: scale(1);
+        background-color: transparent;
+        box-shadow: 0 0 0 rgba(230, 184, 0, 0);
+    }
+    35% {
+        transform: scale(1.03);
+        background-color: rgba(230, 184, 0, 0.14);
+        box-shadow: 0 0 20px rgba(230, 184, 0, 0.35);
+    }
+    100% {
+        transform: scale(1);
+        background-color: transparent;
+        box-shadow: 0 0 0 rgba(230, 184, 0, 0);
+    }
+}
+
+@keyframes reward-star-icon-pop {
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+    30% {
+        transform: scale(1.38) rotate(-14deg);
+    }
+    60% {
+        transform: scale(1.22) rotate(10deg);
+    }
+}
+
+@keyframes reward-count-bump {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.22);
+        color: #c9a000;
+    }
+}
+
+@keyframes reward-colorful-row-collect {
+    0% {
+        filter: brightness(1);
+        box-shadow: 0 0 0 rgba(199, 91, 154, 0);
+    }
+    40% {
+        filter: brightness(1.08);
+        box-shadow: 0 0 22px rgba(107, 127, 215, 0.45), 0 0 12px rgba(232, 124, 80, 0.35);
+    }
+    100% {
+        filter: brightness(1);
+        box-shadow: 0 0 0 rgba(199, 91, 154, 0);
+    }
+}
+
+.reward-pool-star-row.reward-star-collect-active {
+    animation: reward-star-row-collect 0.68s ease-out;
+}
+
+.reward-pool-star-row.reward-star-collect-active .reward-star {
+    display: inline-block;
+    animation: reward-star-icon-pop 0.68s ease-out;
+}
+
+.reward-pool-star-row.reward-star-collect-active .reward-pool-count {
+    display: inline-block;
+    animation: reward-count-bump 0.55s ease-out 0.08s both;
+}
+
+.reward-pool-star-row[data-reward-pool-target="colorful"].reward-star-collect-active {
+    animation-name: reward-colorful-row-collect;
+}
+
+.planner-star-collect-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(12px);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--warm-gray-900);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(230, 184, 0, 0.45);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10050;
+    transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.planner-star-collect-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 .reward-pool-exchange-btn {
@@ -1100,9 +1227,9 @@ body:has(.todo-date-modal-overlay.active) {
     font-size: 13px;
     font-weight: 500;
     color: var(--warm-gray-900);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .reward-prize-cost {
@@ -1864,6 +1991,7 @@ body:has(.todo-date-modal-overlay.active) {
 .home-page .global-topbar-logo {
     /* 与下方 sidebar 导航文字居中对齐：logo 图片中心对齐 sidebar 中心 */
     margin-left: calc((var(--sidebar-width) - 156px) / 2 - 16px);
+    transition: margin-left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-page .main-content {
@@ -1872,6 +2000,7 @@ body:has(.todo-date-modal-overlay.active) {
     overflow-y: auto;
     padding-top: calc(var(--layout-page-gutter) + var(--topbar-fixed-height));
     position: relative;
+    transition: margin-left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-page .main-content.with-global-topbar {
@@ -1888,6 +2017,7 @@ body:has(.todo-date-modal-overlay.active) {
     background: var(--warm-gray-50);
     pointer-events: none;
     z-index: 22;
+    transition: left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-page .main-content::after {
@@ -1900,7 +2030,7 @@ body:has(.todo-date-modal-overlay.active) {
     background: transparent;
     box-shadow: 0 8px 14px rgba(70, 60, 50, 0.14);
     opacity: 0;
-    transition: opacity 0.18s ease;
+    transition: opacity 0.18s ease, left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
     z-index: 23;
 }
@@ -1919,6 +2049,48 @@ body:has(.todo-date-modal-overlay.active) {
     box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
     overflow: hidden;
     padding: 22px 0 14px;
+    clip-path: inset(0 0 0 0);
+    transition:
+        width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        clip-path 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.32s ease,
+        box-shadow 0.32s ease;
+}
+
+/* 顶栏 Logo 切换：主导航自上而下收起，主区补位；再次点击自下而上展开并让出侧栏宽度 */
+html.planner-sidebar-retracted .sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    clip-path: inset(100% 0 0 0);
+    pointer-events: none;
+    border: none !important;
+    box-shadow: none !important;
+    opacity: 0;
+}
+
+html.planner-sidebar-retracted .home-page .sidebar {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* 与顶栏 global-topbar 的 left 一致；不再保留「侧栏与主区间距」——侧栏已收起 */
+html.planner-sidebar-retracted .home-page .main-content {
+    margin-left: var(--layout-page-gutter) !important;
+}
+
+/* Logo 沿用展开态的 margin 计算，收起主导航时视觉位置不变 */
+html.planner-sidebar-retracted .home-page .main-content::before,
+html.planner-sidebar-retracted .home-page .main-content::after {
+    left: var(--layout-page-gutter) !important;
+    transition: left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.planner-sidebar-retracted .main-content {
+    margin-left: 0 !important;
+    transition: margin-left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-page .sidebar-header,
@@ -2122,9 +2294,9 @@ body:has(.todo-date-modal-overlay.active) {
     cursor: pointer;
     flex: 1;
     min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     line-height: 1.45;
 }
 
@@ -2247,6 +2419,18 @@ body:has(.todo-date-modal-overlay.active) {
 .modal-overlay.active {
     opacity: 1;
     visibility: visible;
+}
+
+/* 高于「日期事项」弹窗 (z-index:120)，否则从内嵌列表点删除时看不到确认层 */
+#todoDeleteConfirmModal {
+    z-index: 200;
+}
+
+.todo-delete-confirm-text {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--warm-gray-700);
 }
 
 .modal {
@@ -2519,10 +2703,11 @@ body:has(.todo-date-modal-overlay.active) {
 .color-coral { background: var(--okr-color-coral); }
 .color-amber { background: var(--okr-color-amber); }
 
-/* 多行文本框 */
+/* 多行文本框（弹窗内由脚本随内容增高，避免内部滚动条） */
 .form-textarea {
     min-height: 80px;
-    resize: vertical;
+    resize: none;
+    overflow-y: hidden;
     font-family: var(--font-sans);
     line-height: 1.5;
 }
@@ -2555,6 +2740,18 @@ body:has(.todo-date-modal-overlay.active) {
     outline: none;
     border-color: var(--primary-brown);
     box-shadow: 0 0 0 3px rgba(160, 128, 112, 0.1);
+}
+
+/* 数字框去掉上下步进按钮，仅键盘/手动输入 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 /* 下拉选择框样式 */
@@ -3374,6 +3571,12 @@ select.form-input option:hover {
 .todo-item.priority-layout .todo-title-text {
     flex: 1 1 auto;
     min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+html.planner-fold-long-enabled .todo-item.priority-layout .todo-title-text.is-user-text-overlong {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3441,9 +3644,25 @@ select.form-input option:hover {
 }
 
 .todo-item.no-meta .todo-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     width: 100%;
+    min-width: 0;
     line-height: 1.2;
     text-align: left;
+    white-space: normal;
+}
+
+.todo-item.no-meta .todo-title-text {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-overlong {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3504,13 +3723,25 @@ select.form-input option:hover {
 }
 
 .todo-title {
-    display: block;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    min-width: 0;
     font-size: 13px;
     color: var(--warm-gray-900);
     cursor: pointer;
     line-height: 1.4;
     word-break: keep-all;
     white-space: normal;
+}
+
+.todo-title-text {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .todo-kr-linked-icon,
@@ -3887,6 +4118,11 @@ select.form-input option:hover {
     --kiss-item-min-height: 88px;
 }
 
+.kiss-grid > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .kiss-toolbar {
     display: flex;
     gap: 8px;
@@ -3937,6 +4173,8 @@ select.form-input option:hover {
     height: var(--kiss-item-min-height);
     white-space: normal;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     overflow: hidden;
 }
 
@@ -4129,11 +4367,20 @@ select.form-input option:hover {
     margin-bottom: var(--spacing-sm);
     border: 1px solid rgba(212, 206, 199, 0.25);
     box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .review-list {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--spacing-sm);
+}
+
+.review-list > * {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .review-list > .empty-state {
@@ -4145,9 +4392,34 @@ select.form-input option:hover {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     margin-bottom: 0;
     min-height: 170px;
+    min-width: 0;
+    max-width: 100%;
     padding: 12px;
     border: 1px solid rgba(212, 206, 199, 0.25);
     box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    display: flex;
+    flex-direction: column;
+}
+
+.review-record-card .review-content.review-content-compact {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.review-record-card .review-compact-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.review-record-card .review-card-expand-btn {
+    margin-top: auto;
+    padding-top: 8px;
 }
 
 .review-record-card .review-header {
@@ -4168,15 +4440,25 @@ select.form-input option:hover {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 8px;
     margin-bottom: var(--spacing-sm);
     padding-bottom: var(--spacing-xs);
     border-bottom: 1px solid var(--warm-gray-100);
+    min-width: 0;
+}
+
+.review-header .okr-delete {
+    flex-shrink: 0;
 }
 
 .review-period {
     font-size: 14px;
     font-weight: 600;
     color: var(--warm-gray-900);
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .review-header-main {
@@ -4344,6 +4626,8 @@ select.form-input option:hover {
     font-size: 13px;
     color: var(--warm-gray-700);
     line-height: 1.6;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .review-content-compact {
@@ -4352,6 +4636,85 @@ select.form-input option:hover {
     gap: 6px;
     font-size: 12px;
     line-height: 1.45;
+    min-width: 0;
+}
+
+.review-compact-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    min-width: 0;
+    width: 100%;
+}
+
+.review-card-expand-btn {
+    align-self: flex-start;
+    margin: 0;
+    padding: 2px 0;
+    border: none;
+    background: transparent;
+    color: var(--primary-brown);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.review-card-expand-btn:hover,
+.review-card-expand-btn:focus-visible {
+    color: #8b6f5c;
+    text-decoration: none;
+}
+
+.review-card-expand-icon {
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.88;
+    flex-shrink: 0;
+    transform: translateY(0.5px);
+}
+
+.review-compact-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+}
+
+html.planner-fold-long-enabled .review-compact-inner.is-user-review-body-folded {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 8;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.review-compact-wrap.is-expanded .review-compact-inner.is-user-review-body-folded {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    -webkit-box-orient: unset;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
 }
 
 .review-line {
@@ -4368,11 +4731,13 @@ select.form-input option:hover {
 }
 
 .review-line p {
+    display: flow-root;
     margin: 0;
     color: var(--warm-gray-600);
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
+    min-width: 0;
 }
 
 .review-line p::after {
@@ -4403,11 +4768,13 @@ select.form-input option:hover {
 .review-section p {
     color: var(--warm-gray-600);
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
 }
 
-.form-textarea {
-    min-height: 80px;
-    resize: vertical;
+.review-content-compact .review-section {
+    min-width: 0;
 }
 
 .review-textarea {
@@ -4555,11 +4922,10 @@ select.form-input option:hover {
     gap: 8px;
 }
 
-#reviewModal .form-textarea {
-    resize: none;
+#reviewModal #reviewStop {
+    min-height: 62px;
 }
 
-#reviewModal #reviewStop,
 #reviewModal .review-start-add-box {
     height: 62px;
     min-height: 62px;

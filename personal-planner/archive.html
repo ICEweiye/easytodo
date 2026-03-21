@@ -272,6 +272,13 @@
             return Number.isFinite(num) ? num : fallback;
         }
 
+        function roundFinanceAmount(value) {
+            const amount = Number(value);
+            if (!Number.isFinite(amount)) return 0;
+            const rounded = Math.round((amount + Number.EPSILON) * 100) / 100;
+            return Math.abs(rounded) < 0.000000000001 ? 0 : rounded;
+        }
+
         function sanitizeCategoryValues(raw, allowedKeys) {
             const result = {};
             const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
@@ -317,14 +324,14 @@
         }
 
         function formatCurrency(value) {
-            const amount = Math.round(toFiniteNumber(value, 0));
-            return `¥${Math.abs(amount).toLocaleString('zh-CN')}`;
+            const amount = roundFinanceAmount(toFiniteNumber(value, 0));
+            return `¥${Math.abs(amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
         function formatSignedCurrency(value) {
-            const amount = Math.round(toFiniteNumber(value, 0));
-            if (amount === 0) return '¥0';
-            return `${amount > 0 ? '+' : '-'}${formatCurrency(amount)}`;
+            const amount = roundFinanceAmount(toFiniteNumber(value, 0));
+            if (amount === 0) return '¥0.00';
+            return `${amount > 0 ? '+' : '-'}¥${Math.abs(amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
         function formatPercent(value, total) {
@@ -764,11 +771,11 @@
 
                     const expenseByCategory = sanitizeCategoryValues(record.expenseByCategory, EXPENSE_CATEGORY_KEYS);
                     const incomeByCategory = sanitizeCategoryValues(record.incomeByCategory, INCOME_CATEGORY_KEYS);
-                    const expense = toFiniteNumber(record.expense, 0);
-                    const income = toFiniteNumber(record.income, 0);
-                    const investment = toFiniteNumber(record.investment, 0);
-                    const investmentReturn = toFiniteNumber(record.investmentReturn, 0);
-                    const netBalance = income - expense - investment;
+                    const expense = roundFinanceAmount(toFiniteNumber(record.expense, 0));
+                    const income = roundFinanceAmount(toFiniteNumber(record.income, 0));
+                    const investment = roundFinanceAmount(toFiniteNumber(record.investment, 0));
+                    const investmentReturn = roundFinanceAmount(toFiniteNumber(record.investmentReturn, 0));
+                    const netBalance = roundFinanceAmount(income - expense - investment);
                     const hasValue = [expense, income, investment, investmentReturn, netBalance].some(value => Math.abs(value) > 0.000001);
                     if (!hasValue) return null;
 
@@ -812,12 +819,12 @@
                                 netBalance,
                                 adjustment: 0,
                                 expenseByCategory: {
-                                    fixed_expense: toFiniteNumber(expenseByCategory.fixed_expense, 0),
-                                    variable_expense: toFiniteNumber(expenseByCategory.variable_expense, 0)
+                                    fixed_expense: roundFinanceAmount(toFiniteNumber(expenseByCategory.fixed_expense, 0)),
+                                    variable_expense: roundFinanceAmount(toFiniteNumber(expenseByCategory.variable_expense, 0))
                                 },
                                 incomeByCategory: {
-                                    salary_income: toFiniteNumber(incomeByCategory.salary_income, 0),
-                                    other_income: toFiniteNumber(incomeByCategory.other_income, 0)
+                                    salary_income: roundFinanceAmount(toFiniteNumber(incomeByCategory.salary_income, 0)),
+                                    other_income: roundFinanceAmount(toFiniteNumber(incomeByCategory.other_income, 0))
                                 }
                             }
                         }
@@ -878,11 +885,11 @@
                     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return null;
 
                     const bucket = monthMap.get(monthKey);
-                    const expense = bucket.expense + bucket.adjustment;
-                    const income = bucket.income;
-                    const investment = bucket.investment;
-                    const investmentReturn = bucket.investmentReturn;
-                    const netBalance = income - expense - investment;
+                    const expense = roundFinanceAmount(bucket.expense + bucket.adjustment);
+                    const income = roundFinanceAmount(bucket.income);
+                    const investment = roundFinanceAmount(bucket.investment);
+                    const investmentReturn = roundFinanceAmount(bucket.investmentReturn);
+                    const netBalance = roundFinanceAmount(income - expense - investment);
                     const hasValue = [expense, income, investment, investmentReturn, netBalance].some(value => Math.abs(value) > 0.000001);
                     if (!hasValue) return null;
 
@@ -920,14 +927,14 @@
                                 investment,
                                 investmentReturn,
                                 netBalance,
-                                adjustment: bucket.adjustment,
+                                adjustment: roundFinanceAmount(bucket.adjustment),
                                 expenseByCategory: {
-                                    fixed_expense: toFiniteNumber(bucket.expenseByCategory.fixed_expense, 0),
-                                    variable_expense: toFiniteNumber(bucket.expenseByCategory.variable_expense, 0)
+                                    fixed_expense: roundFinanceAmount(toFiniteNumber(bucket.expenseByCategory.fixed_expense, 0)),
+                                    variable_expense: roundFinanceAmount(toFiniteNumber(bucket.expenseByCategory.variable_expense, 0))
                                 },
                                 incomeByCategory: {
-                                    salary_income: toFiniteNumber(bucket.incomeByCategory.salary_income, 0),
-                                    other_income: toFiniteNumber(bucket.incomeByCategory.other_income, 0)
+                                    salary_income: roundFinanceAmount(toFiniteNumber(bucket.incomeByCategory.salary_income, 0)),
+                                    other_income: roundFinanceAmount(toFiniteNumber(bucket.incomeByCategory.other_income, 0))
                                 }
                             }
                         }
@@ -1443,7 +1450,8 @@
             const tasks = reviewDetail.tasks !== undefined
                 ? String(reviewDetail.tasks || '')
                 : getArchiveDetailValue(detailMap, '今日事项', getArchiveDetailValue(detailMap, '预览', record.title || '--'));
-            const todayTaskText = escapeHtml(normalizeArchiveInlineText(tasks) || '今日事项');
+            const tasksPlainForFold = normalizeArchiveInlineText(tasks) || '';
+            const todayTaskText = escapeHtml(tasksPlainForFold || '今日事项');
 
             const mood = getArchiveDetailValue(detailMap, '情绪', String(reviewDetail.mood || '--'));
             const energy = getArchiveDetailValue(detailMap, '精力', String(reviewDetail.energy || '--'));
@@ -1469,6 +1477,22 @@
             const improve = reviewDetail.improve !== undefined ? String(reviewDetail.improve || '') : getArchiveDetailValue(detailMap, '改进', '--');
             const stop = reviewDetail.stop !== undefined ? String(reviewDetail.stop || '') : getArchiveDetailValue(detailMap, '停止', '--');
 
+            const combinedUser = [
+                normalizeArchiveInlineText(summary),
+                normalizeArchiveInlineText(keep),
+                normalizeArchiveInlineText(improve),
+                normalizeArchiveInlineText(stop),
+                tasksPlainForFold
+            ].filter((t) => t && t !== '--').join('\n');
+            const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
+                ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
+                : '';
+            const reviewCompactInnerClass = reviewBodyFold ? `review-compact-inner ${reviewBodyFold}` : 'review-compact-inner';
+            const taskFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
+                ? PlannerBackup.userContentFoldClass(tasksPlainForFold)
+                : '';
+            const todayTaskClass = taskFold ? `review-today-task-text ${taskFold}` : 'review-today-task-text';
+
             const summaryHtml = renderArchiveReviewSectionHtml('总结', summary);
             const kissHtml = [
                 renderArchiveReviewSectionPreviewHtml('✅ 保持', keep),
@@ -1476,6 +1500,20 @@
                 renderArchiveReviewSectionPreviewHtml('🚫 停止', stop)
             ].filter(Boolean).join('');
             const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const compactBodyHtml = reviewBodyFold
+                ? `<div class="review-compact-wrap">
+                        <div class="${reviewCompactInnerClass}">
+                        ${summaryHtml}
+                        ${dividerHtml}
+                        ${kissHtml}
+                        </div>
+                        <button type="button" class="review-card-expand-btn" aria-expanded="false" aria-label="展开或收起复盘正文" onclick="handleReviewCardExpandClick(this, event)"><span class="review-card-expand-label">展开</span><span class="review-card-expand-icon" aria-hidden="true">▼</span></button>
+                    </div>`
+                : `<div class="${reviewCompactInnerClass}">
+                        ${summaryHtml}
+                        ${dividerHtml}
+                        ${kissHtml}
+                        </div>`;
 
             const extraClass = opts.forDetail ? ' archive-detail-review-card' : ' archive-review-record-card';
             const clickableClass = opts.clickable ? ' archive-review-clickable' : '';
@@ -1492,13 +1530,11 @@
                                 <span class="review-score-circle ${toneClass}" title="评分 ${escapeHtml(scoreText)}/10">${escapeHtml(scoreText)}</span>
                                 <span class="review-cheer-badge ${toneClass}">${escapeHtml(cheerText)}</span>
                             </div>
-                            <span class="review-today-note"><strong>今天</strong><span class="review-today-task-text">${todayTaskText}</span><strong>时</strong>${moodHtml || '<span class="review-today-mood-text">平静</span>'}</span>
+                            <span class="review-today-note"><strong>今天</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml || '<span class="review-today-mood-text">平静</span>'}</span>
                         </div>
                     </div>
                     <div class="review-content review-content-compact">
-                        ${summaryHtml}
-                        ${dividerHtml}
-                        ${kissHtml}
+                        ${compactBodyHtml}
                     </div>
                 </article>
             `;
@@ -1719,8 +1755,16 @@
                 salary_income: salaryIncome,
                 other_income: otherIncome
             }, INCOME_CATEGORY_KEYS);
-            const expense = sumCategoryValues(expenseByCategory, EXPENSE_CATEGORY_KEYS);
-            const income = sumCategoryValues(incomeByCategory, INCOME_CATEGORY_KEYS);
+            const expense = roundFinanceAmount(sumCategoryValues(expenseByCategory, EXPENSE_CATEGORY_KEYS));
+            const income = roundFinanceAmount(sumCategoryValues(incomeByCategory, INCOME_CATEGORY_KEYS));
+            const investmentValue = roundFinanceAmount(Number(investment) || 0);
+            const investmentReturnValue = roundFinanceAmount(Number(investmentReturn) || 0);
+            const roundedExpenseByCategory = Object.fromEntries(
+                EXPENSE_CATEGORY_KEYS.map(k => [k, roundFinanceAmount(expenseByCategory[k] || 0)])
+            );
+            const roundedIncomeByCategory = Object.fromEntries(
+                INCOME_CATEGORY_KEYS.map(k => [k, roundFinanceAmount(incomeByCategory[k] || 0)])
+            );
             const weekDate = getDateFromWeekKey(weekKey) || new Date();
 
             if (index >= 0) {
@@ -1729,11 +1773,11 @@
                     weekKey,
                     amount: expense,
                     expense,
-                    expenseByCategory,
+                    expenseByCategory: roundedExpenseByCategory,
                     income,
-                    incomeByCategory,
-                    investment: Number(investment) || 0,
-                    investmentReturn: Number(investmentReturn) || 0
+                    incomeByCategory: roundedIncomeByCategory,
+                    investment: investmentValue,
+                    investmentReturn: investmentReturnValue
                 };
             } else {
                 records.push({
@@ -1741,11 +1785,11 @@
                     weekKey,
                     amount: expense,
                     expense,
-                    expenseByCategory,
+                    expenseByCategory: roundedExpenseByCategory,
                     income,
-                    incomeByCategory,
-                    investment: Number(investment) || 0,
-                    investmentReturn: Number(investmentReturn) || 0,
+                    incomeByCategory: roundedIncomeByCategory,
+                    investment: investmentValue,
+                    investmentReturn: investmentReturnValue,
                     createdAt: weekDate.toISOString()
                 });
             }

@@ -7,6 +7,7 @@ Thumbs.db
 .claude/
 .cursor/
 
+
 # Local scratch files in repo root
 _head_*.txt
 _head_*.bin
