@@ -78,13 +78,13 @@
                         </div>
                     </section>
 
-                    <section class="module review-kiss-panel" id="kissPanel">
-                        <div class="module-header">
-                            <h2 class="module-title">KISS 模型复盘</h2>
-                            <button class="add-btn" onclick="openReviewModal()" title="新增复盘">+</button>
+                    <section class="module review-type-panel" id="reviewTypePanel">
+                        <div class="review-type-grid">
+                            <button type="button" class="review-type-card" onclick="openReviewModal()">每日记录</button>
+                            <button type="button" class="review-type-card" onclick="openWeeklyReviewModal()">每周复盘</button>
+                            <button type="button" class="review-type-card" onclick="openReviewModal()">每月复盘</button>
+                            <button type="button" class="review-type-card" onclick="openReviewModal()">事件复盘</button>
                         </div>
-                        <div class="kiss-toolbar" id="kissToolbar"></div>
-                        <div class="kiss-grid" id="kissGrid"></div>
                     </section>
                 </div>
 
@@ -92,6 +92,7 @@
                     <div class="module-header">
                         <h2 class="module-title">复盘记录</h2>
                     </div>
+                    <div class="weekly-review-list" id="weeklyReviewList"></div>
                     <div class="review-list" id="reviewList"></div>
                 </section>
             </div>
@@ -101,14 +102,16 @@
     <div class="modal-overlay" id="reviewModal">
         <div class="modal modal-large review-modal">
             <h3 class="modal-title" id="reviewModalTitle">新增复盘记录</h3>
-            <div class="form-row review-basic-row">
-                <div class="form-group">
-                    <label class="form-label">复盘日期</label>
-                    <input type="date" class="form-input" id="reviewDate">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">今日评分</label>
-                    <select class="form-input" id="reviewScore">
+            <section class="review-modal-section">
+                <h4 class="review-modal-section-title">记录部分</h4>
+                <div class="form-row review-basic-row">
+                    <div class="form-group">
+                        <label class="form-label">记录日期</label>
+                        <input type="date" class="form-input" id="reviewDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">今日评分</label>
+                        <select class="form-input" id="reviewScore">
                         <option value="1">1 分</option>
                         <option value="2">2 分</option>
                         <option value="3">3 分</option>
@@ -119,27 +122,27 @@
                         <option value="8">8 分</option>
                         <option value="9">9 分</option>
                         <option value="10">10 分</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">标签分类</label>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">标签分类</label>
                     <select class="form-input review-category-select" id="reviewCategory" onchange="syncReviewCategorySelectStyle()">
                         <option value="life">生活</option>
                         <option value="work" selected>工作</option>
                         <option value="study">学习</option>
                         <option value="important">重要</option>
-                    </select>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">总结</label>
+                <div class="form-group">
+                    <label class="form-label">总结</label>
                 <textarea class="form-input form-textarea review-textarea" id="reviewSummary" placeholder="先写下今天最核心的结论"></textarea>
             </div>
             <div class="form-group">
                 <label class="form-label">今日事项</label>
                 <textarea class="form-input form-textarea review-textarea" id="reviewTasks" placeholder="记录今天完成或推进的关键事项"></textarea>
-            </div>
-            <div class="form-row review-emotion-row">
+                </div>
+                <div class="form-row review-emotion-row">
                 <div class="form-group review-emotion-group">
                     <label class="form-label">情绪</label>
                     <div class="review-emotion-slot-grid">
@@ -153,9 +156,12 @@
                     <input type="hidden" id="reviewEmotionTags" value="[]">
                 </div>
             </div>
-            <div class="form-row review-kiss-row">
-                <div class="form-group">
-                    <label class="form-label">Keep（需要保持）</label>
+            </section>
+            <section class="review-modal-section">
+                <h4 class="review-modal-section-title">复盘部分</h4>
+                <div class="form-row review-kiss-row">
+                    <div class="form-group">
+                        <label class="form-label">Keep（需要保持）</label>
                     <textarea class="form-input form-textarea review-textarea" id="reviewKeep" placeholder="继续保持的做法、状态或习惯"></textarea>
                 </div>
                 <div class="form-group">
@@ -176,6 +182,7 @@
                     </button>
                 </div>
             </div>
+            </section>
             <div class="modal-actions">
                 <button class="btn btn-danger" id="reviewDeleteBtn" style="display:none;" onclick="deleteReview(editingReviewId)">删除</button>
                 <div style="flex:1;"></div>
@@ -291,6 +298,124 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="weeklyReviewModal" onclick="if(event.target===this)closeWeeklyReviewModal()">
+        <div class="modal modal-large weekly-review-modal" onclick="event.stopPropagation(); if(!event.target.closest('.weekly-review-category-dropdown')) document.querySelectorAll('#weeklyReviewModal .weekly-review-category-dropdown.open').forEach(function(w){w.classList.remove('open');})">
+            <h3 class="modal-title" id="weeklyReviewModalTitle">周复盘</h3>
+            <div class="weekly-review-form">
+                <div class="form-row weekly-review-meta-row">
+                    <div class="form-group">
+                        <label class="form-label">周次</label>
+                        <input type="week" class="form-input" id="weeklyReviewWeek" title="选择复盘所在周">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">评分</label>
+                        <div class="weekly-review-score-inline">
+                            <span class="weekly-review-score-display" id="weeklyReviewScoreDisplay">7.0 分</span>
+                            <input type="hidden" id="weeklyReviewScore" value="7">
+                            <span class="weekly-review-state-hint">本周每日复盘评分的平均分</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">本周主要事件</label>
+                    <div class="weekly-review-events-container" id="weeklyReviewEventsContainer">
+                        <div class="weekly-review-events-list" id="weeklyReviewEventsList"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">状态复盘</label>
+                    <div class="weekly-review-state-follow-row">
+                    <div class="weekly-review-state-split">
+                        <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="weeklyReviewGoodState" placeholder="状态好的原因及保持方法"></textarea>
+                    </div>
+                    <div class="weekly-review-state-split">
+                        <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="weeklyReviewBadState" placeholder="状态差的原因及摆脱方法"></textarea>
+                    </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">本周进程</label>
+                    <div class="weekly-review-okr-reference" id="weeklyReviewOkrReference"></div>
+                    <textarea class="form-input form-textarea weekly-review-textarea" id="weeklyReviewOkrCompare" placeholder="对比本周与上周各 OKR 的进展变化"></textarea>
+                </div>
+                <div class="form-group weekly-review-state-follow-row">
+                    <div class="weekly-review-state-split">
+                        <div class="weekly-review-field-header">
+                            <label class="form-label">本周亮点</label>
+                            <div class="weekly-review-category-dropdown" id="weeklyReviewHighlightsCategoriesWrap">
+                                <button type="button" class="weekly-review-category-trigger" onclick="toggleWeeklyCategoryDropdown('weeklyReviewHighlightsCategories')" title="选择标签" aria-label="选择标签">
+                                    <svg class="weekly-review-category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="weekly-review-category-options" id="weeklyReviewHighlightsCategoryOptions">
+                                    <div class="weekly-review-category-option category-none selected" data-value="none" onclick="setWeeklyCategoriesNone('weeklyReviewHighlightsCategories')">无</div>
+                                    <div class="weekly-review-category-option category-life" data-value="life" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','life')">生活</div>
+                                    <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','work')">工作</div>
+                                    <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','study')">学习</div>
+                                    <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','important')">重要</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="weeklyReviewHighlightsCategories" value='[]'>
+                        </div>
+                        <div class="weekly-review-input-wrap">
+                            <div class="weekly-review-pills" id="weeklyReviewHighlightsPills"></div>
+                            <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="weeklyReviewHighlights" placeholder="本周做得好的、值得肯定的地方"></textarea>
+                        </div>
+                    </div>
+                    <div class="weekly-review-state-split">
+                        <div class="weekly-review-field-header">
+                            <label class="form-label">本周反思</label>
+                            <div class="weekly-review-category-dropdown" id="weeklyReviewReflectionCategoriesWrap">
+                                <button type="button" class="weekly-review-category-trigger" onclick="toggleWeeklyCategoryDropdown('weeklyReviewReflectionCategories')" title="选择标签" aria-label="选择标签">
+                                    <svg class="weekly-review-category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="weekly-review-category-options" id="weeklyReviewReflectionCategoryOptions">
+                                    <div class="weekly-review-category-option category-none selected" data-value="none" onclick="setWeeklyCategoriesNone('weeklyReviewReflectionCategories')">无</div>
+                                    <div class="weekly-review-category-option category-life" data-value="life" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','life')">生活</div>
+                                    <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','work')">工作</div>
+                                    <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','study')">学习</div>
+                                    <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','important')">重要</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="weeklyReviewReflectionCategories" value='[]'>
+                        </div>
+                        <div class="weekly-review-input-wrap">
+                            <div class="weekly-review-pills" id="weeklyReviewReflectionPills"></div>
+                            <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="weeklyReviewReflection" placeholder="需要改进的问题与思考"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="weekly-review-field-header">
+                        <label class="form-label">下周计划</label>
+                        <div class="weekly-review-category-dropdown" id="weeklyReviewNextPlanCategoriesWrap">
+                            <button type="button" class="weekly-review-category-trigger" onclick="toggleWeeklyCategoryDropdown('weeklyReviewNextPlanCategories')" title="选择标签" aria-label="选择标签">
+                                <svg class="weekly-review-category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="weekly-review-category-options" id="weeklyReviewNextPlanCategoryOptions">
+                                <div class="weekly-review-category-option category-none selected" data-value="none" onclick="setWeeklyCategoriesNone('weeklyReviewNextPlanCategories')">无</div>
+                                <div class="weekly-review-category-option category-life" data-value="life" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','life')">生活</div>
+                                <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','work')">工作</div>
+                                <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','study')">学习</div>
+                                <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','important')">重要</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="weeklyReviewNextPlanCategories" value='[]'>
+                    </div>
+                    <div class="weekly-review-input-wrap">
+                        <div class="weekly-review-pills" id="weeklyReviewNextPlanPills"></div>
+                        <textarea class="form-input form-textarea weekly-review-textarea" id="weeklyReviewNextPlan" placeholder="下周要推进的重点事项"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="weeklyReviewDeleteBtn" style="display:none;" onclick="deleteWeeklyReview(editingWeeklyReviewId)">删除</button>
+                <div style="flex:1;"></div>
+                <button class="btn btn-secondary" onclick="closeWeeklyReviewModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveWeeklyReview()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function plannerScopedKey(logicalKey) {
             if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
@@ -305,7 +430,7 @@
                 try {
                     var parsed = JSON.parse(raw);
                     if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' &&
-                        (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' || logicalKey === 'planner_review_archive_entries')) {
+                        (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' || logicalKey === 'planner_review_archive_entries' || logicalKey === 'planner_weekly_reviews')) {
                         return window.Utf8Utils.ensureValidUtf8(parsed);
                     }
                     return parsed;
@@ -321,6 +446,7 @@
 
         const REVIEW_STORAGE_KEY = 'planner_review_entries';
         const REVIEW_ARCHIVE_STORAGE_KEY = 'planner_review_archive_entries';
+        const WEEKLY_REVIEW_STORAGE_KEY = 'planner_weekly_reviews';
         const LEGACY_REVIEW_KEY = 'reviews';
         const TODO_STORAGE_KEY = 'planner_todos';
         const OKR_STORAGE_KEY = 'planner_okrs';
@@ -369,7 +495,9 @@
 
         let reviewEntries = [];
         let reviewArchiveEntries = [];
+        let weeklyReviewEntries = [];
         let editingReviewId = null;
+        let editingWeeklyReviewId = null;
         let currentKissTab = 'keep';
         let reviewLinkedTodoIds = [];
         let reviewEmotionEditingSlot = 0;
@@ -414,6 +542,37 @@
             return `${y}-${m}-${d}`;
         }
 
+        function getWeekKey(dateOrStr) {
+            const d = dateOrStr ? new Date(dateOrStr) : new Date();
+            if (Number.isNaN(d.getTime())) return null;
+            const dup = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            dup.setUTCDate(dup.getUTCDate() + 4 - (dup.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(dup.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((dup - yearStart) / 86400000) + 1) / 7);
+            return `${dup.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+        }
+
+        function getAverageDailyScoreForWeek(weekKey) {
+            if (!weekKey || !/^\d{4}-W\d{2}$/.test(weekKey)) return 7;
+            let total = 0;
+            let count = 0;
+            const allDaily = [...reviewEntries, ...reviewArchiveEntries];
+            allDaily.forEach(entry => {
+                const entryWeek = getWeekKey(entry.date || entry.createdAt);
+                if (entryWeek === weekKey) {
+                    const score = parseInt(entry.score, 10);
+                    if (Number.isFinite(score) && score >= 1 && score <= 10) {
+                        total += score;
+                        count += 1;
+                    }
+                }
+            });
+            if (count === 0) return 7;
+            const avg = total / count;
+            const rounded = Math.round(avg * 10) / 10;
+            return Math.max(1, Math.min(10, rounded));
+        }
+
         function normalizeReviewCategory(value) {
             const key = String(value || '').trim();
             return REVIEW_CATEGORY_OPTIONS.includes(key) ? key : 'work';
@@ -432,6 +591,203 @@
             select.value = key;
             select.classList.remove('category-life', 'category-work', 'category-study', 'category-important');
             select.classList.add(`category-${key}`);
+        }
+
+        function toggleWeeklyCategoryDropdown(hiddenId) {
+            const wrapId = hiddenId + 'Wrap';
+            const wrap = document.getElementById(wrapId);
+            if (!wrap) return;
+            const isOpen = wrap.classList.contains('open');
+            document.querySelectorAll('#weeklyReviewModal .weekly-review-category-dropdown').forEach(w => w.classList.remove('open'));
+            if (!isOpen) wrap.classList.add('open');
+        }
+
+        const WEEKLY_CATEGORY_PILLS_MAP = {
+            weeklyReviewHighlightsCategories: 'weeklyReviewHighlightsPills',
+            weeklyReviewReflectionCategories: 'weeklyReviewReflectionPills',
+            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlanPills'
+        };
+        const WEEKLY_CATEGORY_TEXTAREA_MAP = {
+            weeklyReviewHighlightsCategories: 'weeklyReviewHighlights',
+            weeklyReviewReflectionCategories: 'weeklyReviewReflection',
+            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlan'
+        };
+        const WEEKLY_CATEGORY_TEXTAREA_PLACEHOLDER = {
+            weeklyReviewHighlightsCategories: '本周做得好的、值得肯定的地方',
+            weeklyReviewReflectionCategories: '需要改进的问题与思考',
+            weeklyReviewNextPlanCategories: '下周要推进的重点事项'
+        };
+
+        function getWeeklyCategoriesArray(hiddenId) {
+            const hidden = document.getElementById(hiddenId);
+            if (!hidden) return [];
+            try {
+                const arr = JSON.parse(hidden.value || '[]');
+                return Array.isArray(arr) ? arr.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : [];
+            } catch (_) { return []; }
+        }
+
+        function setWeeklyCategoriesArray(hiddenId, arr) {
+            const hidden = document.getElementById(hiddenId);
+            if (!hidden) return;
+            hidden.value = JSON.stringify(arr);
+        }
+
+        function setWeeklyCategoriesNone(hiddenId) {
+            setWeeklyCategoriesArray(hiddenId, []);
+            renderWeeklyCategoryPills(hiddenId);
+            syncWeeklyCategoryDropdownUI(hiddenId);
+        }
+
+        function addWeeklyCategory(hiddenId, value) {
+            const arr = getWeeklyCategoriesArray(hiddenId);
+            const key = normalizeReviewCategory(value);
+            if (arr.includes(key)) return;
+            arr.push(key);
+            setWeeklyCategoriesArray(hiddenId, arr);
+            renderWeeklyCategoryPills(hiddenId);
+            syncWeeklyCategoryDropdownUI(hiddenId);
+            const pillsId = WEEKLY_CATEGORY_PILLS_MAP[hiddenId];
+            const pillsEl = document.getElementById(pillsId);
+            if (pillsEl) {
+                const newRow = pillsEl.querySelector(`.weekly-review-category-row[data-category="${key}"]`);
+                if (newRow) {
+                    const input = newRow.querySelector('.weekly-review-category-input');
+                    if (input) input.focus();
+                }
+            }
+        }
+
+        function removeWeeklyCategoryPill(hiddenId, value) {
+            const arr = getWeeklyCategoriesArray(hiddenId);
+            const key = normalizeReviewCategory(value);
+            const next = arr.filter(k => k !== key);
+            setWeeklyCategoriesArray(hiddenId, next);
+            renderWeeklyCategoryPills(hiddenId);
+            syncWeeklyCategoryDropdownUI(hiddenId);
+        }
+
+        function getWeeklyCategoryInputTexts(hiddenId) {
+            const pillsId = WEEKLY_CATEGORY_PILLS_MAP[hiddenId];
+            const pillsEl = document.getElementById(pillsId);
+            if (!pillsEl) return {};
+            const texts = {};
+            pillsEl.querySelectorAll('.weekly-review-category-row').forEach(row => {
+                const key = row.dataset.category;
+                const input = row.querySelector('.weekly-review-category-input');
+                if (key && input) texts[key] = input.value;
+            });
+            return texts;
+        }
+
+        function collectWeeklyCategoryFieldValue(hiddenId) {
+            const arr = getWeeklyCategoriesArray(hiddenId);
+            if (arr.length === 0) {
+                const textareaId = WEEKLY_CATEGORY_TEXTAREA_MAP[hiddenId];
+                const textarea = document.getElementById(textareaId);
+                return textarea ? textarea.value.trim() : '';
+            }
+            const texts = getWeeklyCategoryInputTexts(hiddenId);
+            return arr.map(key => {
+                const meta = getReviewCategoryMeta(key);
+                const text = (texts[key] || '').trim();
+                return meta.label + ' ' + text;
+            }).join('\n');
+        }
+
+        function parseWeeklyCategoryTexts(text, categories) {
+            const result = {};
+            if (!text || !categories || categories.length === 0) return result;
+            const labels = categories.map(k => getReviewCategoryMeta(k).label);
+            const lines = text.split('\n');
+            let currentKey = null;
+            for (const line of lines) {
+                let matched = false;
+                for (let i = 0; i < labels.length; i++) {
+                    if (line.startsWith(labels[i] + ' ') || line === labels[i]) {
+                        currentKey = categories[i];
+                        result[currentKey] = line.slice(labels[i].length + 1) || '';
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched && currentKey) {
+                    result[currentKey] = (result[currentKey] || '') + '\n' + line;
+                }
+            }
+            return result;
+        }
+
+        function renderWeeklyCategoryPills(hiddenId) {
+            const pillsId = WEEKLY_CATEGORY_PILLS_MAP[hiddenId];
+            const pillsEl = document.getElementById(pillsId);
+            if (!pillsEl) return;
+            const arr = getWeeklyCategoriesArray(hiddenId);
+            const prevTexts = getWeeklyCategoryInputTexts(hiddenId);
+            pillsEl.innerHTML = arr.map(key => {
+                const meta = getReviewCategoryMeta(key);
+                const safeKey = escapeJsString(key);
+                const inputVal = prevTexts[key] !== undefined ? prevTexts[key] : '';
+                const safeVal = escapeHtml(inputVal);
+                return `<div class="weekly-review-category-row" data-category="${key}"><span class="weekly-review-pill category-${key}">${escapeHtml(meta.label)}<button type="button" class="weekly-review-pill-remove" onclick="event.stopPropagation();removeWeeklyCategoryPill('${hiddenId}','${safeKey}')" aria-label="移除">×</button></span><input type="text" class="weekly-review-category-input" value="${safeVal}" placeholder="${escapeHtml(meta.label)}类别内容"></div>`;
+            }).join('');
+            const textareaId = WEEKLY_CATEGORY_TEXTAREA_MAP[hiddenId];
+            const textarea = document.getElementById(textareaId);
+            if (textarea) {
+                if (arr.length > 0) {
+                    textarea.classList.add('hidden-by-categories');
+                } else {
+                    textarea.classList.remove('hidden-by-categories');
+                    syncWeeklyCategoryTextareaEmptyClass();
+                }
+                textarea.style.paddingLeft = '';
+                textarea.style.paddingTop = '';
+            }
+        }
+
+        function syncWeeklyCategoryDropdownUI(hiddenId) {
+            const wrap = document.getElementById(hiddenId + 'Wrap');
+            if (!wrap) return;
+            wrap.classList.remove('open');
+            const arr = getWeeklyCategoriesArray(hiddenId);
+            const trigger = wrap.querySelector('.weekly-review-category-trigger');
+            const options = wrap.querySelector('.weekly-review-category-options');
+            if (trigger) { /* 下拉 icon 保持中性色 */ }
+            if (options) {
+                options.querySelectorAll('.weekly-review-category-option').forEach(opt => {
+                    const v = opt.dataset.value;
+                    opt.classList.toggle('selected', v === 'none' ? arr.length === 0 : arr.includes(v));
+                });
+            }
+        }
+
+        function syncWeeklyReviewCategoryUI(hiddenId) {
+            renderWeeklyCategoryPills(hiddenId);
+            syncWeeklyCategoryDropdownUI(hiddenId);
+        }
+
+        function syncWeeklyCategoryTextareaEmptyClass() {
+            ['weeklyReviewHighlights', 'weeklyReviewReflection', 'weeklyReviewNextPlan'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el || el.classList.contains('hidden-by-categories')) return;
+                const empty = !el.value.trim();
+                el.classList.toggle('empty', empty);
+            });
+        }
+
+        function populateWeeklyCategoryInputs(hiddenId, text, categories) {
+            if (!categories || categories.length === 0) return;
+            const texts = parseWeeklyCategoryTexts(text, categories);
+            const pillsId = WEEKLY_CATEGORY_PILLS_MAP[hiddenId];
+            const pillsEl = document.getElementById(pillsId);
+            if (!pillsEl) return;
+            pillsEl.querySelectorAll('.weekly-review-category-row').forEach(row => {
+                const key = row.dataset.category;
+                const input = row.querySelector('.weekly-review-category-input');
+                if (key && input && texts[key] !== undefined) {
+                    input.value = texts[key];
+                }
+            });
         }
 
         function normalizeEmotionArousal(value) {
@@ -1515,6 +1871,345 @@
             reviewLinkedTodoIds = [];
         }
 
+        function loadWeeklyReviews() {
+            const stored = StorageUtil.get(WEEKLY_REVIEW_STORAGE_KEY);
+            weeklyReviewEntries = Array.isArray(stored) ? stored : [];
+        }
+
+        function persistWeeklyReviews() {
+            StorageUtil.set(WEEKLY_REVIEW_STORAGE_KEY, weeklyReviewEntries);
+        }
+
+        function parseWeeklyReviewEvents(raw) {
+            if (Array.isArray(raw)) return raw.filter(t => String(t || '').trim());
+            const s = String(raw || '').trim();
+            return s ? s.split(/\r?\n/).map(t => t.trim()).filter(Boolean) : [];
+        }
+
+        function previewWeeklyReviewEvents(entry) {
+            if (entry.highlights) return String(entry.highlights);
+            const ev = entry.events;
+            if (Array.isArray(ev)) return ev.join(' ');
+            return String(ev || '');
+        }
+
+        function ensureWeeklyReviewAddSlot(list) {
+            let slot = list.querySelector('.weekly-review-event-add-slot');
+            if (slot) return;
+            slot = document.createElement('div');
+            slot.className = 'weekly-review-event-add-slot';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'weekly-review-event-add-input';
+            input.placeholder = '添加事件';
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addWeeklyReviewEventCard();
+                }
+            });
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'weekly-review-event-add-btn';
+            addBtn.title = '添加';
+            addBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+            addBtn.addEventListener('click', (e) => { e.stopPropagation(); addWeeklyReviewEventCard(); });
+            slot.appendChild(input);
+            slot.appendChild(addBtn);
+            slot.addEventListener('click', (e) => { if (!e.target.closest('.weekly-review-event-add-btn')) input.focus(); });
+            list.appendChild(slot);
+        }
+
+        function renderWeeklyReviewEventCardHtml(text, idx) {
+            const safe = escapeHtml(String(text || ''));
+            const safeIdx = escapeJsString(String(idx));
+            return `<div class="weekly-review-event-card" data-event-idx="${escapeHtml(String(idx))}">
+                <span class="weekly-review-event-text">${safe}</span>
+                <div class="todo-actions">
+                    <button type="button" class="todo-action-btn" onclick="event.stopPropagation();editWeeklyReviewEventCard(${safeIdx})" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="todo-action-btn delete" onclick="event.stopPropagation();removeWeeklyReviewEventCard(${safeIdx})" title="删除">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function editWeeklyReviewEventCard(idx) {
+            const list = document.getElementById('weeklyReviewEventsList');
+            if (!list) return;
+            const card = list.querySelector(`[data-event-idx="${idx}"]`);
+            if (!card) return;
+            const textEl = card.querySelector('.weekly-review-event-text');
+            if (!textEl) return;
+            const originalText = (textEl.textContent || '').trim();
+            const wrap = document.createElement('div');
+            wrap.className = 'weekly-review-event-edit-wrap';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'weekly-review-event-edit-input';
+            input.value = originalText;
+            wrap.appendChild(input);
+            const actions = card.querySelector('.todo-actions');
+            card.replaceChild(wrap, textEl);
+            if (actions) actions.remove();
+            input.focus();
+            input.select();
+            let committed = false;
+            const commit = () => {
+                if (committed) return;
+                committed = true;
+                const newText = input.value.trim();
+                card.innerHTML = '';
+                const newTextEl = document.createElement('span');
+                newTextEl.className = 'weekly-review-event-text';
+                newTextEl.textContent = newText || originalText;
+                card.appendChild(newTextEl);
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'todo-actions';
+                actionsDiv.innerHTML = `<button type="button" class="todo-action-btn" onclick="event.stopPropagation();editWeeklyReviewEventCard(${idx})" title="编辑">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button type="button" class="todo-action-btn delete" onclick="event.stopPropagation();removeWeeklyReviewEventCard(${idx})" title="删除">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>`;
+                card.appendChild(actionsDiv);
+                reindexWeeklyReviewEventCards();
+            };
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { e.preventDefault(); input.value = originalText; commit(); }
+            });
+            input.addEventListener('blur', commit);
+        }
+
+        function renderWeeklyReviewEventsCards(arr) {
+            const list = document.getElementById('weeklyReviewEventsList');
+            if (!list) return;
+            list.innerHTML = (arr || []).map((text, idx) => renderWeeklyReviewEventCardHtml(text, idx)).join('');
+            ensureWeeklyReviewAddSlot(list);
+        }
+
+        function addWeeklyReviewEventCard() {
+            const list = document.getElementById('weeklyReviewEventsList');
+            if (!list) return;
+            const slot = list.querySelector('.weekly-review-event-add-slot');
+            if (!slot) return;
+            const input = slot.querySelector('.weekly-review-event-add-input');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+            const idx = list.querySelectorAll('.weekly-review-event-card').length;
+            const temp = document.createElement('div');
+            temp.innerHTML = renderWeeklyReviewEventCardHtml(text, idx);
+            const card = temp.firstElementChild;
+            list.insertBefore(card, slot);
+            input.value = '';
+            reindexWeeklyReviewEventCards();
+        }
+
+        function removeWeeklyReviewEventCard(idx) {
+            const list = document.getElementById('weeklyReviewEventsList');
+            if (!list) return;
+            const card = list.querySelector(`[data-event-idx="${idx}"]`);
+            if (card) card.remove();
+            reindexWeeklyReviewEventCards();
+        }
+
+        function reindexWeeklyReviewEventCards() {
+            const list = document.getElementById('weeklyReviewEventsList');
+            if (!list) return;
+            const cards = list.querySelectorAll('.weekly-review-event-card');
+            cards.forEach((card, i) => {
+                card.dataset.eventIdx = String(i);
+                const actions = card.querySelector('.todo-actions');
+                if (actions) {
+                    const editBtn = actions.querySelector('.todo-action-btn:not(.delete)');
+                    const delBtn = actions.querySelector('.todo-action-btn.delete');
+                    if (editBtn) editBtn.onclick = (e) => { e.stopPropagation(); editWeeklyReviewEventCard(i); };
+                    if (delBtn) delBtn.onclick = (e) => { e.stopPropagation(); removeWeeklyReviewEventCard(i); };
+                }
+            });
+        }
+
+        function getWeeklyReviewEventsArray() {
+            const list = document.getElementById('weeklyReviewEventsList');
+            if (!list) return [];
+            return Array.from(list.querySelectorAll('.weekly-review-event-card .weekly-review-event-text'))
+                .map(el => (el.textContent || '').trim())
+                .filter(Boolean);
+        }
+
+        function renderWeeklyReviewOkrReference() {
+            const container = document.getElementById('weeklyReviewOkrReference');
+            if (!container) return;
+            const okrs = StorageUtil.get(OKR_STORAGE_KEY);
+            if (!Array.isArray(okrs) || okrs.length === 0) {
+                container.innerHTML = '<p class="weekly-review-okr-empty">暂无 OKR，可在主页添加</p>';
+                return;
+            }
+            container.innerHTML = okrs.map(okr => {
+                const krs = okr.krs || [];
+                const totalWeight = krs.length;
+                const completedWeight = krs.reduce((s, kr) => {
+                    const cur = Number(kr.current) || 0;
+                    const tgt = Math.max(1, Number(kr.target) || 1);
+                    return s + Math.min(1, cur / tgt);
+                }, 0);
+                const pct = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+                const colorClass = REVIEW_OKR_COLOR_CLASSES.includes(okr.color) ? okr.color : 'brown';
+                const krsHtml = (okr.krs || []).map(kr => {
+                    const cur = Number(kr.current) || 0;
+                    const tgt = Math.max(1, Number(kr.target) || 1);
+                    return `<span class="weekly-okr-kr">${escapeHtml(kr.text || '')} ${cur}/${tgt}</span>`;
+                }).join('、');
+                return `<div class="weekly-okr-item weekly-okr-${colorClass}"><span class="weekly-okr-title">${escapeHtml(okr.title || '')}</span> ${pct}% · ${krsHtml}</div>`;
+            }).join('');
+        }
+
+        function openWeeklyReviewModal(id = null) {
+            editingWeeklyReviewId = id;
+            const titleEl = document.getElementById('weeklyReviewModalTitle');
+            const deleteBtn = document.getElementById('weeklyReviewDeleteBtn');
+            const weekInput = document.getElementById('weeklyReviewWeek');
+
+            const thisWeek = getWeekKey(new Date());
+            if (weekInput) weekInput.value = thisWeek || '';
+
+            if (!id) {
+                titleEl.textContent = '新增周复盘';
+                deleteBtn.style.display = 'none';
+                renderWeeklyReviewEventsCards([]);
+                const avgScore = getAverageDailyScoreForWeek(weekInput ? weekInput.value : thisWeek);
+                const scoreDisplay = document.getElementById('weeklyReviewScoreDisplay');
+                const scoreInput = document.getElementById('weeklyReviewScore');
+                if (scoreDisplay) scoreDisplay.textContent = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
+                if (scoreInput) scoreInput.value = String(avgScore);
+                document.getElementById('weeklyReviewOkrCompare').value = '';
+                document.getElementById('weeklyReviewGoodState').value = '';
+                document.getElementById('weeklyReviewBadState').value = '';
+                document.getElementById('weeklyReviewHighlights').value = '';
+                document.getElementById('weeklyReviewReflection').value = '';
+                document.getElementById('weeklyReviewNextPlan').value = '';
+                document.getElementById('weeklyReviewHighlightsCategories').value = '[]';
+                document.getElementById('weeklyReviewReflectionCategories').value = '[]';
+                document.getElementById('weeklyReviewNextPlanCategories').value = '[]';
+                syncWeeklyReviewCategoryUI('weeklyReviewHighlightsCategories');
+                syncWeeklyReviewCategoryUI('weeklyReviewReflectionCategories');
+                syncWeeklyReviewCategoryUI('weeklyReviewNextPlanCategories');
+                syncWeeklyCategoryTextareaEmptyClass();
+            } else {
+                const entry = weeklyReviewEntries.find(item => item.id == id);
+                if (!entry) return;
+                titleEl.textContent = '编辑周复盘';
+                deleteBtn.style.display = 'block';
+                const entryWeek = entry.weekKey || thisWeek || '';
+                if (weekInput) weekInput.value = entryWeek;
+                const eventsArr = parseWeeklyReviewEvents(entry.events);
+                renderWeeklyReviewEventsCards(eventsArr);
+                const avgScore = getAverageDailyScoreForWeek(entryWeek);
+                const scoreDisplay = document.getElementById('weeklyReviewScoreDisplay');
+                const scoreInput = document.getElementById('weeklyReviewScore');
+                if (scoreDisplay) scoreDisplay.textContent = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
+                if (scoreInput) scoreInput.value = String(avgScore);
+                document.getElementById('weeklyReviewOkrCompare').value = entry.okrCompare || '';
+                document.getElementById('weeklyReviewGoodState').value = entry.goodState || '';
+                document.getElementById('weeklyReviewBadState').value = entry.badState || '';
+                document.getElementById('weeklyReviewHighlights').value = entry.highlights || '';
+                document.getElementById('weeklyReviewReflection').value = entry.reflection || '';
+                document.getElementById('weeklyReviewNextPlan').value = entry.nextPlan || '';
+                const hCat = entry.highlightsCategories;
+                const rCat = entry.reflectionCategories;
+                const nCat = entry.nextPlanCategories;
+                const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
+                const hArr = toArr(hCat || entry.highlightsCategory);
+                const rArr = toArr(rCat || entry.reflectionCategory);
+                const nArr = toArr(nCat || entry.nextPlanCategory);
+                document.getElementById('weeklyReviewHighlightsCategories').value = JSON.stringify(hArr);
+                document.getElementById('weeklyReviewReflectionCategories').value = JSON.stringify(rArr);
+                document.getElementById('weeklyReviewNextPlanCategories').value = JSON.stringify(nArr);
+                syncWeeklyReviewCategoryUI('weeklyReviewHighlightsCategories');
+                syncWeeklyReviewCategoryUI('weeklyReviewReflectionCategories');
+                syncWeeklyReviewCategoryUI('weeklyReviewNextPlanCategories');
+                populateWeeklyCategoryInputs('weeklyReviewHighlightsCategories', entry.highlights || '', hArr);
+                syncWeeklyCategoryTextareaEmptyClass();
+                populateWeeklyCategoryInputs('weeklyReviewReflectionCategories', entry.reflection || '', rArr);
+                populateWeeklyCategoryInputs('weeklyReviewNextPlanCategories', entry.nextPlan || '', nArr);
+            }
+
+            renderWeeklyReviewOkrReference();
+            document.getElementById('weeklyReviewModal').classList.add('active');
+        }
+
+        function closeWeeklyReviewModal() {
+            document.getElementById('weeklyReviewModal').classList.remove('active');
+            editingWeeklyReviewId = null;
+        }
+
+        function saveWeeklyReview() {
+            const weekInput = document.getElementById('weeklyReviewWeek');
+            let weekKey = weekInput ? weekInput.value.trim() : '';
+            if (!weekKey && weekInput) weekKey = getWeekKey(new Date()) || '';
+            const events = getWeeklyReviewEventsArray();
+            const score = getAverageDailyScoreForWeek(weekKey);
+            const okrCompare = document.getElementById('weeklyReviewOkrCompare').value.trim();
+            const goodState = document.getElementById('weeklyReviewGoodState').value.trim();
+            const badState = document.getElementById('weeklyReviewBadState').value.trim();
+            const highlights = collectWeeklyCategoryFieldValue('weeklyReviewHighlightsCategories');
+            const reflection = collectWeeklyCategoryFieldValue('weeklyReviewReflectionCategories');
+            const nextPlan = collectWeeklyCategoryFieldValue('weeklyReviewNextPlanCategories');
+            const highlightsCategories = getWeeklyCategoriesArray('weeklyReviewHighlightsCategories');
+            const reflectionCategories = getWeeklyCategoriesArray('weeklyReviewReflectionCategories');
+            const nextPlanCategories = getWeeklyCategoriesArray('weeklyReviewNextPlanCategories');
+
+            const payload = {
+                id: editingWeeklyReviewId || generateId(),
+                weekKey,
+                events: Array.isArray(events) ? events : parseWeeklyReviewEvents(events),
+                score,
+                okrCompare,
+                goodState,
+                badState,
+                highlights,
+                reflection,
+                nextPlan,
+                highlightsCategories,
+                reflectionCategories,
+                nextPlanCategories,
+                createdAt: editingWeeklyReviewId ? (weeklyReviewEntries.find(e => e.id == editingWeeklyReviewId)?.createdAt) : new Date().toISOString()
+            };
+
+            const idx = weeklyReviewEntries.findIndex(e => e.id == payload.id);
+            if (idx >= 0) weeklyReviewEntries[idx] = payload;
+            else weeklyReviewEntries.push(payload);
+            weeklyReviewEntries.sort((a, b) => (b.weekKey || '').localeCompare(a.weekKey || ''));
+            persistWeeklyReviews();
+            closeWeeklyReviewModal();
+            renderAll();
+        }
+
+        function deleteWeeklyReview(id) {
+            if (!id) return;
+            if (!confirm('确定删除这条周复盘吗？')) return;
+            weeklyReviewEntries = weeklyReviewEntries.filter(e => e.id !== id);
+            persistWeeklyReviews();
+            closeWeeklyReviewModal();
+            renderAll();
+        }
+
         function saveReview() {
             const date = document.getElementById('reviewDate').value || todayKey();
             const score = parseInt(document.getElementById('reviewScore').value, 10) || 7;
@@ -1719,7 +2414,7 @@
             const heatmap = document.getElementById('reviewHeatmap');
             const heatMeta = document.getElementById('reviewHeatMeta');
             const stage = document.querySelector('.review-heatmap-stage');
-            const kissPanel = document.getElementById('kissPanel');
+            const kissPanel = document.getElementById('reviewTypePanel');
             const heatPanel = document.querySelector('.review-heat-panel');
             if (!heatmap || !stage || !kissPanel || !heatPanel) return;
 
@@ -1866,7 +2561,7 @@
             if (!container) return;
 
             if (reviewEntries.length === 0) {
-                container.innerHTML = '<div class="empty-state">暂无复盘记录，点击上方 + 开始记录</div>';
+                container.innerHTML = '<div class="empty-state">暂无复盘记录，点击上方选择类型开始记录</div>';
                 return;
             }
 
@@ -1942,9 +2637,34 @@
             }).join('');
         }
 
+        function renderWeeklyReviewList() {
+            const container = document.getElementById('weeklyReviewList');
+            if (!container) return;
+            if (weeklyReviewEntries.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = weeklyReviewEntries.map(entry => {
+                const safeId = escapeJsString(entry.id);
+                const weekLabel = (entry.weekKey || '').replace(/^(\d{4})-W(\d{2})$/, '$1年第$2周') || '未设置周次';
+                const score = Number(entry.score) || 0;
+                const scoreClass = score <= 4 ? 'score-tone-red' : score <= 6 ? 'score-tone-yellow' : 'score-tone-green';
+                const scoreStr = Number.isFinite(score) ? score.toFixed(1) : '0';
+                return `
+                <article class="weekly-review-card" data-weekly-id="${escapeHtml(entry.id)}" onclick="openWeeklyReviewModal('${safeId}')">
+                    <div class="weekly-review-card-header">
+                        <span class="weekly-review-card-week">${escapeHtml(weekLabel)}</span>
+                        <span class="weekly-review-card-score ${scoreClass}">${scoreStr} 分</span>
+                    </div>
+                    <div class="weekly-review-card-preview">${escapeHtml(previewWeeklyReviewEvents(entry).slice(0, 80))}${previewWeeklyReviewEvents(entry).length > 80 ? '…' : ''}</div>
+                </article>
+            `;
+            }).join('');
+        }
+
         function renderAll() {
-            renderKissBoard();
             renderHeatmap();
+            renderWeeklyReviewList();
             renderReviewList();
             scheduleHeatmapScale();
             tryFocusPendingReviewCard();
@@ -1956,6 +2676,7 @@
             pendingFocusReviewId = getPendingFocusReviewIdFromUrl();
             updateCurrentDate();
             loadEntries();
+            loadWeeklyReviews();
             renderAll();
             window.addEventListener('resize', scheduleHeatmapScale);
             document.getElementById('reviewDate').value = todayKey();
@@ -1985,6 +2706,26 @@
                 });
             }
 
+            ['weeklyReviewHighlights', 'weeklyReviewReflection', 'weeklyReviewNextPlan'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', syncWeeklyCategoryTextareaEmptyClass);
+            });
+
+            const weeklyReviewWeekInput = document.getElementById('weeklyReviewWeek');
+            if (weeklyReviewWeekInput) {
+                weeklyReviewWeekInput.addEventListener('change', () => {
+                    const scoreDisplay = document.getElementById('weeklyReviewScoreDisplay');
+                    const scoreInput = document.getElementById('weeklyReviewScore');
+                    if (scoreDisplay || scoreInput) {
+                        const weekVal = weeklyReviewWeekInput.value.trim();
+                        const weekKey = weekVal || getWeekKey(new Date());
+                        const avg = getAverageDailyScoreForWeek(weekKey);
+                        if (scoreDisplay) scoreDisplay.textContent = (typeof avg === 'number' ? avg.toFixed(1) : avg) + ' 分';
+                        if (scoreInput) scoreInput.value = String(avg);
+                    }
+                });
+            }
+
             const reviewEmotionModal = document.getElementById('reviewEmotionModal');
             if (reviewEmotionModal) {
                 reviewEmotionModal.addEventListener('click', (event) => {
@@ -2004,6 +2745,7 @@
 
         window.addEventListener('planner-storage-synced', () => {
             loadEntries();
+            loadWeeklyReviews();
             renderAll();
             updateReviewTodoModalOkrOptions(document.getElementById('reviewTodoModalOkr')?.value || '');
         });
@@ -2017,6 +2759,7 @@
                 return;
             }
             loadEntries();
+            loadWeeklyReviews();
             renderAll();
             updateReviewTodoModalOkrOptions(document.getElementById('reviewTodoModalOkr')?.value || '');
         });

@@ -2765,7 +2765,7 @@
 
         .finance-report-dialog {
             position: relative;
-            width: min(920px, 100%);
+            width: min(960px, 100%);
             max-height: calc(100vh - 48px);
             overflow-y: auto;
             background: #fff;
@@ -2786,8 +2786,8 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
-            padding: 18px 20px 14px;
+            gap: 16px;
+            padding: 20px 24px 18px;
             border-bottom: 1px solid var(--warm-gray-100);
             background: linear-gradient(180deg, var(--warm-gray-50) 0%, #fff 100%);
         }
@@ -2825,26 +2825,34 @@
         }
 
         .finance-report-body {
-            padding: 16px 20px 20px;
-            display: grid;
-            gap: 14px;
+            padding: 20px 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
         .finance-report-kpis {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 8px;
+            gap: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .finance-report-kpis {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
         .finance-report-kpi {
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 14px 16px;
             background: var(--warm-gray-50);
             border: 1px solid var(--warm-gray-100);
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
-            align-items: center;
-            gap: 12px;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .finance-report-kpi-main {
@@ -2852,16 +2860,16 @@
         }
 
         .finance-report-kpi-label {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--warm-gray-500);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .finance-report-kpi-value {
-            font-size: 15px;
+            font-size: 17px;
             font-weight: 600;
             color: var(--warm-gray-900);
-            line-height: 1.25;
+            line-height: 1.3;
         }
 
         .finance-report-kpi.is-expense .finance-report-kpi-value {
@@ -2885,7 +2893,7 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 4px;
-            font-size: 11px;
+            font-size: 12px;
             flex-shrink: 0;
             text-align: left;
         }
@@ -2912,23 +2920,36 @@
 
         .finance-report-visuals {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .finance-report-card:nth-child(3) {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 600px) {
+            .finance-report-visuals {
+                grid-template-columns: 1fr;
+            }
+            .finance-report-card:nth-child(3) {
+                grid-column: 1;
+            }
         }
 
         .finance-report-card {
             border: 1px solid var(--warm-gray-100);
             border-radius: 12px;
             background: var(--warm-gray-50);
-            padding: 12px;
+            padding: 18px;
         }
 
         .finance-report-card-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
         .finance-report-card-head .finance-report-card-title {
@@ -2942,14 +2963,14 @@
         }
 
         .finance-report-card-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--warm-gray-800);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .finance-report-note {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 12px;
             color: var(--warm-gray-600);
         }
@@ -2961,11 +2982,11 @@
         .finance-report-stackbar {
             display: flex;
             width: 100%;
-            height: 10px;
+            height: 12px;
             border-radius: 999px;
             overflow: hidden;
             background: var(--warm-gray-100);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .finance-report-stackbar-segment {
@@ -2989,22 +3010,22 @@
         }
 
         .finance-report-empty {
-            margin-bottom: 10px;
-            font-size: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
             color: var(--warm-gray-400);
         }
 
         .finance-report-list {
             display: grid;
-            gap: 7px;
+            gap: 10px;
         }
 
         .finance-report-list-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            font-size: 12px;
+            gap: 12px;
+            font-size: 13px;
         }
 
         .finance-report-list-key {
@@ -3038,29 +3059,30 @@
         }
 
         .finance-report-list-value {
-            color: var(--warm-gray-500);
+            font-size: 13px;
+            color: var(--warm-gray-600);
             white-space: nowrap;
         }
 
         .finance-report-flow {
             display: grid;
-            gap: 8px;
+            gap: 12px;
         }
 
         .finance-report-flow-row {
             display: grid;
-            grid-template-columns: 34px 1fr auto;
+            grid-template-columns: 48px 1fr auto;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
         .finance-report-flow-label {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--warm-gray-600);
         }
 
         .finance-report-flow-track {
-            height: 8px;
+            height: 10px;
             border-radius: 999px;
             background: var(--warm-gray-100);
             overflow: hidden;
@@ -3085,8 +3107,9 @@
         }
 
         .finance-report-flow-value {
-            font-size: 12px;
-            color: var(--warm-gray-600);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--warm-gray-700);
             white-space: nowrap;
         }
 

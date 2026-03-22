@@ -101,7 +101,7 @@
         return value;
     }
 
-    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|life_categories|life_sites|planner_todos|planner_okrs|planner_acc_|planner_reward_pool)/;
+    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|life_categories|life_sites|planner_todos|planner_okrs|planner_acc_|planner_reward_pool)/;
 
     /**
      * 对存储对象中所有字符串值进行乱码修复
