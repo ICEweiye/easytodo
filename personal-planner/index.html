@@ -413,17 +413,8 @@
                 </div>
                 <input type="hidden" id="todoKr" value="">
             </div>
-            <div class="form-group">
-                <label class="form-label">关联进度</label>
-                <div class="todo-priority-box">
-                    <label class="todo-important-toggle">
-                        <input type="checkbox" id="todoSyncKrProgress">
-                        <span>事项完成后自动为关联关键结果 +1</span>
-                    </label>
-                </div>
-            </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal('todoModal')">取消</button>
+                <button class="btn btn-secondary" onclick="closeTodoModal()">取消</button>
                 <button class="btn btn-primary" onclick="saveTodo()">保存</button>
             </div>
         </div>
@@ -449,6 +440,21 @@
                 <button class="btn btn-primary" type="button" onclick="openTodoModalForDate(selectedTodoDate)">+ 新增事项</button>
             </div>
             <div class="todo-date-modal-list" id="todoDateModalList"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="krSubTaskModal" onclick="if(event.target===this)closeKrSubTaskModal()">
+        <div class="modal kr-subtask-modal" onclick="event.stopPropagation()">
+            <div class="kr-subtask-modal-header">
+                <h3 class="modal-title" id="krSubTaskModalTitle">子任务</h3>
+                <button class="btn btn-secondary" type="button" onclick="closeKrSubTaskModal()">关闭</button>
+            </div>
+            <div class="kr-subtask-modal-body">
+                <div class="kr-subtask-modal-list" id="krSubTaskModalList"></div>
+                <div class="kr-subtask-modal-add-wrap">
+                    <button class="btn btn-primary" type="button" onclick="addKrSubTaskFromModal()">+ 添加任务</button>
+                </div>
+            </div>
         </div>
     </div>
 <script src="app.js"></script>
@@ -1674,11 +1680,9 @@
             document.getElementById('todoTitle').value = '';
             document.getElementById('todoDueDate').value = selectedTodoDate || '';
             document.getElementById('todoImportant').checked = false;
-            document.getElementById('todoSyncKrProgress').checked = false;
             setTodoSingleDayOnly(false);
 
             selectCustomOkrOption('', '无关联', '');
-            updateTodoKrSyncControl();
 
             document.getElementById('todoModal').classList.add('active');
         }
@@ -1693,7 +1697,6 @@
             document.getElementById('todoTitle').value = todo.title;
             document.getElementById('todoDueDate').value = todo.dueDate || '';
             document.getElementById('todoImportant').checked = !!todo.important;
-            document.getElementById('todoSyncKrProgress').checked = !!todo.syncKrProgressOnComplete;
             setTodoSingleDayOnly(!!todo.singleDayOnly);
 
             if (todo.okrId) {
@@ -1712,7 +1715,6 @@
             } else {
                 selectCustomOkrOption('', '无关联', '');
             }
-            updateTodoKrSyncControl();
 
             document.getElementById('todoModal').classList.add('active');
         }
@@ -1724,8 +1726,8 @@
             const important = document.getElementById('todoImportant').checked;
             const okrId = document.getElementById('todoOkr').value;
             const krId = document.getElementById('todoKr').value;
-            const syncKrProgressOnComplete = document.getElementById('todoSyncKrProgress').checked;
-            const shouldSyncKrProgress = !!krId && syncKrProgressOnComplete;
+            const existingTodo = editingId ? todos.find(t => t.id == editingId) : null;
+            const shouldSyncKrProgress = !!krId && (existingTodo ? !!existingTodo.syncKrProgressOnComplete : true);
             const singleDayOnly = getTodoSingleDayOnlyValue();
             const dueDate = singleDayOnly && !isTodoDateKey(dueDateRaw)
                 ? (isTodoDateKey(selectedTodoDate) ? selectedTodoDate : getTodoDayKey(new Date()))
@@ -1740,7 +1742,6 @@
                 const todo = todos.find(t => t.id == editingId);
                 if (todo) {
                     const relationChanged = todo.okrId !== okrId || todo.krId !== krId;
-                    const syncSettingChanged = !!todo.syncKrProgressOnComplete !== shouldSyncKrProgress;
                     const oldDueDate = todo.dueDate || '';
                     const todayKey = getTodoDayKey(new Date());
                     todo.title = title;
@@ -1757,7 +1758,7 @@
                             todo.todayOrder = null;
                         }
                     }
-                    if (relationChanged || syncSettingChanged) {
+                    if (relationChanged) {
                         todo.krProgressSynced = false;
                     }
                 }
@@ -1785,7 +1786,7 @@
             Storage.set('planner_todos', todos);
             renderTodoList();
             refreshTodoDateModalIfOpen();
-            closeModal('todoModal');
+            closeTodoModal();
         }
 
         function deleteTodo(id) {
@@ -1808,19 +1809,6 @@
                 executeTodoDelete();
             } else {
                 closeTodoDeleteConfirm();
-            }
-        }
-
-        function updateTodoKrSyncControl() {
-            const checkbox = document.getElementById('todoSyncKrProgress');
-            const krId = document.getElementById('todoKr').value;
-            if (!checkbox) return;
-
-            const hasKr = !!krId;
-            checkbox.disabled = !hasKr;
-
-            if (!hasKr) {
-                checkbox.checked = false;
             }
         }
 
@@ -1883,6 +1871,99 @@
             updateCustomOkrOptions();
         }
 
+        let krSubTaskModalOkrId = '';
+        let krSubTaskModalKrId = '';
+        let returnToKrSubTaskModalAfterSave = false;
+
+        function openKrSubTaskModal(okrId, krId) {
+            krSubTaskModalOkrId = String(okrId);
+            krSubTaskModalKrId = String(krId);
+            const okr = data.okrs.find(o => o.id == okrId);
+            const kr = okr ? okr.krs.find(k => k.id == krId) : null;
+            const titleEl = document.getElementById('krSubTaskModalTitle');
+            if (titleEl) titleEl.textContent = kr ? `关键结果：${kr.text || ''}` : '关键结果';
+            renderKrSubTaskModalList();
+            document.getElementById('krSubTaskModal').classList.add('active');
+        }
+
+        function closeKrSubTaskModal(clearIds = true) {
+            document.getElementById('krSubTaskModal').classList.remove('active');
+            if (clearIds) {
+                krSubTaskModalOkrId = '';
+                krSubTaskModalKrId = '';
+                returnToKrSubTaskModalAfterSave = false;
+            }
+        }
+
+        function getTodosForKr(okrId, krId) {
+            return todos.filter(t => t.okrId == okrId && t.krId == krId);
+        }
+
+        function renderKrSubTaskModalList() {
+            const listEl = document.getElementById('krSubTaskModalList');
+            if (!listEl) return;
+            const items = getTodosForKr(krSubTaskModalOkrId, krSubTaskModalKrId)
+                .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || '') || (a.createdAt || '').localeCompare(b.createdAt || ''));
+            listEl.innerHTML = items.length ? items.map(todo => {
+                const safeId = escapeJsString(todo.id);
+                const safeTitle = escapeHtml(todo.title || '');
+                const dueStr = todo.dueDate ? formatDate(todo.dueDate) : '--';
+                return `
+                    <div class="kr-subtask-item ${todo.completed ? 'completed' : ''}" data-todo-id="${escapeHtml(String(todo.id))}">
+                        <div class="kr-subtask-checkbox ${todo.completed ? 'checked' : ''}" onclick="toggleTodo('${safeId}'); renderKrSubTaskModalList();"></div>
+                        <div class="kr-subtask-content" onclick="closeKrSubTaskModal(false); editTodo('${safeId}'); returnToKrSubTaskModalAfterSave=true;">
+                            <span class="kr-subtask-title">${safeTitle}</span>
+                            <span class="kr-subtask-date">${dueStr}</span>
+                        </div>
+                        <button class="kr-subtask-delete" onclick="event.stopPropagation(); deleteTodoFromKrModal('${safeId}')" title="删除">&times;</button>
+                    </div>
+                `;
+            }).join('') : '';
+        }
+
+        function addKrSubTaskFromModal() {
+            returnToKrSubTaskModalAfterSave = true;
+            closeKrSubTaskModal(false);
+            const okr = data.okrs.find(o => o.id == krSubTaskModalOkrId);
+            const kr = okr ? okr.krs.find(k => k.id == krSubTaskModalKrId) : null;
+            editingId = null;
+            document.getElementById('todoModalTitle').textContent = '添加任务';
+            document.getElementById('todoTitle').value = '';
+            const todayKey = getTodoDayKey(new Date());
+            const okrEndDate = okr && okr.endDate && /^\d{4}-\d{2}-\d{2}$/.test(String(okr.endDate)) ? okr.endDate : null;
+            document.getElementById('todoDueDate').value = okrEndDate || todayKey;
+            document.getElementById('todoImportant').checked = false;
+            setTodoSingleDayOnly(false);
+            selectCustomOkrOption(krSubTaskModalOkrId, okr ? okr.title : '', okr ? (okr.color || '') : '');
+            selectCustomKrOption(krSubTaskModalKrId, kr ? kr.text : '', okr ? (okr.color || '') : '');
+            document.getElementById('todoModal').classList.add('active');
+        }
+
+        function closeTodoModal() {
+            closeModal('todoModal');
+            if (returnToKrSubTaskModalAfterSave && krSubTaskModalOkrId && krSubTaskModalKrId) {
+                returnToKrSubTaskModalAfterSave = false;
+                openKrSubTaskModal(krSubTaskModalOkrId, krSubTaskModalKrId);
+            }
+        }
+
+        function deleteTodoFromKrModal(todoId) {
+            const todo = todos.find(t => t.id == todoId);
+            if (!todo) return;
+            const starKey = findTodoStarAwardKey(todo);
+            if (starKey && !confirm('该事项已完成并获得过积分，删除后积分会被收回，确定删除吗？')) return;
+            if (!starKey && !confirm('确定删除这个子任务吗？')) return;
+            todos = todos.filter(t => t.id != todoId);
+            Storage.set('planner_todos', todos);
+            renderTodoList();
+            refreshTodoDateModalIfOpen();
+            renderKrSubTaskModalList();
+            if (starKey && window.RewardPool) {
+                window.RewardPool.revokeYellowStar(starKey);
+                if (typeof renderRewardPool === 'function') renderRewardPool();
+            }
+        }
+
         function updateCustomOkrOptions() {
             const container = document.getElementById('todoOkrOptions');
             if (!container) return;
@@ -1915,7 +1996,6 @@
                 krSelect.value = '';
                 if (triggerText) triggerText.textContent = '无关联';
             }
-            updateTodoKrSyncControl();
         }
 
         function getOkrColorClassNames() {
@@ -1964,7 +2044,6 @@
             triggerText.textContent = text;
             hiddenInput.value = value;
             select.classList.remove('open');
-            updateTodoKrSyncControl();
         }
 
         function toggleCustomSelect(selectId) {

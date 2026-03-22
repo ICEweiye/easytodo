@@ -759,7 +759,7 @@ function renderOKRs() {
         const safeTitle = escapePlannerHtml(okr.title);
         const safeDateRange = escapePlannerHtml(dateRange);
         const safeRemainingHtml = remainingNumber
-            ? `${escapePlannerHtml(remainingPrefix)} <span class="okr-remaining-number">${escapePlannerHtml(remainingNumber)}</span> ${escapePlannerHtml(remainingSuffix)}`
+            ? `<span class="okr-remaining-text">${escapePlannerHtml(remainingPrefix)}</span><span class="okr-remaining-number">${escapePlannerHtml(remainingNumber)}</span><span class="okr-remaining-text">${escapePlannerHtml(remainingSuffix)}</span>`
             : escapePlannerHtml(remainingText);
         const safeMemo = escapePlannerHtml(okr.memo || '');
 
@@ -792,7 +792,7 @@ function renderOKRs() {
                         <div class="kr-item ${isCompleted ? 'kr-completed' : ''}">
                             <div class="kr-main">
                                 <span class="kr-text${isCompleted ? ' completed' : ''}${plannerUserContentFoldClass(kr.text)}"
-                                      onclick="editKr('${safeOkrId}', '${safeKrId}')" title="点击编辑">${safeKrText}</span>
+                                      onclick="if(typeof openKrSubTaskModal==='function')openKrSubTaskModal('${safeOkrId}', '${safeKrId}')" title="点击管理子任务">${safeKrText}</span>
                                 <div class="kr-meta">
                                     <span class="kr-weight-badge">权重 ${getKrWeightValue(kr)}%</span>
                                 </div>
@@ -1615,7 +1615,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
-                if (overlay.id === 'okrModal') {
+                if (overlay.id === 'okrModal') return;
+                if (overlay.id === 'krSubTaskModal' && typeof closeKrSubTaskModal === 'function') {
+                    closeKrSubTaskModal();
                     return;
                 }
                 const shouldClose = confirm('\u68c0\u6d4b\u5230\u70b9\u51fb\u7a7a\u767d\u533a\u57df\u3002\u786e\u8ba4\u9000\u51fa\u7f16\u8f91\u5417\uff1f\u672a\u4fdd\u5b58\u5185\u5bb9\u5c06\u4e22\u5931\u3002');
