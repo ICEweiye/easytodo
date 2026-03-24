@@ -10,6 +10,7 @@
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <script src="reward-pool.js"></script>
+    <script src="app.js"></script>
 </head>
 <body class="home-page">
     <div class="app-layout">
@@ -82,17 +83,18 @@
                         <div class="review-type-grid">
                             <button type="button" class="review-type-card" onclick="openReviewModal()">每日记录</button>
                             <button type="button" class="review-type-card" onclick="openWeeklyReviewModal()">每周复盘</button>
-                            <button type="button" class="review-type-card" onclick="openReviewModal()">每月复盘</button>
+                            <button type="button" class="review-type-card" onclick="openMonthlyReviewModal()">每月复盘</button>
                             <button type="button" class="review-type-card" onclick="openReviewModal()">事件复盘</button>
                         </div>
                     </section>
                 </div>
 
-                <section class="module">
+                <section class="module review-records-section">
                     <div class="module-header">
                         <h2 class="module-title">复盘记录</h2>
                     </div>
                     <div class="weekly-review-list" id="weeklyReviewList"></div>
+                    <div class="weekly-review-list" id="monthlyReviewList"></div>
                     <div class="review-list" id="reviewList"></div>
                 </section>
             </div>
@@ -127,10 +129,12 @@
                     <div class="form-group">
                         <label class="form-label">标签分类</label>
                     <select class="form-input review-category-select" id="reviewCategory" onchange="syncReviewCategorySelectStyle()">
+                        <option value="none" selected>无</option>
                         <option value="life">生活</option>
-                        <option value="work" selected>工作</option>
+                        <option value="work">工作</option>
                         <option value="study">学习</option>
                         <option value="important">重要</option>
+                        <option value="goal">目标</option>
                         </select>
                     </div>
                 </div>
@@ -298,6 +302,85 @@
         </div>
     </div>
 
+    <div id="okrGrid" style="display:none" aria-hidden="true"></div>
+    <div id="readingList" style="display:none" aria-hidden="true"></div>
+    <!-- OKR 编辑弹窗（周复盘页面复用） -->
+    <div class="modal-overlay" id="okrModal">
+        <div class="modal modal-large">
+            <h3 class="modal-title" id="okrModalTitle">添加目标 (O)</h3>
+            <div class="form-group">
+                <label class="form-label">目标名称</label>
+                <input type="text" class="form-input" id="okrTitle" placeholder="例如：提升专业技能">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">开始日期</label>
+                    <div class="date-picker-field">
+                        <input type="text" class="form-input form-date-text-input" id="okrStartDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <button type="button" class="date-picker-trigger" data-input-id="okrStartDate" data-native-id="okrStartDateNative" aria-label="选择开始日期">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </button>
+                        <input type="date" class="date-picker-native-proxy" id="okrStartDateNative" tabindex="-1" aria-hidden="true">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">结束日期</label>
+                    <div class="date-picker-field">
+                        <input type="text" class="form-input form-date-text-input" id="okrEndDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <button type="button" class="date-picker-trigger" data-input-id="okrEndDate" data-native-id="okrEndDateNative" aria-label="选择结束日期">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </button>
+                        <input type="date" class="date-picker-native-proxy" id="okrEndDateNative" tabindex="-1" aria-hidden="true">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="okr-duration-display">
+                    <span class="duration-label">持续时间：</span>
+                    <span class="duration-value" id="okrDuration">-- 天</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">关键结果 (KR)</label>
+                <div class="kr-editor-container" id="krEditorContainer"></div>
+                <button type="button" class="add-kr-editor-btn" onclick="addKrEditor()"><span>+ 添加关键结果</span></button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注</label>
+                <textarea class="form-input form-textarea" id="okrMemo" placeholder="记录一些想法、备注..." rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">颜色</label>
+                <div class="color-selector" id="okrColorSelector">
+                    <button type="button" class="color-btn color-brown selected" data-color="brown" title="棕色" onclick="selectOkrColor('brown')"></button>
+                    <button type="button" class="color-btn color-apricot" data-color="apricot" title="杏色" onclick="selectOkrColor('apricot')"></button>
+                    <button type="button" class="color-btn color-sage" data-color="sage" title="鼠尾草绿" onclick="selectOkrColor('sage')"></button>
+                    <button type="button" class="color-btn color-pink" data-color="pink" title="粉色" onclick="selectOkrColor('pink')"></button>
+                    <button type="button" class="color-btn color-indigo" data-color="indigo" title="靛蓝" onclick="selectOkrColor('indigo')"></button>
+                    <button type="button" class="color-btn color-teal" data-color="teal" title="青色" onclick="selectOkrColor('teal')"></button>
+                    <button type="button" class="color-btn color-coral" data-color="coral" title="珊瑚红" onclick="selectOkrColor('coral')"></button>
+                    <button type="button" class="color-btn color-amber" data-color="amber" title="琥珀色" onclick="selectOkrColor('amber')"></button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="okrDeleteBtn" style="display:none;" onclick="deleteOkr(editingId)">删除</button>
+                <div style="flex:1;"></div>
+                <button class="btn btn-secondary" onclick="closeOkrModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveOkr()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="weeklyReviewModal" onclick="if(event.target===this)closeWeeklyReviewModal()">
         <div class="modal modal-large weekly-review-modal" onclick="event.stopPropagation(); if(!event.target.closest('.weekly-review-category-dropdown')) document.querySelectorAll('#weeklyReviewModal .weekly-review-category-dropdown.open').forEach(function(w){w.classList.remove('open');})">
             <h3 class="modal-title" id="weeklyReviewModalTitle">周复盘</h3>
@@ -336,7 +419,18 @@
                 <div class="form-group">
                     <label class="form-label">本周进程</label>
                     <div class="weekly-review-okr-reference" id="weeklyReviewOkrReference"></div>
-                    <textarea class="form-input form-textarea weekly-review-textarea" id="weeklyReviewOkrCompare" placeholder="对比本周与上周各 OKR 的进展变化"></textarea>
+                    <div class="weekly-review-adjust-goal-row">
+                        <span class="weekly-review-adjust-goal-label">是否需要调整目标</span>
+                        <input type="hidden" id="weeklyReviewNeedAdjustGoal" value="no">
+                        <div class="weekly-review-adjust-goal-toggle">
+                            <button type="button" class="weekly-review-adjust-goal-option is-active" data-value="no">否</button>
+                            <button type="button" class="weekly-review-adjust-goal-option" data-value="yes">是</button>
+                        </div>
+                    </div>
+                    <div class="weekly-review-adjust-reason-wrap">
+                        <label class="form-label">调整原因</label>
+                        <textarea class="form-input form-textarea weekly-review-adjust-reason-textarea" id="weeklyReviewAdjustReason" placeholder="填写需要调整目标的原因"></textarea>
+                    </div>
                 </div>
                 <div class="form-group weekly-review-state-follow-row">
                     <div class="weekly-review-state-split">
@@ -352,6 +446,7 @@
                                     <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','work')">工作</div>
                                     <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','study')">学习</div>
                                     <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','important')">重要</div>
+                                    <div class="weekly-review-category-option category-goal" data-value="goal" onclick="addWeeklyCategory('weeklyReviewHighlightsCategories','goal')">目标</div>
                                 </div>
                             </div>
                             <input type="hidden" id="weeklyReviewHighlightsCategories" value='[]'>
@@ -374,6 +469,7 @@
                                     <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','work')">工作</div>
                                     <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','study')">学习</div>
                                     <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','important')">重要</div>
+                                    <div class="weekly-review-category-option category-goal" data-value="goal" onclick="addWeeklyCategory('weeklyReviewReflectionCategories','goal')">目标</div>
                                 </div>
                             </div>
                             <input type="hidden" id="weeklyReviewReflectionCategories" value='[]'>
@@ -397,6 +493,7 @@
                                 <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','work')">工作</div>
                                 <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','study')">学习</div>
                                 <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','important')">重要</div>
+                                <div class="weekly-review-category-option category-goal" data-value="goal" onclick="addWeeklyCategory('weeklyReviewNextPlanCategories','goal')">目标</div>
                             </div>
                         </div>
                         <input type="hidden" id="weeklyReviewNextPlanCategories" value='[]'>
@@ -416,6 +513,105 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="monthlyReviewModal" onclick="if(event.target===this)closeMonthlyReviewModal()">
+        <div class="modal modal-large weekly-review-modal" onclick="event.stopPropagation(); if(!event.target.closest('.weekly-review-category-dropdown')) document.querySelectorAll('#monthlyReviewModal .weekly-review-category-dropdown.open').forEach(function(w){w.classList.remove('open');})">
+            <h3 class="modal-title" id="monthlyReviewModalTitle">新增月复盘</h3>
+            <div class="weekly-review-form">
+                <div class="form-row weekly-review-meta-row">
+                    <div class="form-group">
+                        <label class="form-label">月份</label>
+                        <input type="month" class="form-input" id="monthlyReviewMonth" title="选择复盘月份">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">评分</label>
+                        <div class="weekly-review-score-inline">
+                            <span class="weekly-review-score-display" id="monthlyReviewScoreDisplay">7.0 分</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="weekly-review-field-header">
+                        <label class="form-label">本月进展</label>
+                        <div class="weekly-review-category-dropdown" id="monthlyReviewProgressCategoriesWrap">
+                            <button type="button" class="weekly-review-category-trigger" onclick="toggleWeeklyCategoryDropdown('monthlyReviewProgressCategories')" title="选择标签" aria-label="选择标签">
+                                <svg class="weekly-review-category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="weekly-review-category-options" id="monthlyReviewProgressCategoryOptions">
+                                <div class="weekly-review-category-option category-none selected" data-value="none" onclick="setWeeklyCategoriesNone('monthlyReviewProgressCategories')">无</div>
+                                <div class="weekly-review-category-option category-life" data-value="life" onclick="addWeeklyCategory('monthlyReviewProgressCategories','life')">生活</div>
+                                <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('monthlyReviewProgressCategories','work')">工作</div>
+                                <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('monthlyReviewProgressCategories','study')">学习</div>
+                                <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('monthlyReviewProgressCategories','important')">重要</div>
+                                <div class="weekly-review-category-option category-goal" data-value="goal" onclick="addWeeklyCategory('monthlyReviewProgressCategories','goal')">目标</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="monthlyReviewProgressCategories" value='[]'>
+                    </div>
+                    <div class="weekly-review-input-wrap">
+                        <div class="weekly-review-pills" id="monthlyReviewProgressPills"></div>
+                        <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="monthlyReviewProgress" placeholder="记录本月关键进展与成果"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">生活状态</label>
+                    <textarea class="form-input form-textarea weekly-review-textarea" id="monthlyReviewLife" placeholder="记录本月生活状态和感受"></textarea>
+                </div>
+                <div class="form-group">
+                    <div class="weekly-review-field-header">
+                        <label class="form-label">能力成长</label>
+                        <div class="weekly-review-category-dropdown" id="monthlyReviewGrowthCategoriesWrap">
+                            <button type="button" class="weekly-review-category-trigger" onclick="toggleWeeklyCategoryDropdown('monthlyReviewGrowthCategories')" title="选择标签" aria-label="选择标签">
+                                <svg class="weekly-review-category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="weekly-review-category-options" id="monthlyReviewGrowthCategoryOptions">
+                                <div class="weekly-review-category-option category-none selected" data-value="none" onclick="setWeeklyCategoriesNone('monthlyReviewGrowthCategories')">无</div>
+                                <div class="weekly-review-category-option category-life" data-value="life" onclick="addWeeklyCategory('monthlyReviewGrowthCategories','life')">生活</div>
+                                <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('monthlyReviewGrowthCategories','work')">工作</div>
+                                <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('monthlyReviewGrowthCategories','study')">学习</div>
+                                <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('monthlyReviewGrowthCategories','important')">重要</div>
+                                <div class="weekly-review-category-option category-goal" data-value="goal" onclick="addWeeklyCategory('monthlyReviewGrowthCategories','goal')">目标</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="monthlyReviewGrowthCategories" value='[]'>
+                    </div>
+                    <div class="weekly-review-input-wrap">
+                        <div class="weekly-review-pills" id="monthlyReviewGrowthPills"></div>
+                        <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="monthlyReviewGrowth" placeholder="记录本月能力提升、经验沉淀"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="weekly-review-field-header">
+                        <label class="form-label">下月计划</label>
+                        <div class="weekly-review-category-dropdown" id="monthlyReviewNextPlanCategoriesWrap">
+                            <button type="button" class="weekly-review-category-trigger" onclick="toggleWeeklyCategoryDropdown('monthlyReviewNextPlanCategories')" title="选择标签" aria-label="选择标签">
+                                <svg class="weekly-review-category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="weekly-review-category-options" id="monthlyReviewNextPlanCategoryOptions">
+                                <div class="weekly-review-category-option category-none selected" data-value="none" onclick="setWeeklyCategoriesNone('monthlyReviewNextPlanCategories')">无</div>
+                                <div class="weekly-review-category-option category-life" data-value="life" onclick="addWeeklyCategory('monthlyReviewNextPlanCategories','life')">生活</div>
+                                <div class="weekly-review-category-option category-work" data-value="work" onclick="addWeeklyCategory('monthlyReviewNextPlanCategories','work')">工作</div>
+                                <div class="weekly-review-category-option category-study" data-value="study" onclick="addWeeklyCategory('monthlyReviewNextPlanCategories','study')">学习</div>
+                                <div class="weekly-review-category-option category-important" data-value="important" onclick="addWeeklyCategory('monthlyReviewNextPlanCategories','important')">重要</div>
+                                <div class="weekly-review-category-option category-goal" data-value="goal" onclick="addWeeklyCategory('monthlyReviewNextPlanCategories','goal')">目标</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="monthlyReviewNextPlanCategories" value='[]'>
+                    </div>
+                    <div class="weekly-review-input-wrap">
+                        <div class="weekly-review-pills" id="monthlyReviewNextPlanPills"></div>
+                        <textarea class="form-input form-textarea weekly-review-textarea" id="monthlyReviewNextPlan" placeholder="记录下月重点计划与安排"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="monthlyReviewDeleteBtn" style="display:none;" onclick="deleteMonthlyReview(editingMonthlyReviewId)">删除</button>
+                <div style="flex:1;"></div>
+                <button class="btn btn-secondary" onclick="closeMonthlyReviewModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveMonthlyReview()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function plannerScopedKey(logicalKey) {
             if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
@@ -430,7 +626,7 @@
                 try {
                     var parsed = JSON.parse(raw);
                     if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' &&
-                        (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' || logicalKey === 'planner_review_archive_entries' || logicalKey === 'planner_weekly_reviews')) {
+                        (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' || logicalKey === 'planner_review_archive_entries' || logicalKey === 'planner_weekly_reviews' || logicalKey === 'planner_monthly_reviews')) {
                         return window.Utf8Utils.ensureValidUtf8(parsed);
                     }
                     return parsed;
@@ -447,6 +643,7 @@
         const REVIEW_STORAGE_KEY = 'planner_review_entries';
         const REVIEW_ARCHIVE_STORAGE_KEY = 'planner_review_archive_entries';
         const WEEKLY_REVIEW_STORAGE_KEY = 'planner_weekly_reviews';
+        const MONTHLY_REVIEW_STORAGE_KEY = 'planner_monthly_reviews';
         const LEGACY_REVIEW_KEY = 'reviews';
         const TODO_STORAGE_KEY = 'planner_todos';
         const OKR_STORAGE_KEY = 'planner_okrs';
@@ -461,12 +658,14 @@
         const KISS_TABS = [
             ...KISS_FIELDS
         ];
-        const REVIEW_CATEGORY_OPTIONS = ['life', 'work', 'study', 'important'];
+        const REVIEW_CATEGORY_OPTIONS = ['none', 'life', 'work', 'study', 'important', 'goal'];
         const REVIEW_CATEGORY_META = {
+            none: { key: 'none', label: '无', className: 'category-none' },
             life: { key: 'life', label: '生活', className: 'category-life' },
             work: { key: 'work', label: '工作', className: 'category-work' },
             study: { key: 'study', label: '学习', className: 'category-study' },
-            important: { key: 'important', label: '重要', className: 'category-important' }
+            important: { key: 'important', label: '重要', className: 'category-important' },
+            goal: { key: 'goal', label: '目标', className: 'category-goal' }
         };
         const REVIEW_EMOTION_GROUPS = [
             {
@@ -496,8 +695,11 @@
         let reviewEntries = [];
         let reviewArchiveEntries = [];
         let weeklyReviewEntries = [];
+        let monthlyReviewEntries = [];
         let editingReviewId = null;
         let editingWeeklyReviewId = null;
+        let editingMonthlyReviewId = null;
+        let selectedWeeklyReviewOkrId = null;
         let currentKissTab = 'keep';
         let reviewLinkedTodoIds = [];
         let reviewEmotionEditingSlot = 0;
@@ -552,6 +754,55 @@
             return `${dup.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
         }
 
+        function getPrevWeekKey(weekKey) {
+            const m = (weekKey || '').match(/^(\d{4})-W(\d{2})$/);
+            if (!m) return null;
+            const y = parseInt(m[1], 10), wn = parseInt(m[2], 10);
+            if (wn <= 1) return `${y - 1}-W52`;
+            return `${y}-W${String(wn - 1).padStart(2, '0')}`;
+        }
+
+        function computeOkrProgressPercent(okr) {
+            const krs = okr.krs || [];
+            if (krs.length === 0) return 0;
+            let total = 0;
+            krs.forEach(kr => {
+                const cur = Number(kr.current) || 0;
+                const tgt = Math.max(1, Number(kr.target) || 1);
+                total += Math.min(1, cur / tgt);
+            });
+            return Math.round((total / krs.length) * 100);
+        }
+
+        function buildOkrProgressSnapshot() {
+            const okrs = StorageUtil.get(OKR_STORAGE_KEY);
+            if (!Array.isArray(okrs)) return {};
+            const snapshot = {};
+            okrs.forEach(okr => { if (okr && okr.id) snapshot[String(okr.id)] = computeOkrProgressPercent(okr); });
+            return snapshot;
+        }
+
+        function getAverageDailyScoreForMonth(monthKey) {
+            if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) return 7;
+            let total = 0;
+            let count = 0;
+            const allDaily = [...reviewEntries, ...reviewArchiveEntries];
+            allDaily.forEach(entry => {
+                const dateStr = entry.date || entry.createdAt || '';
+                if (typeof dateStr === 'string' && dateStr.indexOf(monthKey) === 0) {
+                    const score = parseInt(entry.score, 10);
+                    if (Number.isFinite(score) && score >= 1 && score <= 10) {
+                        total += score;
+                        count += 1;
+                    }
+                }
+            });
+            if (count === 0) return 7;
+            const avg = total / count;
+            const rounded = Math.round(avg * 10) / 10;
+            return Math.max(1, Math.min(10, rounded));
+        }
+
         function getAverageDailyScoreForWeek(weekKey) {
             if (!weekKey || !/^\d{4}-W\d{2}$/.test(weekKey)) return 7;
             let total = 0;
@@ -575,12 +826,12 @@
 
         function normalizeReviewCategory(value) {
             const key = String(value || '').trim();
-            return REVIEW_CATEGORY_OPTIONS.includes(key) ? key : 'work';
+            return REVIEW_CATEGORY_OPTIONS.includes(key) ? key : 'none';
         }
 
         function getReviewCategoryMeta(value) {
             const key = normalizeReviewCategory(value);
-            return REVIEW_CATEGORY_META[key] || REVIEW_CATEGORY_META.work;
+            return REVIEW_CATEGORY_META[key] || REVIEW_CATEGORY_META.none;
         }
 
         function syncReviewCategorySelectStyle() {
@@ -589,7 +840,7 @@
 
             const key = normalizeReviewCategory(select.value);
             select.value = key;
-            select.classList.remove('category-life', 'category-work', 'category-study', 'category-important');
+            select.classList.remove('category-none', 'category-life', 'category-work', 'category-study', 'category-important', 'category-goal');
             select.classList.add(`category-${key}`);
         }
 
@@ -598,19 +849,25 @@
             const wrap = document.getElementById(wrapId);
             if (!wrap) return;
             const isOpen = wrap.classList.contains('open');
-            document.querySelectorAll('#weeklyReviewModal .weekly-review-category-dropdown').forEach(w => w.classList.remove('open'));
+            document.querySelectorAll('#weeklyReviewModal .weekly-review-category-dropdown, #monthlyReviewModal .weekly-review-category-dropdown').forEach(w => w.classList.remove('open'));
             if (!isOpen) wrap.classList.add('open');
         }
 
         const WEEKLY_CATEGORY_PILLS_MAP = {
             weeklyReviewHighlightsCategories: 'weeklyReviewHighlightsPills',
             weeklyReviewReflectionCategories: 'weeklyReviewReflectionPills',
-            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlanPills'
+            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlanPills',
+            monthlyReviewProgressCategories: 'monthlyReviewProgressPills',
+            monthlyReviewGrowthCategories: 'monthlyReviewGrowthPills',
+            monthlyReviewNextPlanCategories: 'monthlyReviewNextPlanPills'
         };
         const WEEKLY_CATEGORY_TEXTAREA_MAP = {
             weeklyReviewHighlightsCategories: 'weeklyReviewHighlights',
             weeklyReviewReflectionCategories: 'weeklyReviewReflection',
-            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlan'
+            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlan',
+            monthlyReviewProgressCategories: 'monthlyReviewProgress',
+            monthlyReviewGrowthCategories: 'monthlyReviewGrowth',
+            monthlyReviewNextPlanCategories: 'monthlyReviewNextPlan'
         };
         const WEEKLY_CATEGORY_TEXTAREA_PLACEHOLDER = {
             weeklyReviewHighlightsCategories: '本周做得好的、值得肯定的地方',
@@ -767,7 +1024,7 @@
         }
 
         function syncWeeklyCategoryTextareaEmptyClass() {
-            ['weeklyReviewHighlights', 'weeklyReviewReflection', 'weeklyReviewNextPlan'].forEach(id => {
+            ['weeklyReviewHighlights', 'weeklyReviewReflection', 'weeklyReviewNextPlan', 'monthlyReviewProgress', 'monthlyReviewGrowth', 'monthlyReviewNextPlan'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el || el.classList.contains('hidden-by-categories')) return;
                 const empty = !el.value.trim();
@@ -1819,7 +2076,7 @@
                 deleteBtn.style.display = 'none';
                 document.getElementById('reviewDate').value = todayKey();
                 document.getElementById('reviewScore').value = '7';
-                document.getElementById('reviewCategory').value = 'work';
+                document.getElementById('reviewCategory').value = 'none';
                 document.getElementById('reviewTasks').value = '';
                 setReviewEmotionIntensity('中');
                 setReviewEmotionTags([]);
@@ -1878,6 +2135,45 @@
 
         function persistWeeklyReviews() {
             StorageUtil.set(WEEKLY_REVIEW_STORAGE_KEY, weeklyReviewEntries);
+        }
+
+        function monthKeyToday() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = `${now.getMonth() + 1}`.padStart(2, '0');
+            return `${y}-${m}`;
+        }
+
+        function normalizeMonthlyReviewEntry(entry) {
+            const monthKey = /^\d{4}-\d{2}$/.test(String(entry?.monthKey || '').trim())
+                ? String(entry.monthKey).trim()
+                : monthKeyToday();
+            const scoreNum = Number.parseInt(entry?.score, 10);
+            const score = Number.isFinite(scoreNum) ? Math.max(1, Math.min(10, scoreNum)) : 7;
+            const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
+            return {
+                id: String(entry?.id || generateId()),
+                monthKey,
+                score,
+                progress: String(entry?.progress || ''),
+                progressCategories: toArr(entry?.progressCategories || entry?.progressCategory),
+                life: String(entry?.life || ''),
+                growth: String(entry?.growth || ''),
+                growthCategories: toArr(entry?.growthCategories || entry?.growthCategory),
+                nextPlan: String(entry?.nextPlan || ''),
+                nextPlanCategories: toArr(entry?.nextPlanCategories || entry?.nextPlanCategory),
+                createdAt: entry?.createdAt || new Date().toISOString(),
+                updatedAt: entry?.updatedAt || new Date().toISOString()
+            };
+        }
+
+        function loadMonthlyReviews() {
+            const stored = StorageUtil.get(MONTHLY_REVIEW_STORAGE_KEY);
+            monthlyReviewEntries = Array.isArray(stored) ? stored.map(normalizeMonthlyReviewEntry) : [];
+        }
+
+        function persistMonthlyReviews() {
+            StorageUtil.set(MONTHLY_REVIEW_STORAGE_KEY, monthlyReviewEntries);
         }
 
         function parseWeeklyReviewEvents(raw) {
@@ -2058,26 +2354,61 @@
             if (!container) return;
             const okrs = StorageUtil.get(OKR_STORAGE_KEY);
             if (!Array.isArray(okrs) || okrs.length === 0) {
+                selectedWeeklyReviewOkrId = null;
                 container.innerHTML = '<p class="weekly-review-okr-empty">暂无 OKR，可在主页添加</p>';
                 return;
             }
-            container.innerHTML = okrs.map(okr => {
-                const krs = okr.krs || [];
-                const totalWeight = krs.length;
-                const completedWeight = krs.reduce((s, kr) => {
-                    const cur = Number(kr.current) || 0;
-                    const tgt = Math.max(1, Number(kr.target) || 1);
-                    return s + Math.min(1, cur / tgt);
-                }, 0);
-                const pct = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+            if (!selectedWeeklyReviewOkrId || !okrs.some(o => String(o.id) === String(selectedWeeklyReviewOkrId))) {
+                selectedWeeklyReviewOkrId = okrs[0] ? String(okrs[0].id) : null;
+            }
+            const weekKey = document.getElementById('weeklyReviewWeek')?.value?.trim() || getWeekKey(new Date());
+            const currentEntry = editingWeeklyReviewId ? weeklyReviewEntries.find(e => e.id == editingWeeklyReviewId) : null;
+            const currentSnapshot = currentEntry?.okrProgressSnapshot;
+            const prevWeekKey = getPrevWeekKey(weekKey);
+            const prevWeekEntry = prevWeekKey ? weeklyReviewEntries.find(e => e.weekKey === prevWeekKey) : null;
+            const prevSnapshot = prevWeekEntry?.okrProgressSnapshot || {};
+            container.innerHTML = '<div class="weekly-review-okr-cards">' + okrs.map(okr => {
+                const pct = currentSnapshot && currentSnapshot[String(okr.id)] != null ? currentSnapshot[String(okr.id)] : computeOkrProgressPercent(okr);
+                const prevPct = prevSnapshot[String(okr.id)];
+                const delta = prevPct != null ? pct - prevPct : null;
+                const deltaCls = delta === null ? 'weekly-okr-delta-none' : (delta > 0 ? 'weekly-okr-delta-up' : 'weekly-okr-delta-down');
+                const deltaText = delta === null ? '—' : (delta > 0 ? '+' + delta + '%' : delta + '%');
                 const colorClass = REVIEW_OKR_COLOR_CLASSES.includes(okr.color) ? okr.color : 'brown';
-                const krsHtml = (okr.krs || []).map(kr => {
-                    const cur = Number(kr.current) || 0;
-                    const tgt = Math.max(1, Number(kr.target) || 1);
-                    return `<span class="weekly-okr-kr">${escapeHtml(kr.text || '')} ${cur}/${tgt}</span>`;
-                }).join('、');
-                return `<div class="weekly-okr-item weekly-okr-${colorClass}"><span class="weekly-okr-title">${escapeHtml(okr.title || '')}</span> ${pct}% · ${krsHtml}</div>`;
-            }).join('');
+                const isSelected = String(okr.id) === String(selectedWeeklyReviewOkrId);
+                const safeId = escapeJsString(String(okr.id));
+                return `<div class="weekly-review-okr-card weekly-okr-${colorClass} ${isSelected ? 'is-selected' : ''}" data-okr-id="${escapeHtml(String(okr.id))}" onclick="selectWeeklyReviewOkr('${safeId}'); event.stopPropagation();" role="button" tabindex="0">
+                    <div class="weekly-review-okr-card-main">
+                        <span class="weekly-review-okr-card-title">${escapeHtml(okr.title || '')}</span>
+                        <span class="weekly-review-okr-progress-pct">${pct}%</span>
+                    </div>
+                    <span class="weekly-review-okr-card-delta ${deltaCls}">${escapeHtml(deltaText)}</span>
+                </div>`;
+            }).join('') + '</div>';
+        }
+
+        function selectWeeklyReviewOkr(okrId) {
+            selectedWeeklyReviewOkrId = okrId;
+            const container = document.getElementById('weeklyReviewOkrReference');
+            if (!container) return;
+            container.querySelectorAll('.weekly-review-okr-card').forEach(card => {
+                card.classList.toggle('is-selected', String(card.dataset.okrId) === String(okrId));
+            });
+            const needVal = document.getElementById('weeklyReviewNeedAdjustGoal')?.value;
+            if (needVal === 'yes' && typeof editOkr === 'function') editOkr(okrId);
+        }
+
+        function syncWeeklyReviewAdjustGoalUI() {
+            const needEl = document.getElementById('weeklyReviewNeedAdjustGoal');
+            const reasonWrap = document.querySelector('.weekly-review-adjust-reason-wrap');
+            const reasonLabel = reasonWrap?.querySelector('.form-label');
+            const reasonInput = document.getElementById('weeklyReviewAdjustReason');
+            const isYes = needEl?.value === 'yes';
+            if (needEl) needEl.value = isYes ? 'yes' : 'no';
+            document.querySelectorAll('.weekly-review-adjust-goal-option').forEach(btn => {
+                btn.classList.toggle('is-active', (btn.dataset.value === 'yes') === isYes);
+            });
+            if (reasonLabel) reasonLabel.textContent = isYes ? '调整原因' : '不需要调整的原因';
+            if (reasonInput) reasonInput.placeholder = isYes ? '填写需要调整目标的原因' : '填写不需要调整的原因';
         }
 
         function openWeeklyReviewModal(id = null) {
@@ -2098,7 +2429,9 @@
                 const scoreInput = document.getElementById('weeklyReviewScore');
                 if (scoreDisplay) scoreDisplay.textContent = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
                 if (scoreInput) scoreInput.value = String(avgScore);
-                document.getElementById('weeklyReviewOkrCompare').value = '';
+                document.getElementById('weeklyReviewNeedAdjustGoal').value = 'no';
+                document.getElementById('weeklyReviewAdjustReason').value = '';
+                syncWeeklyReviewAdjustGoalUI();
                 document.getElementById('weeklyReviewGoodState').value = '';
                 document.getElementById('weeklyReviewBadState').value = '';
                 document.getElementById('weeklyReviewHighlights').value = '';
@@ -2125,7 +2458,10 @@
                 const scoreInput = document.getElementById('weeklyReviewScore');
                 if (scoreDisplay) scoreDisplay.textContent = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
                 if (scoreInput) scoreInput.value = String(avgScore);
-                document.getElementById('weeklyReviewOkrCompare').value = entry.okrCompare || '';
+                const needAdj = (entry.needAdjustGoal || 'no') === 'yes' ? 'yes' : 'no';
+                document.getElementById('weeklyReviewNeedAdjustGoal').value = needAdj;
+                document.getElementById('weeklyReviewAdjustReason').value = entry.adjustReason || '';
+                syncWeeklyReviewAdjustGoalUI();
                 document.getElementById('weeklyReviewGoodState').value = entry.goodState || '';
                 document.getElementById('weeklyReviewBadState').value = entry.badState || '';
                 document.getElementById('weeklyReviewHighlights').value = entry.highlights || '';
@@ -2165,7 +2501,8 @@
             if (!weekKey && weekInput) weekKey = getWeekKey(new Date()) || '';
             const events = getWeeklyReviewEventsArray();
             const score = getAverageDailyScoreForWeek(weekKey);
-            const okrCompare = document.getElementById('weeklyReviewOkrCompare').value.trim();
+            const needAdjustGoal = (document.getElementById('weeklyReviewNeedAdjustGoal')?.value || 'no') === 'yes' ? 'yes' : 'no';
+            const adjustReason = document.getElementById('weeklyReviewAdjustReason')?.value.trim() || '';
             const goodState = document.getElementById('weeklyReviewGoodState').value.trim();
             const badState = document.getElementById('weeklyReviewBadState').value.trim();
             const highlights = collectWeeklyCategoryFieldValue('weeklyReviewHighlightsCategories');
@@ -2180,7 +2517,9 @@
                 weekKey,
                 events: Array.isArray(events) ? events : parseWeeklyReviewEvents(events),
                 score,
-                okrCompare,
+                needAdjustGoal,
+                adjustReason,
+                okrProgressSnapshot: buildOkrProgressSnapshot(),
                 goodState,
                 badState,
                 highlights,
@@ -2207,6 +2546,132 @@
             weeklyReviewEntries = weeklyReviewEntries.filter(e => e.id !== id);
             persistWeeklyReviews();
             closeWeeklyReviewModal();
+            renderAll();
+        }
+
+        function openMonthlyReviewModal(id = null) {
+            editingMonthlyReviewId = id;
+            const titleEl = document.getElementById('monthlyReviewModalTitle');
+            const deleteBtn = document.getElementById('monthlyReviewDeleteBtn');
+            if (!titleEl || !deleteBtn) return;
+
+            if (!id) {
+                titleEl.textContent = '新增月复盘';
+                deleteBtn.style.display = 'none';
+                document.getElementById('monthlyReviewMonth').value = monthKeyToday();
+                updateMonthlyReviewScoreDisplay();
+                document.getElementById('monthlyReviewProgress').value = '';
+                document.getElementById('monthlyReviewGrowth').value = '';
+                document.getElementById('monthlyReviewLife').value = '';
+                document.getElementById('monthlyReviewNextPlan').value = '';
+                document.getElementById('monthlyReviewProgressCategories').value = '[]';
+                document.getElementById('monthlyReviewGrowthCategories').value = '[]';
+                document.getElementById('monthlyReviewNextPlanCategories').value = '[]';
+                syncWeeklyReviewCategoryUI('monthlyReviewProgressCategories');
+                syncWeeklyReviewCategoryUI('monthlyReviewGrowthCategories');
+                syncWeeklyReviewCategoryUI('monthlyReviewNextPlanCategories');
+            } else {
+                const entry = monthlyReviewEntries.find(item => item.id === id);
+                if (!entry) return;
+                titleEl.textContent = '编辑月复盘';
+                deleteBtn.style.display = 'block';
+                document.getElementById('monthlyReviewMonth').value = entry.monthKey;
+                updateMonthlyReviewScoreDisplay();
+                document.getElementById('monthlyReviewProgress').value = entry.progress || '';
+                document.getElementById('monthlyReviewGrowth').value = entry.growth || '';
+                document.getElementById('monthlyReviewLife').value = entry.life || '';
+                document.getElementById('monthlyReviewNextPlan').value = entry.nextPlan || '';
+                const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
+                const pArr = toArr(entry.progressCategories || entry.progressCategory);
+                const gArr = toArr(entry.growthCategories || entry.growthCategory);
+                const nArr = toArr(entry.nextPlanCategories || entry.nextPlanCategory);
+                document.getElementById('monthlyReviewProgressCategories').value = JSON.stringify(pArr);
+                document.getElementById('monthlyReviewGrowthCategories').value = JSON.stringify(gArr);
+                document.getElementById('monthlyReviewNextPlanCategories').value = JSON.stringify(nArr);
+                syncWeeklyReviewCategoryUI('monthlyReviewProgressCategories');
+                syncWeeklyReviewCategoryUI('monthlyReviewGrowthCategories');
+                syncWeeklyReviewCategoryUI('monthlyReviewNextPlanCategories');
+                populateWeeklyCategoryInputs('monthlyReviewProgressCategories', entry.progress || '', pArr);
+                populateWeeklyCategoryInputs('monthlyReviewGrowthCategories', entry.growth || '', gArr);
+                populateWeeklyCategoryInputs('monthlyReviewNextPlanCategories', entry.nextPlan || '', nArr);
+                syncWeeklyCategoryTextareaEmptyClass();
+            }
+
+            const monthlyModalEl = document.getElementById('monthlyReviewModal');
+            monthlyModalEl.classList.add('active');
+            if (window.PlannerBackup && typeof window.PlannerBackup.scheduleOverlayTextareaAutosize === 'function') {
+                window.PlannerBackup.scheduleOverlayTextareaAutosize(monthlyModalEl);
+            }
+        }
+
+        function closeMonthlyReviewModal() {
+            const modal = document.getElementById('monthlyReviewModal');
+            if (modal) modal.classList.remove('active');
+            editingMonthlyReviewId = null;
+        }
+
+        function updateMonthlyReviewScoreDisplay() {
+            const monthInput = document.getElementById('monthlyReviewMonth');
+            const displayEl = document.getElementById('monthlyReviewScoreDisplay');
+            if (!monthInput || !displayEl) return;
+            const monthKey = String(monthInput.value || '').trim() || monthKeyToday();
+            const avgScore = getAverageDailyScoreForMonth(/^\d{4}-\d{2}$/.test(monthKey) ? monthKey : monthKeyToday());
+            displayEl.textContent = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
+        }
+
+        function saveMonthlyReview() {
+            const monthKeyRaw = String(document.getElementById('monthlyReviewMonth').value || '').trim();
+            const monthKey = /^\d{4}-\d{2}$/.test(monthKeyRaw) ? monthKeyRaw : monthKeyToday();
+            const score = getAverageDailyScoreForMonth(monthKey);
+            const progress = collectWeeklyCategoryFieldValue('monthlyReviewProgressCategories');
+            const life = document.getElementById('monthlyReviewLife').value.trim();
+            const growth = collectWeeklyCategoryFieldValue('monthlyReviewGrowthCategories');
+            const nextPlan = collectWeeklyCategoryFieldValue('monthlyReviewNextPlanCategories');
+
+            if (!progress && !life && !growth && !nextPlan) {
+                alert('请至少填写一项月复盘内容');
+                return;
+            }
+
+            const progressCategories = getWeeklyCategoriesArray('monthlyReviewProgressCategories');
+            const growthCategories = getWeeklyCategoriesArray('monthlyReviewGrowthCategories');
+            const nextPlanCategories = getWeeklyCategoriesArray('monthlyReviewNextPlanCategories');
+            const payload = normalizeMonthlyReviewEntry({
+                id: editingMonthlyReviewId || generateId(),
+                monthKey,
+                score,
+                progress,
+                progressCategories,
+                life,
+                growth,
+                growthCategories,
+                nextPlan,
+                nextPlanCategories,
+                createdAt: editingMonthlyReviewId
+                    ? (monthlyReviewEntries.find(item => item.id === editingMonthlyReviewId)?.createdAt || new Date().toISOString())
+                    : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+
+            if (editingMonthlyReviewId) {
+                const idx = monthlyReviewEntries.findIndex(item => item.id === editingMonthlyReviewId);
+                if (idx >= 0) monthlyReviewEntries[idx] = payload;
+                else monthlyReviewEntries.push(payload);
+            } else {
+                monthlyReviewEntries.push(payload);
+            }
+            monthlyReviewEntries.sort((a, b) => (b.monthKey || '').localeCompare(a.monthKey || ''));
+            persistMonthlyReviews();
+            closeMonthlyReviewModal();
+            renderAll();
+        }
+
+        function deleteMonthlyReview(id) {
+            if (!id) return;
+            if (!confirm('确定删除这条月复盘吗？')) return;
+            monthlyReviewEntries = monthlyReviewEntries.filter(item => item.id !== id);
+            persistMonthlyReviews();
+            closeMonthlyReviewModal();
             renderAll();
         }
 
@@ -2662,9 +3127,46 @@
             }).join('');
         }
 
+        function previewMonthlyReviewText(entry) {
+            const parts = [
+                entry.progress,
+                entry.life,
+                entry.growth,
+                entry.nextPlan
+            ].map(item => String(item || '').trim()).filter(Boolean);
+            return parts.join(' ').trim();
+        }
+
+        function renderMonthlyReviewList() {
+            const container = document.getElementById('monthlyReviewList');
+            if (!container) return;
+            if (monthlyReviewEntries.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = monthlyReviewEntries.map(entry => {
+                const safeId = escapeJsString(entry.id);
+                const monthLabel = String(entry.monthKey || '').replace(/^(\d{4})-(\d{2})$/, '$1年$2月') || '未设置月份';
+                const score = Number(entry.score) || 0;
+                const scoreClass = score <= 4 ? 'score-tone-red' : score <= 6 ? 'score-tone-yellow' : 'score-tone-green';
+                const preview = previewMonthlyReviewText(entry);
+                return `
+                <article class="weekly-review-card" data-monthly-id="${escapeHtml(entry.id)}" onclick="openMonthlyReviewModal('${safeId}')">
+                    <div class="weekly-review-card-header">
+                        <span class="weekly-review-card-week">${escapeHtml(monthLabel)}</span>
+                        <span class="weekly-review-card-score ${scoreClass}">${escapeHtml(String(score))} 分</span>
+                    </div>
+                    <div class="weekly-review-card-preview">${escapeHtml(preview.slice(0, 80))}${preview.length > 80 ? '…' : ''}</div>
+                </article>
+            `;
+            }).join('');
+        }
+
         function renderAll() {
             renderHeatmap();
             renderWeeklyReviewList();
+            renderMonthlyReviewList();
             renderReviewList();
             scheduleHeatmapScale();
             tryFocusPendingReviewCard();
@@ -2677,10 +3179,11 @@
             updateCurrentDate();
             loadEntries();
             loadWeeklyReviews();
+            loadMonthlyReviews();
             renderAll();
             window.addEventListener('resize', scheduleHeatmapScale);
             document.getElementById('reviewDate').value = todayKey();
-            document.getElementById('reviewCategory').value = 'work';
+            document.getElementById('reviewCategory').value = 'none';
             syncReviewCategorySelectStyle();
             setReviewEmotionIntensity('中');
             setReviewEmotionTags([]);
@@ -2706,7 +3209,7 @@
                 });
             }
 
-            ['weeklyReviewHighlights', 'weeklyReviewReflection', 'weeklyReviewNextPlan'].forEach(id => {
+            ['weeklyReviewHighlights', 'weeklyReviewReflection', 'weeklyReviewNextPlan', 'monthlyReviewProgress', 'monthlyReviewGrowth', 'monthlyReviewNextPlan'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', syncWeeklyCategoryTextareaEmptyClass);
             });
@@ -2714,16 +3217,39 @@
             const weeklyReviewWeekInput = document.getElementById('weeklyReviewWeek');
             if (weeklyReviewWeekInput) {
                 weeklyReviewWeekInput.addEventListener('change', () => {
+                    const weekVal = weeklyReviewWeekInput.value.trim();
+                    const weekKey = weekVal || getWeekKey(new Date());
+                    const avg = getAverageDailyScoreForWeek(weekKey);
                     const scoreDisplay = document.getElementById('weeklyReviewScoreDisplay');
                     const scoreInput = document.getElementById('weeklyReviewScore');
-                    if (scoreDisplay || scoreInput) {
-                        const weekVal = weeklyReviewWeekInput.value.trim();
-                        const weekKey = weekVal || getWeekKey(new Date());
-                        const avg = getAverageDailyScoreForWeek(weekKey);
-                        if (scoreDisplay) scoreDisplay.textContent = (typeof avg === 'number' ? avg.toFixed(1) : avg) + ' 分';
-                        if (scoreInput) scoreInput.value = String(avg);
+                    if (scoreDisplay) scoreDisplay.textContent = (typeof avg === 'number' ? avg.toFixed(1) : avg) + ' 分';
+                    if (scoreInput) scoreInput.value = String(avg);
+                    renderWeeklyReviewOkrReference();
+                });
+            }
+
+            const monthlyReviewMonthInput = document.getElementById('monthlyReviewMonth');
+            if (monthlyReviewMonthInput) {
+                monthlyReviewMonthInput.addEventListener('change', updateMonthlyReviewScoreDisplay);
+            }
+
+            document.querySelectorAll('.weekly-review-adjust-goal-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.dataset.value || 'no';
+                    document.getElementById('weeklyReviewNeedAdjustGoal').value = val;
+                    syncWeeklyReviewAdjustGoalUI();
+                    if (val === 'yes' && selectedWeeklyReviewOkrId && typeof editOkr === 'function') editOkr(selectedWeeklyReviewOkrId);
+                });
+            });
+
+            const okrModalEl = document.getElementById('okrModal');
+            if (okrModalEl) {
+                const obs = new MutationObserver(() => {
+                    if (!okrModalEl.classList.contains('active') && document.getElementById('weeklyReviewModal')?.classList.contains('active')) {
+                        renderWeeklyReviewOkrReference();
                     }
                 });
+                obs.observe(okrModalEl, { attributes: true, attributeFilter: ['class'] });
             }
 
             const reviewEmotionModal = document.getElementById('reviewEmotionModal');
@@ -2746,6 +3272,7 @@
         window.addEventListener('planner-storage-synced', () => {
             loadEntries();
             loadWeeklyReviews();
+            loadMonthlyReviews();
             renderAll();
             updateReviewTodoModalOkrOptions(document.getElementById('reviewTodoModalOkr')?.value || '');
         });
@@ -2760,6 +3287,7 @@
             }
             loadEntries();
             loadWeeklyReviews();
+            loadMonthlyReviews();
             renderAll();
             updateReviewTodoModalOkrOptions(document.getElementById('reviewTodoModalOkr')?.value || '');
         });

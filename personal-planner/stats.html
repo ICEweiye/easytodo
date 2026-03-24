@@ -71,7 +71,13 @@
                 <!-- 周财务统计 -->
                 <section class="module" id="financeModule">
                     <div class="module-header">
-                        <h2 class="module-title">财务统计 <span class="finance-period-label" id="financePeriodLabel" aria-hidden="true"></span></h2>
+                        <h2 class="module-title">财务统计
+                            <span class="finance-period-row">
+                                <span class="finance-period-label" id="financePeriodLabel" aria-hidden="true"></span>
+                                <button type="button" class="finance-period-prev-btn" id="financePeriodPrevBtn" onclick="goFinanceStatsPreviousPeriod()">上周</button>
+                                <button type="button" class="finance-period-reset-btn" id="financePeriodResetBtn" onclick="resetFinanceStatsPeriodOffset()" hidden>本周</button>
+                            </span>
+                        </h2>
                         <div class="finance-header-actions">
                             <div class="finance-switch" id="financeSwitch">
                                 <span class="finance-switch-indicator" aria-hidden="true"></span>
@@ -372,6 +378,10 @@
 
     <script>
         let expensePeriod = 'week';
+        /** 相对「本周」向过去偏移的周数，0 表示本周 */
+        let financeStatsWeekOffset = 0;
+        /** 相对「本月」向过去偏移的月数，0 表示本月 */
+        let financeStatsMonthOffset = 0;
         let currentNetBalance = 0;
         let currentInvestmentReturnTotal = 0;
         const EXPENSE_CATEGORY_KEYS = ['fixed_expense', 'variable_expense'];
@@ -863,7 +873,7 @@
             entryEl.hidden = !isMonth;
             if (!isMonth) return;
 
-            const monthKey = getCurrentMonthKey(new Date());
+            const monthKey = getCurrentMonthKey(getFinanceStatsViewDate());
             const displayRecord = getReconcileDisplayRecords()[monthKey];
 
             const masked = !getFinanceDataVisible();
@@ -890,7 +900,7 @@
         }
 
         function clearReconcileForCurrentMonth() {
-            const monthKey = getCurrentMonthKey(new Date());
+            const monthKey = getCurrentMonthKey(getFinanceStatsViewDate());
             const displayRecords = getReconcileDisplayRecords();
             const adjustments = getReconcileAdjustments();
             if (!(monthKey in displayRecords) && !(monthKey in adjustments)) return;
@@ -927,7 +937,7 @@
             inputEl.value = normalizeAmountForInput(value);
 
             setReconcileActualAmount(value);
-            const monthKey = getCurrentMonthKey(new Date());
+            const monthKey = getCurrentMonthKey(getFinanceStatsViewDate());
             const adjustments = getReconcileAdjustments();
             const currentDelta = roundFinanceAmount(adjustments[monthKey]);
             const statAmount = roundFinanceAmount(getLiquidAssets());
@@ -949,7 +959,7 @@
             inputEl.value = normalizeAmountForInput(getReconcileActualAmount());
 
             inputEl.addEventListener('input', () => {
-                const monthKey = getCurrentMonthKey(new Date());
+                const monthKey = getCurrentMonthKey(getFinanceStatsViewDate());
                 const displayRecord = getReconcileDisplayRecords()[monthKey];
                 const baseStatAmount = displayRecord ? displayRecord.statAmount : getLiquidAssets();
                 updateReconcileDiff(baseStatAmount);
@@ -1186,7 +1196,7 @@
             const parsedValue = parsed.value;
 
             const records = getWeeklyExpenseRecords();
-            const now = new Date();
+            const now = getFinanceStatsViewDate();
             const weekKey = getWeekKey(now);
             const index = records.findIndex(record => record.weekKey === weekKey);
             const currentTotal = roundFinanceAmount(currentInvestmentReturnTotal);
@@ -1264,6 +1274,31 @@
 
         function initInvestmentReturnEditor() {
             initEditableAmountCard('investmentReturnCard', 'investmentReturnInput', saveInvestmentReturnFromInput, renderExpenseStats, { allowNegative: true });
+        }
+
+        function getFinanceStatsViewDate() {
+            const base = new Date();
+            if (expensePeriod === 'week') {
+                const d = new Date(base);
+                d.setDate(d.getDate() - 7 * financeStatsWeekOffset);
+                return d;
+            }
+            return new Date(base.getFullYear(), base.getMonth() - financeStatsMonthOffset, 1);
+        }
+
+        function goFinanceStatsPreviousPeriod() {
+            if (expensePeriod === 'week') {
+                financeStatsWeekOffset += 1;
+            } else {
+                financeStatsMonthOffset += 1;
+            }
+            renderExpenseStats();
+        }
+
+        function resetFinanceStatsPeriodOffset() {
+            financeStatsWeekOffset = 0;
+            financeStatsMonthOffset = 0;
+            renderExpenseStats();
         }
 
         function getISOWeekInfo(date) {
@@ -1456,7 +1491,7 @@
         }
 
         function showFinanceReport() {
-            const now = new Date();
+            const now = getFinanceStatsViewDate();
             const records = getWeeklyExpenseRecords();
             let title = '';
             let subtitle = '';
@@ -2031,7 +2066,7 @@
         function openFinanceHistoryEditor() {
             const weekInputEl = document.getElementById('historyWeekInput');
             if (!weekInputEl) return;
-            const currentWeekKey = getWeekKey(new Date());
+            const currentWeekKey = getWeekKey(getFinanceStatsViewDate());
             openFinanceHistoryModal();
             fillFinanceHistoryFormByWeek(currentWeekKey);
             weekInputEl.focus();
@@ -2209,7 +2244,7 @@
                 return;
             }
 
-            const now = new Date();
+            const now = getFinanceStatsViewDate();
             const weekKey = getWeekKey(now);
             const records = getWeeklyExpenseRecords();
             const index = records.findIndex(record => record.weekKey === weekKey);
@@ -2421,13 +2456,27 @@
         }
 
         function renderExpenseStats() {
-            const now = new Date();
+            const now = getFinanceStatsViewDate();
             const records = getWeeklyExpenseRecords();
             const periodLabelEl = document.getElementById('financePeriodLabel');
             if (periodLabelEl) {
                 periodLabelEl.textContent = expensePeriod === 'week'
                     ? `· ${now.getFullYear()}年第${getISOWeekInfo(now).week}周`
                     : `· ${now.getFullYear()}年${now.getMonth() + 1}月`;
+            }
+            const prevBtn = document.getElementById('financePeriodPrevBtn');
+            const resetBtn = document.getElementById('financePeriodResetBtn');
+            if (prevBtn) {
+                prevBtn.textContent = expensePeriod === 'week' ? '上周' : '上月';
+                prevBtn.setAttribute('title', expensePeriod === 'week' ? '切换到上一周' : '切换到上一月');
+                prevBtn.setAttribute('aria-label', expensePeriod === 'week' ? '切换到上一周' : '切换到上一月');
+            }
+            if (resetBtn) {
+                const offset = expensePeriod === 'week' ? financeStatsWeekOffset : financeStatsMonthOffset;
+                resetBtn.hidden = offset === 0;
+                resetBtn.textContent = expensePeriod === 'week' ? '本周' : '本月';
+                resetBtn.setAttribute('title', expensePeriod === 'week' ? '回到本周数据' : '回到本月数据');
+                resetBtn.setAttribute('aria-label', expensePeriod === 'week' ? '回到本周' : '回到本月');
             }
             const financeEntryEl = document.getElementById('financeEntry');
             const reconcileEntryEl = document.getElementById('reconcileEntry');
@@ -2511,6 +2560,8 @@
             const prevPeriod = expensePeriod;
             if (prevPeriod === period) return;
             expensePeriod = period;
+            financeStatsWeekOffset = 0;
+            financeStatsMonthOffset = 0;
             document.querySelectorAll('.finance-switch-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.period === period);
             });
@@ -2638,6 +2689,40 @@
 
         .finance-switch.is-month .finance-switch-indicator {
             left: calc(50% + 4px);
+        }
+
+        .finance-period-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 4px;
+            vertical-align: baseline;
+        }
+
+        .finance-period-prev-btn,
+        .finance-period-reset-btn {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--warm-gray-200);
+            background: var(--warm-gray-50);
+            color: var(--warm-gray-700);
+            cursor: pointer;
+            line-height: 1.3;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .finance-period-prev-btn:hover,
+        .finance-period-reset-btn:hover {
+            background: var(--warm-gray-100);
+            border-color: var(--warm-gray-300);
+        }
+
+        .finance-period-reset-btn {
+            padding: 3px 8px;
+            font-size: 11px;
+            color: var(--warm-gray-600);
         }
 
         .finance-header-actions {
@@ -2833,13 +2918,19 @@
 
         .finance-report-kpis {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        @media (max-width: 980px) {
+            .finance-report-kpis {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
         @media (max-width: 640px) {
             .finance-report-kpis {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: 1fr;
             }
         }
 
@@ -2849,10 +2940,10 @@
             background: var(--warm-gray-50);
             border: 1px solid var(--warm-gray-100);
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: flex-start;
-            gap: 10px;
+            gap: 8px;
+            min-height: 92px;
         }
 
         .finance-report-kpi-main {
@@ -2890,9 +2981,9 @@
 
         .finance-report-kpi-trends {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
             align-items: flex-start;
-            gap: 4px;
+            gap: 8px;
             font-size: 12px;
             flex-shrink: 0;
             text-align: left;

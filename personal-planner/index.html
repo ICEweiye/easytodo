@@ -319,22 +319,51 @@
             </div>
         </div>
     </div>
+                <label class="form-label">奖品图标</label>
+                <select class="form-input" id="prizeEmoji" aria-label="选择奖品图标">
+                    <option value="">不设置</option>
+                    <option value="🎁">🎁</option>
+                    <option value="🍜">🍜</option>
+                    <option value="🍰">🍰</option>
+                    <option value="☕">☕</option>
+                    <option value="🎬">🎬</option>
+                    <option value="🎮">🎮</option>
+                    <option value="📚">📚</option>
+                    <option value="🎵">🎵</option>
+                    <option value="✈️">✈️</option>
+                    <option value="🏆">🏆</option>
+                    <option value="💪">💪</option>
+                    <option value="🌟">🌟</option>
+                    <option value="🎉">🎉</option>
+                </select>
+            </div>
+            <div class="form-group">
 
     <!-- 奖品添加/编辑弹窗 -->
     <div class="modal-overlay" id="prizeModal">
         <div class="modal">
             <h3 class="modal-title" id="prizeModalTitle">添加奖品</h3>
             <div class="form-group">
-                <label class="form-label">奖品图片</label>
-                <div class="prize-image-picker">
-                    <div class="prize-image-preview" id="prizeImagePreview"></div>
-                    <input type="file" id="prizeImageInput" accept="image/*" onchange="onPrizeImageChange(event)" style="display:none">
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('prizeImageInput').click()">选择图片</button>
-                </div>
-            </div>
-            <div class="form-group">
                 <label class="form-label">奖品名称</label>
-                <input type="text" class="form-input" id="prizeName" placeholder="输入奖品名称">
+                <div class="prize-name-wrap">
+                    <select class="prize-name-emoji" id="prizeEmoji" aria-label="选择奖品图标">
+                        <option value="">无</option>
+                        <option value="🎁">🎁</option>
+                        <option value="🍜">🍜</option>
+                        <option value="🍰">🍰</option>
+                        <option value="☕">☕</option>
+                        <option value="🎬">🎬</option>
+                        <option value="🎮">🎮</option>
+                        <option value="📚">📚</option>
+                        <option value="🎵">🎵</option>
+                        <option value="✈️">✈️</option>
+                        <option value="🏆">🏆</option>
+                        <option value="💪">💪</option>
+                        <option value="🌟">🌟</option>
+                        <option value="🎉">🎉</option>
+                    </select>
+                    <input type="text" class="form-input" id="prizeName" placeholder="输入奖品名称">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">所需炫彩星数量</label>
@@ -529,8 +558,14 @@
             flushPendingPlannerStarCollectAnimation();
             renderDailyReviewCard();
             initOkrSelect();
+            const prizeModal = document.getElementById('prizeModal');
+            if (prizeModal) {
+                const prizeEmojiEl = prizeModal.querySelector('.prize-name-emoji');
+                const prizeNameEl = prizeModal.querySelector('#prizeName');
+                if (prizeEmojiEl) prizeEmojiEl.addEventListener('change', syncPrizeCardPreview);
+                if (prizeNameEl) prizeNameEl.addEventListener('input', syncPrizeCardPreview);
+            }
         });
-
         function getTodoMonthKey(dateObj = todoViewMonth) {
             const year = dateObj.getFullYear();
             const month = `${dateObj.getMonth() + 1}`.padStart(2, '0');
@@ -1017,16 +1052,16 @@
                         const cost = Number(p.cost) || 0;
                         const canRedeem = (pool.colorfulStars || 0) >= cost;
                         const realPrice = String(p.realPrice || '').trim();
-                        const imgData = p.imageData ? ('data:image/png;base64,' + String(p.imageData).replace(/"/g, '')) : '';
-                        const imgStyle = imgData ? 'background-image:url(\'' + imgData.replace(/'/g, "\\'") + '\')' : '';
+                        const parsed = parsePrizeNameForEmojiAndText(p.name || '');
+                        const icon = parsed.emoji || '📦';
+                        const displayName = parsed.emoji ? parsed.text : (p.name || '未命名');
                         const prizeFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
                             ? PlannerBackup.userContentFoldClass(p.name || '未命名')
                             : '';
                         const prizeNameClass = prizeFold ? `reward-prize-name ${prizeFold}` : 'reward-prize-name';
                         return `<div class="reward-prize-card" data-prize-id="${escapeHtml(String(p.id))}" onclick="editPrize('${escapeJsString(String(p.id))}')" role="button" tabindex="0">
-                            <div class="reward-prize-img" style="${imgStyle}">${!imgData ? '📦' : ''}</div>
                             <div class="reward-prize-info">
-                                <span class="${prizeNameClass}">${escapeHtml(p.name || '未命名')}</span>
+                                <span class="${prizeNameClass}"><span class="reward-prize-emoji">${escapeHtml(icon)}</span>${escapeHtml(displayName)}</span>
                                 <span class="reward-prize-cost"><span class="reward-star reward-star-colorful">★</span>${cost}</span>
                                 ${realPrice ? '<span class="reward-prize-realprice">' + escapeHtml(realPrice) + '</span>' : ''}
                             </div>
@@ -1074,77 +1109,84 @@
         }
 
         let prizeEditingId = null;
-        let prizeImageData = null;
+        const PRIZE_EMOJI_OPTIONS = ['🎁','🍜','🍰','☕','🎬','🎮','📚','🎵','✈️','🏆','💪','🌟','🎉'];
+
+        function parsePrizeNameForEmojiAndText(name) {
+            const s = String(name || '').trim();
+            for (const emoji of PRIZE_EMOJI_OPTIONS) {
+                if (s === emoji || s.startsWith(emoji + ' ') || s.startsWith(emoji + '\u3000')) {
+                    return { emoji: emoji, text: s.slice(emoji.length).trim() };
+                }
+                if (s.startsWith(emoji)) {
+                    return { emoji: emoji, text: s.slice(emoji.length).trim() };
+                }
+            }
+            return { emoji: '', text: s };
+        }
+
+        function syncPrizeCardPreview() {
+            if (!prizeEditingId) return;
+            const modal = document.getElementById('prizeModal');
+            if (!modal || !modal.classList.contains('active')) return;
+            const emojiEl = modal.querySelector('.prize-name-emoji');
+            const nameEl = modal.querySelector('#prizeName');
+            const emoji = (emojiEl && emojiEl.value) || '';
+            const text = (nameEl && nameEl.value || '').trim();
+            const icon = emoji || '📦';
+            const displayName = emoji ? text : (text || '未命名');
+            const card = document.querySelector('.reward-prize-card[data-prize-id="' + String(prizeEditingId).replace(/"/g, '&quot;') + '"]');
+            if (!card) return;
+            const nameSpan = card.querySelector('.reward-prize-name');
+            if (nameSpan) nameSpan.innerHTML = '<span class="reward-prize-emoji">' + escapeHtml(icon) + '</span>' + escapeHtml(displayName);
+        }
 
         function openPrizeModal(editingId) {
             prizeEditingId = editingId || null;
-            prizeImageData = null;
-            const titleEl = document.getElementById('prizeModalTitle');
-            const nameEl = document.getElementById('prizeName');
-            const costEl = document.getElementById('prizeCost');
-            const realPriceEl = document.getElementById('prizeRealPrice');
-            const previewEl = document.getElementById('prizeImagePreview');
-            const deleteBtn = document.getElementById('prizeDeleteBtn');
+            const modal = document.getElementById('prizeModal');
+            const titleEl = modal && modal.querySelector('.modal-title');
+            const nameEl = modal && modal.querySelector('#prizeName');
+            const emojiEl = modal && modal.querySelector('.prize-name-emoji');
+            const costEl = modal && modal.querySelector('#prizeCost');
+            const realPriceEl = modal && modal.querySelector('#prizeRealPrice');
+            const deleteBtn = modal && modal.querySelector('#prizeDeleteBtn');
             if (titleEl) titleEl.textContent = prizeEditingId ? '编辑奖品' : '添加奖品';
             if (nameEl) nameEl.value = '';
+            if (emojiEl) emojiEl.value = '';
             if (costEl) costEl.value = '10';
             if (realPriceEl) realPriceEl.value = '';
-            if (previewEl) { previewEl.innerHTML = ''; previewEl.style.backgroundImage = ''; }
             if (deleteBtn) deleteBtn.style.display = prizeEditingId ? 'block' : 'none';
             if (prizeEditingId && window.RewardPool) {
                 const pool = window.RewardPool.getPool();
                 const p = (pool.prizes || []).find(x => String(x.id) === String(prizeEditingId));
                 if (p) {
-                    if (nameEl) nameEl.value = p.name || '';
+                    const parsed = parsePrizeNameForEmojiAndText(p.name || '');
+                    if (emojiEl) emojiEl.value = parsed.emoji || '';
+                    if (nameEl) nameEl.value = parsed.text;
                     if (costEl) costEl.value = String(p.cost || 10);
                     if (realPriceEl) {
                         var rp = (p.realPrice || '').trim();
                         realPriceEl.value = (rp.startsWith('¥') || rp.startsWith('￥')) ? rp.slice(1).trim() : rp;
-                    }
-                    prizeImageData = p.imageData || null;
-                    if (previewEl) {
-                        if (prizeImageData) {
-                            previewEl.style.backgroundImage = 'url(data:image/png;base64,' + prizeImageData + ')';
-                            previewEl.innerHTML = '';
-                        }
                     }
                 }
             }
             openModal('prizeModal');
         }
 
-        function onPrizeImageChange(ev) {
-            const file = ev.target && ev.target.files && ev.target.files[0];
-            if (!file || !file.type.startsWith('image/')) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                const data = reader.result;
-                let b64 = '';
-                if (typeof data === 'string' && data.startsWith('data:')) {
-                    const m = data.match(/base64,(.+)$/);
-                    b64 = m ? m[1] : '';
-                }
-                prizeImageData = b64 || null;
-                const previewEl = document.getElementById('prizeImagePreview');
-                if (previewEl) {
-                    previewEl.style.backgroundImage = b64 ? 'url(data:image/png;base64,' + b64 + ')' : '';
-                    previewEl.innerHTML = b64 ? '' : '📦';
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
         function savePrize() {
             if (!window.RewardPool) return;
-            const nameEl = document.getElementById('prizeName');
-            const costEl = document.getElementById('prizeCost');
-            const realPriceEl = document.getElementById('prizeRealPrice');
-            const name = (nameEl && nameEl.value || '').trim();
+            const modal = document.getElementById('prizeModal');
+            const nameEl = modal && modal.querySelector('#prizeName');
+            const emojiEl = modal && modal.querySelector('.prize-name-emoji');
+            const costEl = modal && modal.querySelector('#prizeCost');
+            const realPriceEl = modal && modal.querySelector('#prizeRealPrice');
+            const emoji = (emojiEl && emojiEl.value) || '';
+            const text = (nameEl && nameEl.value || '').trim();
+            const name = emoji ? (text ? emoji + ' ' + text : emoji) : text;
             const cost = Math.max(1, parseInt(costEl && costEl.value, 10) || 10);
             var rpRaw = (realPriceEl && realPriceEl.value || '').trim();
             const realPrice = rpRaw && /^\d+(\.\d+)?$/.test(rpRaw) ? '¥' + rpRaw : rpRaw;
-            if (!name) { alert('请输入奖品名称'); return; }
-            const payload = { name, cost, imageData: prizeImageData, realPrice };
+            if (!name) { alert('请输入奖品名称或选择图标'); return; }
+            const payload = { name, cost, realPrice, imageData: null };
             if (prizeEditingId) {
                 window.RewardPool.updatePrize(prizeEditingId, payload);
             } else {

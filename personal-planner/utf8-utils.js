@@ -48,7 +48,7 @@
         if (typeof str !== 'string') return true;
         if (/\uFFFD/.test(str)) return true;
         if (/\?{2,}/.test(str)) return true;
-        if (/[甯瀛濞鎼浠瑙嗛寮曟搸樼骞冲彴馃鈥€锟]/.test(str)) return true;
+        if (/[甯濞鎼嗛曟搸樼彴鈥€锟]/.test(str)) return true;
         return false;
     }
 
@@ -101,7 +101,7 @@
         return value;
     }
 
-    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|life_categories|life_sites|planner_todos|planner_okrs|planner_acc_|planner_reward_pool)/;
+    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|planner_monthly_reviews|life_categories|life_sites|planner_todos|planner_okrs|planner_acc_|planner_reward_pool)/;
 
     /**
      * 对存储对象中所有字符串值进行乱码修复

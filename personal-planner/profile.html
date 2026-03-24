@@ -220,6 +220,52 @@
             align-items: center;
         }
 
+        #profileAppearanceSection .profile-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #profileAppearanceSection .profile-switch input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        #profileAppearanceSection .profile-switch-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--warm-gray-300);
+            border-radius: 999px;
+            transition: background 0.2s ease;
+        }
+
+        #profileAppearanceSection .profile-switch-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 3px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        #profileAppearanceSection .profile-switch input:checked + .profile-switch-slider {
+            background: #ad8a67;
+        }
+
+        #profileAppearanceSection .profile-switch input:checked + .profile-switch-slider::before {
+            transform: translateX(20px);
+        }
+
         #profileAppearanceSection .profile-appearance-select {
             width: 100%;
             min-width: 0;
@@ -253,11 +299,32 @@
             box-shadow: 0 0 0 3px rgba(173, 138, 103, 0.18);
         }
 
-        #profileAppearanceSection .profile-reward-settings-hint {
-            font-size: 12px;
-            color: var(--warm-gray-500);
-            margin: 0 0 14px 0;
-            line-height: 1.5;
+        #profileAppearanceSection .profile-reward-ratios-group {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--warm-gray-200);
+            border-radius: 10px;
+            background: var(--warm-gray-50);
+        }
+
+        #profileAppearanceSection .profile-reward-ratios-title {
+            margin: 12px 0 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--warm-gray-900);
+        }
+
+        #profileAppearanceSection .profile-reward-ratios-group .privacy-toggle-row {
+            border-top: none;
+            padding: 8px 0;
+        }
+
+        #profileAppearanceSection .profile-reward-ratios-group .privacy-toggle-row:first-of-type {
+            padding-top: 0;
+        }
+
+        #profileAppearanceSection .profile-reward-ratios-group .privacy-toggle-row:last-of-type {
+            padding-bottom: 0;
         }
 
         .privacy-toggle-text {
@@ -601,27 +668,36 @@
                         </article>
                         <article class="privacy-card">
                             <h3>积分设置</h3>
-                            <p class="profile-reward-settings-hint">设置各类黄星兑换炫彩星的比例（几颗黄星 = 1 颗炫彩）。修改后在主页积分区立即生效。</p>
                             <div class="privacy-toggle-row">
                                 <div class="privacy-toggle-text">
-                                    <strong>事项</strong>
-                                    <span>事项黄星 / 炫彩</span>
+                                    <strong>启用积分系统</strong>
+                                    <span>关闭后将隐藏主页积分板块，并暂停积分获取。</span>
                                 </div>
-                                <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioTodo" min="1" value="5" inputmode="numeric" aria-label="事项黄星兑换比例">
+                                <label class="profile-switch" aria-label="启用积分系统开关">
+                                    <input type="checkbox" id="appearanceRewardEnabled" checked>
+                                    <span class="profile-switch-slider" aria-hidden="true"></span>
+                                </label>
                             </div>
-                            <div class="privacy-toggle-row">
-                                <div class="privacy-toggle-text">
-                                    <strong>关键结果</strong>
-                                    <span>KR 黄星 / 炫彩</span>
+                            <p class="profile-reward-ratios-title">兑换比例</p>
+                            <div class="profile-reward-ratios-group">
+                                <div class="privacy-toggle-row">
+                                    <div class="privacy-toggle-text">
+                                        <strong>事项</strong>
+                                    </div>
+                                    <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioTodo" min="1" value="5" inputmode="numeric" aria-label="事项黄星兑换比例">
                                 </div>
-                                <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioKr" min="1" value="5" inputmode="numeric" aria-label="KR 黄星兑换比例">
-                            </div>
-                            <div class="privacy-toggle-row">
-                                <div class="privacy-toggle-text">
-                                    <strong>复盘</strong>
-                                    <span>复盘黄星 / 炫彩</span>
+                                <div class="privacy-toggle-row">
+                                    <div class="privacy-toggle-text">
+                                        <strong>关键结果</strong>
+                                    </div>
+                                    <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioKr" min="1" value="5" inputmode="numeric" aria-label="KR 黄星兑换比例">
                                 </div>
-                                <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioReview" min="1" value="5" inputmode="numeric" aria-label="复盘黄星兑换比例">
+                                <div class="privacy-toggle-row">
+                                    <div class="privacy-toggle-text">
+                                        <strong>复盘</strong>
+                                    </div>
+                                    <input type="number" class="profile-reward-ratio-input" id="appearanceRewardRatioReview" min="1" value="5" inputmode="numeric" aria-label="复盘黄星兑换比例">
+                                </div>
                             </div>
                             <div class="privacy-status" id="appearanceRewardRatiosStatus" aria-live="polite"></div>
                         </article>
@@ -1375,6 +1451,7 @@
                 }
 
                 var appearanceFoldLongContentEl = document.getElementById('appearanceFoldLongContent');
+                var appearanceRewardEnabledEl = document.getElementById('appearanceRewardEnabled');
                 var appearanceRewardRatioTodoEl = document.getElementById('appearanceRewardRatioTodo');
                 var appearanceRewardRatioKrEl = document.getElementById('appearanceRewardRatioKr');
                 var appearanceRewardRatioReviewEl = document.getElementById('appearanceRewardRatioReview');
@@ -1390,9 +1467,14 @@
                 function loadRewardRatioPrefs() {
                     if (!window.RewardPool) return;
                     var pool = window.RewardPool.getPool();
+                    var enabled = pool && typeof pool.enabled === 'boolean' ? pool.enabled : true;
+                    if (appearanceRewardEnabledEl) appearanceRewardEnabledEl.checked = enabled;
                     if (appearanceRewardRatioTodoEl) appearanceRewardRatioTodoEl.value = String(pool.ratioTodo || 5);
                     if (appearanceRewardRatioKrEl) appearanceRewardRatioKrEl.value = String(pool.ratioKr || 5);
                     if (appearanceRewardRatioReviewEl) appearanceRewardRatioReviewEl.value = String(pool.ratioReview || 5);
+                    [appearanceRewardRatioTodoEl, appearanceRewardRatioKrEl, appearanceRewardRatioReviewEl].forEach(function (el) {
+                        if (el) el.disabled = !enabled;
+                    });
                 }
 
                 function saveRewardRatioPrefs() {
@@ -1406,6 +1488,18 @@
                         review: appearanceRewardRatioReviewEl && appearanceRewardRatioReviewEl.value
                     });
                     setRewardRatiosStatus('积分兑换比例已保存。', 'is-success');
+                }
+
+                function saveRewardEnabledPref() {
+                    if (!window.RewardPool || !appearanceRewardEnabledEl) {
+                        setRewardRatiosStatus('积分数据暂不可用。', 'is-error');
+                        return;
+                    }
+                    window.RewardPool.setEnabled(!!appearanceRewardEnabledEl.checked);
+                    [appearanceRewardRatioTodoEl, appearanceRewardRatioKrEl, appearanceRewardRatioReviewEl].forEach(function (el) {
+                        if (el) el.disabled = !appearanceRewardEnabledEl.checked;
+                    });
+                    setRewardRatiosStatus(appearanceRewardEnabledEl.checked ? '已开启积分系统。' : '已关闭积分系统，积分获取已暂停。', 'is-success');
                 }
 
                 function loadAppearancePrefs() {
@@ -1433,6 +1527,7 @@
                 [appearanceRewardRatioTodoEl, appearanceRewardRatioKrEl, appearanceRewardRatioReviewEl].forEach(function (el) {
                     if (el) el.addEventListener('change', saveRewardRatioPrefs);
                 });
+                appearanceRewardEnabledEl && appearanceRewardEnabledEl.addEventListener('change', saveRewardEnabledPref);
             });
         })();
     </script>

@@ -1616,6 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 if (overlay.id === 'okrModal') return;
+                if (['reviewModal','reviewEmotionModal','reviewTodoModal','weeklyReviewModal','monthlyReviewModal'].includes(overlay.id)) return;
                 if (overlay.id === 'krSubTaskModal' && typeof closeKrSubTaskModal === 'function') {
                     closeKrSubTaskModal();
                     return;

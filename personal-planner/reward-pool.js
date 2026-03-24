@@ -16,9 +16,38 @@
 
     function load() {
         try {
-            const raw = localStorage.getItem(getScopedKey());
+            const key = getScopedKey();
+            const raw = localStorage.getItem(key);
+            let parsed = null;
+            if (raw) {
+                try {
+                    parsed = JSON.parse(raw);
+                } catch (e) {
+                    parsed = null;
+                }
+            }
+            if (!parsed || typeof parsed !== 'object') parsed = null;
+            if (!parsed && key !== STORAGE_KEY) {
+                const rawU = localStorage.getItem(STORAGE_KEY);
+                if (rawU) {
+                    try {
+                        const u = JSON.parse(rawU);
+                        if (u && typeof u === 'object') parsed = u;
+                    } catch (e) { /* ignore */ }
+                }
+            }
+            return parsed;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /** 仅读当前 scoped 键的原始 JSON，不做 unscoped 合并（供 save 对比「写入前磁盘状态」） */
+    function loadPersistedScopedOnly() {
+        try {
+            var raw = localStorage.getItem(getScopedKey());
             if (!raw) return null;
-            const parsed = JSON.parse(raw);
+            var parsed = JSON.parse(raw);
             return parsed && typeof parsed === 'object' ? parsed : null;
         } catch (e) {
             return null;
@@ -53,6 +82,7 @@
             yellowStarsKr: kr,
             yellowStarsReview: review,
             colorfulStars: Number(p && p.colorfulStars) || 0,
+            enabled: p && typeof p.enabled === 'boolean' ? p.enabled : true,
             ratioTodo: Math.max(1, Number(p && p.ratioTodo) || DEFAULT_RATIO),
             ratioKr: Math.max(1, Number(p && p.ratioKr) || DEFAULT_RATIO),
             ratioReview: Math.max(1, Number(p && p.ratioReview) || DEFAULT_RATIO),
@@ -65,6 +95,14 @@
         const pool = { ...getPool(), ...updates };
         save(pool);
         return pool;
+    }
+
+    function isEnabled() {
+        return !!getPool().enabled;
+    }
+
+    function setEnabled(enabled) {
+        return setPool({ enabled: !!enabled });
     }
 
     function hasAwarded(key) {
@@ -131,6 +169,7 @@
     }
 
     function awardYellowStar(key) {
+        if (!isEnabled()) return false;
         if (hasAwarded(key)) return false;
         const pool = getPool();
         const src = getYellowSource(key);
@@ -144,6 +183,7 @@
     }
 
     function awardColorfulStar(key) {
+        if (!isEnabled()) return false;
         if (hasAwarded(key)) return false;
         const pool = getPool();
         pool.colorfulStars = (pool.colorfulStars || 0) + 1;
@@ -154,6 +194,7 @@
     }
 
     function revokeYellowStar(key) {
+        if (!isEnabled()) return false;
         if (!hasAwarded(key)) return false;
         const pool = getPool();
         pool.awardedKeys = (pool.awardedKeys || []).filter(k => k !== key);
@@ -166,6 +207,7 @@
     }
 
     function revokeColorfulStar(key) {
+        if (!isEnabled()) return false;
         if (!hasAwarded(key)) return false;
         const pool = getPool();
         pool.awardedKeys = (pool.awardedKeys || []).filter(k => k !== key);
@@ -263,6 +305,8 @@
     window.RewardPool = {
         getPool,
         setPool,
+        isEnabled,
+        setEnabled,
         awardYellowStar,
         awardColorfulStar,
         revokeYellowStar,

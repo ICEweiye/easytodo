@@ -11,10 +11,15 @@
         return isTextarea(target) && target.id === 'reviewSummary';
     }
 
+    function isComposing(event) {
+        return event.isComposing || event.keyCode === 229;
+    }
+
     document.addEventListener('keydown', (event) => {
         const target = event.target;
         if (!isTextarea(target)) return;
         if (allowsMultiline(target)) return;
+        if (isComposing(event)) return;
         if (event.key !== 'Enter') return;
 
         event.preventDefault();
@@ -32,13 +37,14 @@
         const target = event.target;
         if (!isTextarea(target)) return;
         if (allowsMultiline(target)) return;
+        if (event.isComposing) return;
 
         const normalized = normalizeSingleLine(target.value);
         if (normalized === target.value) return;
 
         const cursor = target.selectionStart ?? normalized.length;
         target.value = normalized;
-        const nextPos = Math.max(0, Math.min(cursor - 1, normalized.length));
-        target.setSelectionRange(nextPos, nextPos);
+        const safePos = Math.max(0, Math.min(cursor, normalized.length));
+        target.setSelectionRange(safePos, safePos);
     });
 })();

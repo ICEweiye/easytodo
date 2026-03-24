@@ -1588,7 +1588,7 @@
                         <div class="archive-finance-kpi is-income"><span>收入</span><strong>${formatCurrency(income)}</strong></div>
                         <div class="archive-finance-kpi is-investment"><span>投资</span><strong>${formatCurrency(investment)}</strong></div>
                         <div class="archive-finance-kpi ${investmentReturn >= 0 ? 'is-income' : 'is-expense'}"><span>收益</span><strong>${formatSignedCurrency(investmentReturn)}</strong></div>
-                        <div class="archive-finance-kpi ${netBalance >= 0 ? 'is-balance' : 'is-expense'}"><span>净结余</span><strong>${formatSignedCurrency(netBalance)}</strong></div>
+                        <div class="archive-finance-kpi ${netBalance > 0 ? 'is-balance-positive' : netBalance < 0 ? 'is-expense' : 'is-balance-neutral'}"><span>净结余</span><strong>${formatSignedCurrency(netBalance)}</strong></div>
                     </div>
                     <div class="archive-finance-panels">
                         <section class="archive-finance-panel">
@@ -2596,7 +2596,11 @@
             color: #6f7db8;
         }
 
-        .archive-finance-kpi.is-balance strong {
+        .archive-finance-kpi.is-balance-positive strong {
+            color: #4b7a58;
+        }
+
+        .archive-finance-kpi.is-balance-neutral strong {
             color: var(--warm-gray-900);
         }
 
