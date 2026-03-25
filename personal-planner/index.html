@@ -9,6 +9,7 @@
     <script src="utf8-utils.js"></script>
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
+    <script src="theme.js"></script>
     <script src="reward-pool.js"></script>
 </head>
 <body class="home-page">
@@ -125,9 +126,9 @@
                                             <span class="reward-pool-count" id="rewardColorfulCount">0</span>
                                         </div>
                                     </div>
-                                    <button type="button" class="reward-pool-exchange-btn" id="rewardExchangeBtn" onclick="exchangeStars()">兑换炫彩</button>
                                     <div class="reward-pool-prizes" id="rewardPoolPrizes"></div>
                                     <button type="button" class="reward-pool-add-prize-btn" onclick="openPrizeModal()">+ 添加奖品</button>
+                                    <button type="button" class="reward-pool-exchange-btn" id="rewardExchangeBtn" onclick="exchangeStars()">兑换炫彩</button>
                                 </div>
                             </section>
 
@@ -319,25 +320,6 @@
             </div>
         </div>
     </div>
-                <label class="form-label">奖品图标</label>
-                <select class="form-input" id="prizeEmoji" aria-label="选择奖品图标">
-                    <option value="">不设置</option>
-                    <option value="🎁">🎁</option>
-                    <option value="🍜">🍜</option>
-                    <option value="🍰">🍰</option>
-                    <option value="☕">☕</option>
-                    <option value="🎬">🎬</option>
-                    <option value="🎮">🎮</option>
-                    <option value="📚">📚</option>
-                    <option value="🎵">🎵</option>
-                    <option value="✈️">✈️</option>
-                    <option value="🏆">🏆</option>
-                    <option value="💪">💪</option>
-                    <option value="🌟">🌟</option>
-                    <option value="🎉">🎉</option>
-                </select>
-            </div>
-            <div class="form-group">
 
     <!-- 奖品添加/编辑弹窗 -->
     <div class="modal-overlay" id="prizeModal">
@@ -1024,10 +1006,10 @@
             if (!window.RewardPool) return;
             const pool = window.RewardPool.getPool();
             const todoEl = document.getElementById('rewardYellowTodo');
+            const prizesEl = document.getElementById('rewardPoolPrizes');
             const krEl = document.getElementById('rewardYellowKr');
             const reviewEl = document.getElementById('rewardYellowReview');
             const colorfulEl = document.getElementById('rewardColorfulCount');
-            const prizesEl = document.getElementById('rewardPoolPrizes');
             const exchangeBtn = document.getElementById('rewardExchangeBtn');
             if (todoEl) todoEl.textContent = pool.yellowStarsTodo || 0;
             if (krEl) krEl.textContent = pool.yellowStarsKr || 0;
@@ -1035,10 +1017,7 @@
             if (colorfulEl) colorfulEl.textContent = pool.colorfulStars || 0;
             var canExchange = Math.floor((pool.yellowStarsTodo || 0) / (pool.ratioTodo || 5)) >= 1
                 || Math.floor((pool.yellowStarsKr || 0) / (pool.ratioKr || 5)) >= 1
-                || Math.floor((pool.yellowStarsReview || 0) / (pool.ratioReview || 5)) >= 1;
-            if (exchangeBtn) {
-                exchangeBtn.disabled = !canExchange;
-            }
+                || Math.floor((pool.yellowStarsReview || 0) / (pool.ratioReview || 4)) >= 1;
             if (prizesEl) {
                 const prizes = pool.prizes || [];
                 if (prizes.length === 0) {
@@ -1069,6 +1048,9 @@
                         </div>`;
                     }).join('');
                 }
+            }
+            if (exchangeBtn) {
+                exchangeBtn.disabled = !canExchange;
             }
         }
 

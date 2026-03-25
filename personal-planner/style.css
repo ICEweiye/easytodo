@@ -4629,9 +4629,9 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
 
 .review-header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
     margin-bottom: var(--spacing-sm);
     padding-bottom: var(--spacing-xs);
     border-bottom: 1px solid var(--warm-gray-100);
@@ -4645,11 +4645,13 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
 .review-period {
     font-size: 14px;
     font-weight: 600;
+    line-height: 22px;
     color: var(--warm-gray-900);
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
     word-break: break-word;
+    flex-shrink: 0;
 }
 
 .review-header-main {
@@ -4771,10 +4773,11 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
 }
 
 .review-category-badge {
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.15;
     border-radius: 999px;
-    padding: 1px 6px;
-    font-weight: 600;
+    padding: 0 4px;
+    font-weight: 500;
     border: 1px solid transparent;
 }
 
@@ -4782,11 +4785,11 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     align-self: auto;
     margin-left: auto;
     flex-shrink: 0;
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1.1;
     font-weight: 500;
-    padding: 0 4px;
-    border-radius: 8px;
+    padding: 0 3px;
+    border-radius: 6px;
 }
 
 .review-category-badge.category-life {

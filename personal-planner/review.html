@@ -2845,18 +2845,14 @@
                 return;
             }
 
-            const cardsHtml = items.map(item => {
-                const categoryMeta = getReviewCategoryMeta(item.category);
-                return `
+            const cardsHtml = items.map(item => `
                 <button class="kiss-card" type="button" onclick="openReviewModal('${item.id}')">
                     <div class="kiss-card-head">
                         <div class="kiss-card-date">@${item.date}</div>
-                        <span class="review-category-badge ${categoryMeta.className}">${categoryMeta.label}</span>
                     </div>
                     <div class="kiss-card-text">${escapeHtml(previewText(item.text, 120))}</div>
                 </button>
-            `;
-            }).join('');
+            `).join('');
             container.innerHTML = cardsHtml;
             scheduleHeatmapScale();
         }
@@ -2918,8 +2914,9 @@
             const metaEl = document.getElementById('reviewHeatMeta');
             if (!container) return;
 
+            const allDaily = dedupeEntriesById([...reviewEntries, ...reviewArchiveEntries]);
             const dayMap = {};
-            reviewEntries.forEach(entry => {
+            allDaily.forEach(entry => {
                 const key = toDateKey(entry.date);
                 if (!dayMap[key]) {
                     dayMap[key] = { count: 0, scoreTotal: 0 };
@@ -2935,7 +2932,7 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const firstWeekday = (monthStart.getDay() + 6) % 7;
             const monthPrefix = `${year}-${`${month + 1}`.padStart(2, '0')}`;
-            const monthCount = reviewEntries.reduce((count, entry) => (
+            const monthCount = allDaily.reduce((count, entry) => (
                 String(entry.date || '').startsWith(monthPrefix) ? count + 1 : count
             ), 0);
 
@@ -3092,7 +3089,9 @@
                             </div>
                             <span class="review-today-note"><strong>今天</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
                         </div>
-                        <button class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
+                        <div class="review-header-right">
+                            <button type="button" class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
+                        </div>
                     </div>
                     <div class="review-content review-content-compact">
                         ${compactBodyHtml}

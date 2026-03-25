@@ -77,6 +77,13 @@
             todo = Number(p.yellowStars) || 0;
         }
 
+        var exUnits = [];
+        if (p && Array.isArray(p.exchangeUnits)) {
+            exUnits = p.exchangeUnits.filter(function (u) {
+                return u && typeof u === 'object';
+            });
+        }
+
         return {
             yellowStarsTodo: todo,
             yellowStarsKr: kr,
@@ -87,7 +94,8 @@
             ratioKr: Math.max(1, Number(p && p.ratioKr) || DEFAULT_RATIO),
             ratioReview: Math.max(1, Number(p && p.ratioReview) || DEFAULT_RATIO),
             awardedKeys: Array.isArray(p && p.awardedKeys) ? p.awardedKeys : [],
-            prizes: Array.isArray(p && p.prizes) ? p.prizes : []
+            prizes: Array.isArray(p && p.prizes) ? p.prizes : [],
+            exchangeUnits: exUnits
         };
     }
 
@@ -236,6 +244,17 @@
         pool.yellowStarsKr = Math.max(0, (pool.yellowStarsKr || 0) - cKr * rKr);
         pool.yellowStarsReview = Math.max(0, (pool.yellowStarsReview || 0) - cReview * rReview);
         pool.colorfulStars = (pool.colorfulStars || 0) + total;
+        pool.exchangeUnits = Array.isArray(pool.exchangeUnits) ? pool.exchangeUnits : [];
+        var i;
+        for (i = 0; i < cTodo; i++) {
+            pool.exchangeUnits.push({ yt: rTodo, yk: 0, yr: 0 });
+        }
+        for (i = 0; i < cKr; i++) {
+            pool.exchangeUnits.push({ yt: 0, yk: rKr, yr: 0 });
+        }
+        for (i = 0; i < cReview; i++) {
+            pool.exchangeUnits.push({ yt: 0, yk: 0, yr: rReview });
+        }
         save(pool);
         return { ok: true, exchanged: total };
     }
@@ -247,6 +266,13 @@
         const cost = Number(prize.cost) || 0;
         const colorful = pool.colorfulStars || 0;
         if (cost > colorful) return { ok: false, message: `炫彩星不足，需要 ${cost} 颗` };
+        var units = Array.isArray(pool.exchangeUnits) ? pool.exchangeUnits.slice() : [];
+        var remaining = cost;
+        while (remaining > 0 && units.length > 0) {
+            units.shift();
+            remaining--;
+        }
+        pool.exchangeUnits = units;
         pool.colorfulStars = Math.max(0, colorful - cost);
         save(pool);
         return { ok: true, prize };
@@ -276,13 +302,55 @@
         return true;
     }
 
+    /** 将「兑换所得」且仍留在账户中的炫彩还原为对应黄星（兑换比例变更时调用） */
+    function refundExchangeUnitsOnRatioChange(pool) {
+        var units = Array.isArray(pool.exchangeUnits) ? pool.exchangeUnits : [];
+        if (units.length === 0) return 0;
+        var yt = 0;
+        var yk = 0;
+        var yr = 0;
+        var j;
+        for (j = 0; j < units.length; j++) {
+            var u = units[j];
+            yt += Number(u && u.yt) || 0;
+            yk += Number(u && u.yk) || 0;
+            yr += Number(u && u.yr) || 0;
+        }
+        pool.yellowStarsTodo = (pool.yellowStarsTodo || 0) + yt;
+        pool.yellowStarsKr = (pool.yellowStarsKr || 0) + yk;
+        pool.yellowStarsReview = (pool.yellowStarsReview || 0) + yr;
+        pool.colorfulStars = Math.max(0, (pool.colorfulStars || 0) - units.length);
+        pool.exchangeUnits = [];
+        return units.length;
+    }
+
     function updateRatios(opts) {
-        var updates = {};
-        if (opts.todo != null) updates.ratioTodo = Math.max(1, Math.floor(Number(opts.todo) || DEFAULT_RATIO));
-        if (opts.kr != null) updates.ratioKr = Math.max(1, Math.floor(Number(opts.kr) || DEFAULT_RATIO));
-        if (opts.review != null) updates.ratioReview = Math.max(1, Math.floor(Number(opts.review) || DEFAULT_RATIO));
-        if (Object.keys(updates).length) setPool(updates);
-        return getPool();
+        if (!opts || typeof opts !== 'object') return { pool: getPool(), refundedUnits: 0 };
+        var pool = getPool();
+        var changed = false;
+        if (opts.todo != null) {
+            var nt = Math.max(1, Math.floor(Number(opts.todo) || DEFAULT_RATIO));
+            if (nt !== pool.ratioTodo) changed = true;
+        }
+        if (opts.kr != null) {
+            var nk = Math.max(1, Math.floor(Number(opts.kr) || DEFAULT_RATIO));
+            if (nk !== pool.ratioKr) changed = true;
+        }
+        if (opts.review != null) {
+            var nr = Math.max(1, Math.floor(Number(opts.review) || DEFAULT_RATIO));
+            if (nr !== pool.ratioReview) changed = true;
+        }
+        var refundedUnits = 0;
+        if (changed) {
+            refundedUnits = refundExchangeUnitsOnRatioChange(pool);
+        }
+        if (opts.todo != null) pool.ratioTodo = Math.max(1, Math.floor(Number(opts.todo) || DEFAULT_RATIO));
+        if (opts.kr != null) pool.ratioKr = Math.max(1, Math.floor(Number(opts.kr) || DEFAULT_RATIO));
+        if (opts.review != null) pool.ratioReview = Math.max(1, Math.floor(Number(opts.review) || DEFAULT_RATIO));
+        if (opts.todo != null || opts.kr != null || opts.review != null) {
+            save(pool);
+        }
+        return { pool: getPool(), refundedUnits: refundedUnits };
     }
 
     /** 事项 / KR / 复盘 黄星归零，并移除对应 awardedKeys，便于再次完成时重新获得；炫彩星与其它 awardedKeys 保留 */

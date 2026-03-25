@@ -1482,12 +1482,16 @@
                         setRewardRatiosStatus('积分数据暂不可用。', 'is-error');
                         return;
                     }
-                    window.RewardPool.updateRatios({
+                    var rr = window.RewardPool.updateRatios({
                         todo: appearanceRewardRatioTodoEl && appearanceRewardRatioTodoEl.value,
                         kr: appearanceRewardRatioKrEl && appearanceRewardRatioKrEl.value,
                         review: appearanceRewardRatioReviewEl && appearanceRewardRatioReviewEl.value
                     });
-                    setRewardRatiosStatus('积分兑换比例已保存。', 'is-success');
+                    if (rr && rr.refundedUnits > 0) {
+                        setRewardRatiosStatus('兑换比例已保存。已将 ' + rr.refundedUnits + ' 颗兑换所得炫彩还原为对应黄星。', 'is-success');
+                    } else {
+                        setRewardRatiosStatus('积分兑换比例已保存。', 'is-success');
+                    }
                 }
 
                 function saveRewardEnabledPref() {
