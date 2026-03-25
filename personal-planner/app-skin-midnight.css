@@ -7,25 +7,25 @@
 html[data-app-skin="midnight"] {
     --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
     --midnight-page: #000000;
-    --midnight-surface: #0e0e0e;
+    --midnight-surface: #151515;
     --midnight-accent: #82e9de;
     --midnight-accent-hover: #6dd4c8;
-    --midnight-ink: #ffffff;
+    --midnight-ink: #f2f4f8;
     --midnight-muted: #9ca3a0;
     --midnight-border: rgba(255, 255, 255, 0.1);
     --midnight-topbar: rgba(14, 14, 14, 0.6);
     --sidebar-bg: var(--midnight-surface);
 
     --warm-gray-50: var(--midnight-page);
-    --warm-gray-100: #141414;
-    --warm-gray-200: #1f1f1f;
-    --warm-gray-300: #2a2a2a;
+    --warm-gray-100: #1a1a1a;
+    --warm-gray-200: #252525;
+    --warm-gray-300: #303030;
     --warm-gray-400: #6b7280;
     --warm-gray-500: var(--midnight-muted);
     --warm-gray-600: #b4bab5;
-    --warm-gray-700: #d1d5db;
-    --warm-gray-800: #e5e7eb;
-    --warm-gray-900: #ffffff;
+    --warm-gray-700: #c9ced7;
+    --warm-gray-800: #dde2eb;
+    --warm-gray-900: #f2f4f8;
     --warm-black: var(--midnight-ink);
 
     --primary-brown: var(--midnight-accent);
@@ -171,7 +171,14 @@ html[data-app-skin="midnight"] .form-input:focus {
 }
 
 html[data-app-skin="midnight"] .home-page .main-content::before {
-    background: var(--midnight-page) !important;
+    background-color: var(--midnight-page) !important;
+    background-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent calc(100% - 28px),
+        rgba(0, 0, 0, 0.18) 100%
+    ) !important;
+    box-shadow: inset 0 -22px 36px -14px rgba(0, 0, 0, 0.38) !important;
 }
 
 html[data-app-skin="midnight"] .global-avatar-btn {
@@ -1266,4 +1273,17 @@ html[data-app-skin="midnight"] .archive-detail-okr-card {
 html[data-app-skin="midnight"] .archive-detail-review-card {
     border-color: var(--midnight-border) !important;
     box-shadow: none !important;
+}
+
+/* 财务统计数据卡片：内层与外层同底，靠外边框区分层级 */
+html[data-app-skin="midnight"] .finance-summary-item,
+html[data-app-skin="midnight"] .finance-report-kpi,
+html[data-app-skin="midnight"] .finance-report-card,
+html[data-app-skin="midnight"] .finance-card,
+html[data-app-skin="midnight"] .archive-finance-kpi,
+html[data-app-skin="midnight"] .archive-finance-panel,
+html[data-app-skin="midnight"] #investmentReturnCard,
+html[data-app-skin="midnight"] #investmentReturnCard.is-editing {
+    background: var(--midnight-surface) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }

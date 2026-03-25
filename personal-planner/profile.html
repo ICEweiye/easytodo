@@ -646,11 +646,9 @@
                     <div class="privacy-shell">
                         <article class="privacy-card">
                             <h3>界面主题</h3>
-                            <p style="margin:0 0 12px 0;font-size:13px;color:var(--warm-gray-600);line-height:1.5;">选择整体视觉风格。<strong>Serene Canvas</strong> 为浅绿主色、浅底与 Manrope；<strong>Midnight Focus</strong> 为纯黑底、炭灰卡片、薄荷绿强调色、毛玻璃顶栏与 Manrope，侧重深度工作。</p>
                             <div class="privacy-toggle-row">
                                 <div class="privacy-toggle-text">
                                     <strong>主题</strong>
-                                    <span>默认（暖灰）为经典界面；Serene Canvas 为「静谧画布」；Midnight Focus 为「午夜专注」深色高对比。</span>
                                 </div>
                                 <select class="form-input profile-appearance-select" id="appearanceAppSkin" aria-label="界面主题">
                                     <option value="classic">默认（暖灰）</option>
@@ -898,6 +896,31 @@
                 var privacyClearCacheBtn = document.getElementById('privacyClearCacheBtn');
                 var AUTO_LOCK_KEY = 'planner_privacy_auto_lock_30m';
                 var EXPORTED_FILENAME = 'planner-local-data-export.json';
+
+                function scopedSettingKey(logicalKey) {
+                    if (window.PlannerAuth && typeof window.PlannerAuth.scopedStorageKey === 'function') {
+                        return window.PlannerAuth.scopedStorageKey(logicalKey);
+                    }
+                    return logicalKey;
+                }
+
+                function readScopedSetting(logicalKey) {
+                    var scopedKey = scopedSettingKey(logicalKey);
+                    var scopedValue = localStorage.getItem(scopedKey);
+                    if (scopedValue !== null) return scopedValue;
+                    if (scopedKey !== logicalKey) {
+                        var legacyValue = localStorage.getItem(logicalKey);
+                        if (legacyValue !== null) {
+                            localStorage.setItem(scopedKey, legacyValue);
+                            return legacyValue;
+                        }
+                    }
+                    return null;
+                }
+
+                function writeScopedSetting(logicalKey, value) {
+                    localStorage.setItem(scopedSettingKey(logicalKey), value);
+                }
 
                 function showPanel(panel) {
                     var isUserInfo = panel === 'userinfo';
@@ -1273,9 +1296,9 @@
                 }
 
                 if (privacyAutoLockToggle) {
-                    privacyAutoLockToggle.checked = localStorage.getItem(AUTO_LOCK_KEY) === 'true';
+                    privacyAutoLockToggle.checked = readScopedSetting(AUTO_LOCK_KEY) === 'true';
                     privacyAutoLockToggle.addEventListener('change', function () {
-                        localStorage.setItem(AUTO_LOCK_KEY, privacyAutoLockToggle.checked ? 'true' : 'false');
+                        writeScopedSetting(AUTO_LOCK_KEY, privacyAutoLockToggle.checked ? 'true' : 'false');
                         setPrivacyStatus('privacySessionStatus', privacyAutoLockToggle.checked ? '已开启自动锁屏。' : '已关闭自动锁屏。', 'is-success');
                     });
                 }

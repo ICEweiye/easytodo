@@ -3,6 +3,47 @@
  */
 (function () {
     var STORAGE_KEY = 'planner_app_skin';
+    var LEGACY_STORAGE_KEY = STORAGE_KEY;
+
+    function getStorageKey() {
+        if (window.PlannerAuth && typeof window.PlannerAuth.scopedStorageKey === 'function') {
+            return window.PlannerAuth.scopedStorageKey(STORAGE_KEY);
+        }
+        return STORAGE_KEY;
+    }
+
+    function readSkinFromStorage() {
+        var scopedKey = getStorageKey();
+        var scopedValue = localStorage.getItem(scopedKey);
+
+        if (scopedValue === 'crystal-flow') {
+            try {
+                localStorage.setItem(scopedKey, 'classic');
+            } catch (e) { /* ignore */ }
+            return 'classic';
+        }
+
+        if (scopedValue === 'serene' || scopedValue === 'midnight' || scopedValue === 'classic') {
+            return scopedValue;
+        }
+
+        // 兼容旧版本：把全局主题迁移到当前账号作用域
+        if (scopedKey !== LEGACY_STORAGE_KEY) {
+            var legacyValue = localStorage.getItem(LEGACY_STORAGE_KEY);
+            if (legacyValue === 'crystal-flow') {
+                try {
+                    localStorage.setItem(scopedKey, 'classic');
+                    localStorage.removeItem(LEGACY_STORAGE_KEY);
+                } catch (e) { /* ignore */ }
+                return 'classic';
+            }
+            if (legacyValue === 'serene' || legacyValue === 'midnight' || legacyValue === 'classic') {
+                localStorage.setItem(scopedKey, legacyValue);
+                return legacyValue;
+            }
+        }
+        return null;
+    }
 
     function applySkin(skin) {
         if (skin === 'serene') {
@@ -16,7 +57,7 @@
 
     function initFromStorage() {
         try {
-            var s = localStorage.getItem(STORAGE_KEY);
+            var s = readSkinFromStorage();
             if (s === 'serene' || s === 'midnight') {
                 applySkin(s);
             } else {
@@ -31,9 +72,11 @@
 
     window.PlannerAppSkin = {
         setSkin: function (skin) {
-            var next = skin === 'serene' ? 'serene' : (skin === 'midnight' ? 'midnight' : 'classic');
+            var next = skin === 'serene'
+                ? 'serene'
+                : (skin === 'midnight' ? 'midnight' : 'classic');
             try {
-                localStorage.setItem(STORAGE_KEY, next);
+                localStorage.setItem(getStorageKey(), next);
             } catch (e) { /* ignore */ }
             applySkin(next);
             try {

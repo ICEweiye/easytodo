@@ -1565,19 +1565,6 @@
     
     </script>
     <script src="no-multiline.js"></script>
-    <script>
-        (() => {
-            const mainContent = document.querySelector('.main-content');
-            if (!mainContent) return;
-
-            const updateBaselineShadow = () => {
-                mainContent.classList.toggle('is-baseline-shadow-visible', mainContent.scrollTop > 2);
-            };
-
-            mainContent.addEventListener('scroll', updateBaselineShadow, { passive: true });
-            requestAnimationFrame(updateBaselineShadow);
-        })();
-    </script>
 </body>
 </html>
 

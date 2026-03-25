@@ -2122,15 +2122,63 @@ window.addEventListener('planner-storage-synced', () => {
     <script src="no-multiline.js"></script>
     <script>
         (() => {
-            const mainContent = document.querySelector('.main-content');
+            const mainContent = document.querySelector('.home-page .main-content');
             if (!mainContent) return;
 
-            const updateBaselineShadow = () => {
-                mainContent.classList.toggle('is-baseline-shadow-visible', mainContent.scrollTop > 2);
+            /** 遮罩：高度 = 侧栏顶视口 Y；裁切左边 = 主内容列左缘（与 body 固定背景同一视口对齐） */
+            function syncHomeMainFadeHeight() {
+                const sidebar = document.querySelector('.home-page .sidebar');
+                if (!sidebar) {
+                    mainContent.style.removeProperty('--home-main-fade-height');
+                    mainContent.style.removeProperty('--home-main-fade-clip-left');
+                    return;
+                }
+                const h = Math.round(sidebar.getBoundingClientRect().top);
+                if (!Number.isFinite(h) || h < 0) {
+                    mainContent.style.removeProperty('--home-main-fade-height');
+                    mainContent.style.removeProperty('--home-main-fade-clip-left');
+                    return;
+                }
+                mainContent.style.setProperty('--home-main-fade-height', `${h}px`);
+                const clipLeft = Math.round(mainContent.getBoundingClientRect().left);
+                if (Number.isFinite(clipLeft) && clipLeft >= 0) {
+                    mainContent.style.setProperty('--home-main-fade-clip-left', `${clipLeft}px`);
+                } else {
+                    mainContent.style.removeProperty('--home-main-fade-clip-left');
+                }
+            }
+
+            window.__plannerSyncHomeMainFadeHeight = syncHomeMainFadeHeight;
+
+            let syncRoPending = null;
+            const scheduleSyncFade = () => {
+                if (syncRoPending != null) return;
+                syncRoPending = requestAnimationFrame(() => {
+                    syncRoPending = null;
+                    syncHomeMainFadeHeight();
+                });
             };
 
-            mainContent.addEventListener('scroll', updateBaselineShadow, { passive: true });
-            requestAnimationFrame(updateBaselineShadow);
+            window.addEventListener('resize', scheduleSyncFade);
+            document.addEventListener('planner-app-skin-change', () => requestAnimationFrame(scheduleSyncFade));
+            mainContent.addEventListener('transitionend', (event) => {
+                if (event.propertyName === 'margin-left') {
+                    scheduleSyncFade();
+                }
+            });
+
+            if (typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(scheduleSyncFade).observe(mainContent);
+            }
+
+            const boot = () => {
+                requestAnimationFrame(() => syncHomeMainFadeHeight());
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(boot), { once: true });
+            } else {
+                requestAnimationFrame(boot);
+            }
         })();
     </script>
 </body>

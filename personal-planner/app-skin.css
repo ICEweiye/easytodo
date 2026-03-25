@@ -125,7 +125,14 @@ html[data-app-skin="serene"] .form-input:focus {
 }
 
 html[data-app-skin="serene"] .home-page .main-content::before {
-    background: var(--serene-page) !important;
+    background-color: var(--serene-page) !important;
+    background-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent calc(100% - 28px),
+        rgba(255, 255, 255, 0.2) 100%
+    ) !important;
+    box-shadow: inset 0 -22px 36px -14px rgba(255, 255, 255, 0.24) !important;
 }
 
 html[data-app-skin="serene"] .global-avatar-btn {

@@ -14,6 +14,35 @@
     const FOLD_LONG_CONTENT_KEY = '__planner_fold_long_content';
     const USER_CONTENT_FOLD_THRESHOLD = 300;
 
+    function getScopedSettingKey(logicalKey) {
+        if (window.PlannerAuth && typeof window.PlannerAuth.scopedStorageKey === 'function') {
+            return window.PlannerAuth.scopedStorageKey(logicalKey);
+        }
+        return logicalKey;
+    }
+
+    function readSetting(logicalKey) {
+        const scopedKey = getScopedSettingKey(logicalKey);
+        const scopedValue = localStorage.getItem(scopedKey);
+        if (scopedValue !== null) return scopedValue;
+        if (scopedKey !== logicalKey) {
+            const legacyValue = localStorage.getItem(logicalKey);
+            if (legacyValue !== null) {
+                localStorage.setItem(scopedKey, legacyValue);
+                return legacyValue;
+            }
+        }
+        return null;
+    }
+
+    function writeSetting(logicalKey, value) {
+        localStorage.setItem(getScopedSettingKey(logicalKey), value);
+    }
+
+    function removeSetting(logicalKey) {
+        localStorage.removeItem(getScopedSettingKey(logicalKey));
+    }
+
     function getSidebarCollapsedStorageKey() {
         if (window.PlannerAuth && typeof PlannerAuth.scopedStorageKey === 'function') {
             return PlannerAuth.scopedStorageKey('sidebarCollapsed');
@@ -61,12 +90,12 @@
     }
 
     function getStartPage() {
-        return normalizeStartPage(localStorage.getItem(START_PAGE_KEY));
+        return normalizeStartPage(readSetting(START_PAGE_KEY));
     }
 
     function setStartPage(page) {
         const normalized = normalizeStartPage(page);
-        localStorage.setItem(START_PAGE_KEY, normalized);
+        writeSetting(START_PAGE_KEY, normalized);
         return normalized;
     }
 
@@ -147,12 +176,12 @@
 
     const FONT_SIZE_VALUES = { small: 0.875, standard: 1, medium: 1.1, large: 1.2, xlarge: 1.3 };
     function getFontSizePreference() {
-        const v = localStorage.getItem(FONT_SIZE_KEY) || 'standard';
+        const v = readSetting(FONT_SIZE_KEY) || 'standard';
         return FONT_SIZE_VALUES[v] ? v : 'standard';
     }
     function setFontSizePreference(v) {
         const valid = Object.keys(FONT_SIZE_VALUES).includes(v) ? v : 'standard';
-        localStorage.setItem(FONT_SIZE_KEY, valid);
+        writeSetting(FONT_SIZE_KEY, valid);
         return valid;
     }
     function applyFontSizePreference() {
@@ -165,12 +194,12 @@
 
     const ALLOWED_LANGUAGES = ['zh-CN', 'en'];
     function getLanguagePreference() {
-        const v = localStorage.getItem(LANGUAGE_KEY) || 'zh-CN';
+        const v = readSetting(LANGUAGE_KEY) || 'zh-CN';
         return ALLOWED_LANGUAGES.includes(v) ? v : 'zh-CN';
     }
     function setLanguagePreference(v) {
         const valid = ALLOWED_LANGUAGES.includes(v) ? v : 'zh-CN';
-        localStorage.setItem(LANGUAGE_KEY, valid);
+        writeSetting(LANGUAGE_KEY, valid);
         return valid;
     }
 
@@ -179,16 +208,16 @@
     }
 
     function getFoldLongContentEnabled() {
-        const v = localStorage.getItem(FOLD_LONG_CONTENT_KEY);
+        const v = readSetting(FOLD_LONG_CONTENT_KEY);
         if (v === '1' || v === 'true') return true;
         if (v === '0' || v === 'false') return false;
-        const old = localStorage.getItem(CONTENT_OVERFLOW_KEY);
+        const old = readSetting(CONTENT_OVERFLOW_KEY);
         if (old === 'wrap') return false;
         return true;
     }
 
     function setFoldLongContentEnabled(enabled) {
-        localStorage.setItem(FOLD_LONG_CONTENT_KEY, enabled ? '1' : '0');
+        writeSetting(FOLD_LONG_CONTENT_KEY, enabled ? '1' : '0');
         return !!enabled;
     }
 
@@ -292,25 +321,25 @@
     }
 
     function getSavedTargetDir() {
-        return String(localStorage.getItem(TARGET_DIR_KEY) || '').trim();
+        return String(readSetting(TARGET_DIR_KEY) || '').trim();
     }
 
     function setSavedTargetDir(value) {
         const normalized = String(value || '').trim();
         if (!normalized) {
-            localStorage.removeItem(TARGET_DIR_KEY);
+            removeSetting(TARGET_DIR_KEY);
             return '';
         }
-        localStorage.setItem(TARGET_DIR_KEY, normalized);
+        writeSetting(TARGET_DIR_KEY, normalized);
         return normalized;
     }
 
     function getOpenDirAfterBackup() {
-        return localStorage.getItem(OPEN_AFTER_BACKUP_KEY) === 'true';
+        return readSetting(OPEN_AFTER_BACKUP_KEY) === 'true';
     }
 
     function setOpenDirAfterBackup(enabled) {
-        localStorage.setItem(OPEN_AFTER_BACKUP_KEY, enabled ? 'true' : 'false');
+        writeSetting(OPEN_AFTER_BACKUP_KEY, enabled ? 'true' : 'false');
     }
 
     function setButtonsBusy(isBusy) {
