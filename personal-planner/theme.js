@@ -1,5 +1,5 @@
 /**
- * 界面皮肤（默认暖灰 / Serene Canvas）与 data-app-skin
+ * 界面皮肤（默认暖灰 / Serene Canvas / Midnight Focus）与 data-app-skin
  */
 (function () {
     var STORAGE_KEY = 'planner_app_skin';
@@ -7,6 +7,8 @@
     function applySkin(skin) {
         if (skin === 'serene') {
             document.documentElement.setAttribute('data-app-skin', 'serene');
+        } else if (skin === 'midnight') {
+            document.documentElement.setAttribute('data-app-skin', 'midnight');
         } else {
             document.documentElement.removeAttribute('data-app-skin');
         }
@@ -15,7 +17,11 @@
     function initFromStorage() {
         try {
             var s = localStorage.getItem(STORAGE_KEY);
-            applySkin(s === 'serene' ? 'serene' : 'classic');
+            if (s === 'serene' || s === 'midnight') {
+                applySkin(s);
+            } else {
+                applySkin('classic');
+            }
         } catch (e) {
             applySkin('classic');
         }
@@ -25,7 +31,7 @@
 
     window.PlannerAppSkin = {
         setSkin: function (skin) {
-            var next = skin === 'serene' ? 'serene' : 'classic';
+            var next = skin === 'serene' ? 'serene' : (skin === 'midnight' ? 'midnight' : 'classic');
             try {
                 localStorage.setItem(STORAGE_KEY, next);
             } catch (e) { /* ignore */ }
@@ -35,7 +41,10 @@
             } catch (e2) { /* ignore */ }
         },
         getSkin: function () {
-            return document.documentElement.getAttribute('data-app-skin') === 'serene' ? 'serene' : 'classic';
+            var v = document.documentElement.getAttribute('data-app-skin');
+            if (v === 'serene') return 'serene';
+            if (v === 'midnight') return 'midnight';
+            return 'classic';
         }
     };
 })();

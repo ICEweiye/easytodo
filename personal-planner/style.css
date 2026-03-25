@@ -1,4 +1,5 @@
 @import url('app-skin.css');
+@import url('app-skin-midnight.css');
 
 :root {
     /* 暖色调配色方案 - 低饱和度 */

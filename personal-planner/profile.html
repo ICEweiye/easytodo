@@ -16,7 +16,7 @@
             }
         })();
     </script>
-    <script>try{if(localStorage.getItem('planner_app_skin')==='serene')document.documentElement.setAttribute('data-app-skin','serene');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');}catch(e){}</script>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script src="utf8-utils.js"></script>
@@ -646,15 +646,16 @@
                     <div class="privacy-shell">
                         <article class="privacy-card">
                             <h3>界面主题</h3>
-                            <p style="margin:0 0 12px 0;font-size:13px;color:var(--warm-gray-600);line-height:1.5;">选择整体视觉风格。<strong>Serene Canvas</strong> 使用浅绿主色（#7D8471）、页面底 #F9F9F7、侧栏 #ECEFEC、毛玻璃顶栏与 Manrope 字体。</p>
+                            <p style="margin:0 0 12px 0;font-size:13px;color:var(--warm-gray-600);line-height:1.5;">选择整体视觉风格。<strong>Serene Canvas</strong> 为浅绿主色、浅底与 Manrope；<strong>Midnight Focus</strong> 为纯黑底、炭灰卡片、薄荷绿强调色、毛玻璃顶栏与 Manrope，侧重深度工作。</p>
                             <div class="privacy-toggle-row">
                                 <div class="privacy-toggle-text">
                                     <strong>主题</strong>
-                                    <span>默认（暖灰）为经典界面；Serene Canvas 为参考「静谧画布」风格的淡雅布局。</span>
+                                    <span>默认（暖灰）为经典界面；Serene Canvas 为「静谧画布」；Midnight Focus 为「午夜专注」深色高对比。</span>
                                 </div>
                                 <select class="form-input profile-appearance-select" id="appearanceAppSkin" aria-label="界面主题">
                                     <option value="classic">默认（暖灰）</option>
                                     <option value="serene">Serene Canvas</option>
+                                    <option value="midnight">Midnight Focus</option>
                                 </select>
                             </div>
                             <div class="privacy-status profile-appearance-status-sink" id="appearanceAppSkinStatus" aria-live="polite" aria-hidden="true"></div>
