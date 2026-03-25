@@ -1,0 +1,200 @@
+/**
+ * Serene Canvas — easyOS 可选界面主题
+ * 背景 #F9F9F7、主色 #7D8471、侧栏 #ECEFEC、Manrope、轻阴影；顶栏 Logo 区与侧栏同色
+ */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+html[data-app-skin="serene"] {
+    --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    --serene-primary: #7d8471;
+    --serene-primary-hover: #6a7260;
+    --serene-sidebar: #ecefec;
+    --sidebar-bg: var(--serene-sidebar);
+    --serene-page: #f9f9f7;
+    --serene-ink: #2a2f27;
+    --serene-muted: #6d7268;
+    --serene-border: rgba(125, 132, 113, 0.18);
+    --serene-card-border: rgba(125, 132, 113, 0.12);
+    --warm-gray-50: var(--serene-page);
+    --warm-gray-100: #eef1ec;
+    --warm-gray-200: #e0e4db;
+    --warm-gray-300: #c8cfc0;
+    --warm-gray-400: #8a9084;
+    --warm-gray-500: var(--serene-muted);
+    --warm-gray-600: #5c6358;
+    --warm-gray-700: #4a5244;
+    --warm-gray-900: #3a4138;
+    --warm-black: var(--serene-ink);
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --surface-card-shadow: 0 1px 3px rgba(42, 47, 39, 0.06);
+}
+
+html[data-app-skin="serene"] body {
+    font-family: var(--font-sans);
+    background-color: var(--serene-page);
+    color: var(--serene-ink);
+    letter-spacing: 0.01em;
+}
+
+html[data-app-skin="serene"] .sidebar {
+    background: var(--sidebar-bg) !important;
+    border-right: none !important;
+}
+
+html[data-app-skin="serene"] .home-page .sidebar {
+    background: var(--sidebar-bg) !important;
+    border: none !important;
+    box-shadow: var(--surface-card-shadow) !important;
+}
+
+html[data-app-skin="serene"] .global-topbar-card {
+    /* 与侧栏同色，避免 Logo 条与导航栏色块不一致 */
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none !important;
+    box-shadow: 0 1px 2px rgba(42, 47, 39, 0.05) !important;
+}
+
+html[data-app-skin="serene"] .global-topbar-brand-main {
+    color: var(--serene-ink);
+    letter-spacing: 0.06em;
+    font-weight: 700;
+}
+
+html[data-app-skin="serene"] .module {
+    background: #fff;
+    border: 1px solid var(--serene-card-border);
+    box-shadow: 0 1px 3px rgba(42, 47, 39, 0.04);
+}
+
+html[data-app-skin="serene"] .module:hover {
+    box-shadow: 0 4px 14px rgba(42, 47, 39, 0.07);
+}
+
+html[data-app-skin="serene"] .module-title,
+html[data-app-skin="serene"] h1,
+html[data-app-skin="serene"] h2 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--serene-ink);
+}
+
+html[data-app-skin="serene"] .nav-item {
+    letter-spacing: 0.02em;
+}
+
+html[data-app-skin="serene"] .nav-item:hover {
+    background: rgba(255, 255, 255, 0.65);
+    color: var(--serene-ink);
+}
+
+html[data-app-skin="serene"] .nav-item.active {
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--serene-primary);
+    box-shadow: inset 0 0 0 1px rgba(125, 132, 113, 0.2);
+}
+
+html[data-app-skin="serene"] .btn-primary {
+    background: var(--serene-primary) !important;
+    color: #fff !important;
+}
+
+html[data-app-skin="serene"] .btn-primary:hover {
+    background: var(--serene-primary-hover) !important;
+    color: #fff !important;
+}
+
+html[data-app-skin="serene"] .btn-secondary {
+    border-color: var(--serene-border);
+    color: var(--serene-ink);
+}
+
+html[data-app-skin="serene"] .form-input,
+html[data-app-skin="serene"] select.form-input,
+html[data-app-skin="serene"] textarea {
+    border-color: var(--serene-card-border);
+}
+
+html[data-app-skin="serene"] .form-input:focus {
+    border-color: var(--serene-primary);
+    box-shadow: 0 0 0 2px rgba(125, 132, 113, 0.2);
+}
+
+html[data-app-skin="serene"] .home-page .main-content::before {
+    background: var(--serene-page) !important;
+}
+
+html[data-app-skin="serene"] .global-avatar-btn {
+    background: linear-gradient(145deg, var(--serene-primary), #5f6656) !important;
+}
+
+html[data-app-skin="serene"] .nav-icon-btn:hover,
+html[data-app-skin="serene"] .global-topbar .global-tool-btn:hover {
+    color: var(--serene-ink);
+    background: rgba(125, 132, 113, 0.1);
+}
+
+html[data-app-skin="serene"] .header {
+    border-bottom-color: var(--serene-border);
+}
+
+html[data-app-skin="serene"] .space-name {
+    letter-spacing: -0.03em;
+}
+
+html[data-app-skin="serene"] .privacy-card,
+html[data-app-skin="serene"] .profile-module {
+    border-color: var(--serene-card-border);
+}
+
+html[data-app-skin="serene"] a {
+    color: var(--serene-primary);
+}
+
+html[data-app-skin="serene"] a:hover {
+    color: var(--serene-primary-hover);
+}
+
+html[data-app-skin="serene"] .todo-board-card {
+    /* 与日历外框同色，避免 Serene 弱描边在页面上几乎不可见 */
+    border: 1px solid var(--warm-gray-200);
+    box-shadow: var(--surface-card-shadow);
+}
+
+/* 时间轴等局部仍用原组件色，仅弱化边框（日历外圈用沟槽色 + padding，与格线一致） */
+html[data-app-skin="serene"] .timeline-container {
+    border-color: var(--serene-card-border);
+}
+
+html[data-app-skin="serene"] .review-card,
+html[data-app-skin="serene"] .weekly-review-card {
+    border-color: var(--serene-card-border);
+}
+
+html[data-app-skin="serene"] .modal {
+    background: #fff;
+    border: 1px solid var(--serene-card-border);
+    box-shadow: 0 12px 40px rgba(42, 47, 39, 0.12);
+    border-radius: 12px;
+}
+
+html[data-app-skin="serene"] .modal-overlay {
+    background: rgba(42, 47, 39, 0.35);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+html[data-app-skin="serene"] .stats-module,
+html[data-app-skin="serene"] .finance-card,
+html[data-app-skin="serene"] .reading-item {
+    border-color: var(--serene-card-border);
+}
+
+html[data-app-skin="serene"] .site-card {
+    border-color: var(--serene-card-border);
+    box-shadow: 0 1px 2px rgba(42, 47, 39, 0.04);
+}

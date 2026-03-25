@@ -1,3 +1,5 @@
+@import url('app-skin.css');
+
 :root {
     /* 暖色调配色方案 - 低饱和度 */
     --warm-black: #2d2926;
@@ -55,6 +57,11 @@
     --sidebar-content-gap: 16px;
     --sidebar-top-offset: 96px;
     --sidebar-brand-width: 120px;
+    /* 侧栏与顶栏 Logo 区（.global-topbar-card）共用，保证色块一致 */
+    --sidebar-bg: #ffffff;
+
+    /* 模块 / 待办卡片 / 主页侧栏 统一浅投影（与 .module 一致） */
+    --surface-card-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
 }
 
 html {
@@ -109,7 +116,7 @@ body:has(.todo-date-modal-overlay.active) {
 /* ===== 侧边栏 ===== */
 .sidebar {
     width: var(--sidebar-width);
-    background: white;
+    background: var(--sidebar-bg);
     border-right: none;
     display: flex;
     flex-direction: column;
@@ -470,7 +477,7 @@ body:has(.todo-date-modal-overlay.active) {
     padding: 8px 30px 8px 16px;
     border-radius: var(--radius-lg);
     border: none;
-    background: #fff;
+    background: var(--sidebar-bg);
     box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
 }
 
@@ -644,7 +651,7 @@ body:has(.todo-date-modal-overlay.active) {
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
+    box-shadow: var(--surface-card-shadow);
 }
 .module-header {
     display: flex;
@@ -768,14 +775,17 @@ body:has(.todo-date-modal-overlay.active) {
     min-height: 0;
 }
 
+/* 外框与格线同色；用 border 描边以便圆角处也有一圈完整线（同 1px 沟槽色） */
 .home-todo-module .todo-calendar-panel {
     min-height: 0;
     height: 100%;
     display: flex;
     flex-direction: column;
-    border: 1px solid #cfc6bc;
-    border-radius: 18px;
-    background: #f6f3ef;
+    border: 1px solid var(--warm-gray-200);
+    border-radius: var(--radius-lg);
+    background: #fff;
+    box-shadow: var(--surface-card-shadow);
+    overflow: hidden;
 }
 
 .home-todo-module .todo-weekday-row {
@@ -785,7 +795,7 @@ body:has(.todo-date-modal-overlay.active) {
 .home-todo-module .todo-calendar-grid {
     flex: 1;
     grid-template-rows: repeat(6, minmax(0, 1fr));
-    background: #d6cdc4;
+    background: var(--warm-gray-200);
 }
 
 .home-todo-module .todo-calendar-cell {
@@ -803,10 +813,16 @@ body:has(.todo-date-modal-overlay.active) {
     height: calc(100% - var(--todo-switch-offset));
 }
 
+/* 今日事项 / 本月要事：外框与日历 .todo-calendar-panel 一致 */
+.home-todo-module .todo-board-card {
+    border: 1px solid var(--warm-gray-200);
+}
+
 .todo-board-card {
-    border: 1px solid #cfc6bc;
-    border-radius: 22px;
-    background: #f6f3ef;
+    border: 1px solid var(--warm-gray-200);
+    border-radius: var(--radius-lg);
+    background: #fff;
+    box-shadow: var(--surface-card-shadow);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -816,8 +832,10 @@ body:has(.todo-date-modal-overlay.active) {
 .todo-board-card-header {
     position: relative;
     z-index: 1;
-    padding: 10px 14px;
-    border-bottom: 1px solid #cfc6bc;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--warm-gray-200);
+    /* 与日历星期标题行 .todo-weekday-row 同色带 */
+    background: var(--warm-gray-100);
 }
 
 .todo-board-card-header::after {
@@ -837,21 +855,22 @@ body:has(.todo-date-modal-overlay.active) {
     opacity: 1;
 }
 .todo-board-card-title {
-    font-size: 12px;
-    line-height: 1.1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: #6f8782;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--warm-gray-900);
 }
 
 .todo-board-card.priority .todo-board-card-title {
-    color: #9b6d72;
+    color: var(--warm-gray-900);
 }
 
 .todo-board-card-body {
     flex: 1;
     min-height: 0;
-    padding: 8px;
+    padding: 10px 12px;
+    background: #fff;
 }
 .todo-board-card-list {
     height: 100%;
@@ -866,9 +885,9 @@ body:has(.todo-date-modal-overlay.active) {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 400;
-    color: #222;
+    color: var(--warm-gray-500);
 }
 
 .home-todo-module .module-header {
@@ -1432,15 +1451,6 @@ body:has(.todo-date-modal-overlay.active) {
         padding: 5px 0;
     }
 
-    .todo-board-card-title {
-        font-size: 12px;
-    }
-
-    .todo-board-card-empty {
-        font-size: 12px;
-        font-weight: 400;
-    }
-
     .home-page .home-okr-module .okr-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1524,14 +1534,6 @@ body:has(.todo-date-modal-overlay.active) {
         margin-top: 0;
         height: auto;
         grid-template-rows: repeat(2, minmax(150px, 1fr));
-    }
-
-    .todo-board-card-title {
-        font-size: 12px;
-    }
-
-    .todo-board-card-empty {
-        font-size: 12px;
     }
 
 }
@@ -2057,7 +2059,7 @@ body:has(.todo-date-modal-overlay.active) {
     height: calc(100vh - var(--sidebar-top-offset) - var(--layout-page-gutter));
     border-radius: var(--radius-lg);
     border: none;
-    box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
+    box-shadow: var(--surface-card-shadow);
     overflow: hidden;
     padding: 22px 0 14px;
     clip-path: inset(0 0 0 0);
@@ -3226,9 +3228,10 @@ select.form-input option:hover {
 
 .todo-calendar-panel {
     border: 1px solid var(--warm-gray-200);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    background: var(--warm-gray-100);
+    background: #fff;
+    box-shadow: var(--surface-card-shadow);
 }
 
 .todo-weekday-row {
