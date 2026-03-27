@@ -73,13 +73,7 @@
                 <!-- 周财务统计 -->
                 <section class="module" id="financeModule">
                     <div class="module-header">
-                        <h2 class="module-title">财务统计
-                            <span class="finance-period-row">
-                                <span class="finance-period-label" id="financePeriodLabel" aria-hidden="true"></span>
-                                <button type="button" class="finance-period-prev-btn" id="financePeriodPrevBtn" onclick="goFinanceStatsPreviousPeriod()">上周</button>
-                                <button type="button" class="finance-period-reset-btn" id="financePeriodResetBtn" onclick="resetFinanceStatsPeriodOffset()" hidden>本周</button>
-                            </span>
-                        </h2>
+                        <h2 class="module-title">财务统计</h2>
                         <div class="finance-header-actions">
                             <div class="finance-switch" id="financeSwitch">
                                 <span class="finance-switch-indicator" aria-hidden="true"></span>
@@ -206,7 +200,16 @@
                             </div>
                         </div>
                     </div>
-                    <div class="finance-summary">
+                    <div class="finance-summary finance-summary-grid">
+                        <div class="finance-period-outside">
+                            <span class="finance-period-row">
+                                <span class="finance-period-label" id="financePeriodLabel" aria-hidden="true"></span>
+                                <button type="button" class="finance-period-prev-btn" id="financePeriodPrevBtn" onclick="goFinanceStatsPreviousPeriod()">上周</button>
+                                <button type="button" class="finance-period-reset-btn" id="financePeriodResetBtn" onclick="resetFinanceStatsPeriodOffset()" hidden>本周</button>
+                                <button type="button" class="finance-period-next-btn" id="financePeriodNextBtn" onclick="goFinanceStatsNextPeriod()">下周</button>
+                            </span>
+                        </div>
+                        <div class="finance-summary-grid-cell-empty" aria-hidden="true"></div>
                         <div class="finance-summary-item finance-balance-item is-expense-card">
                             <div class="finance-summary-left">
                                 <span class="finance-summary-icon is-expense" aria-hidden="true">
@@ -285,7 +288,7 @@
                                 <div class="finance-trend-line"><span class="finance-trend-label">收益率</span><span class="finance-trend-value" id="investmentMoM">--</span></div>
                             </div>
                         </div>
-                        <div class="finance-summary-item">
+                        <div class="finance-summary-item finance-summary-item-net">
                             <div class="finance-summary-left">
                                 <span class="finance-summary-icon is-balance" aria-hidden="true">
                                     <svg viewBox="0 0 24 24">
@@ -999,6 +1002,19 @@
             return roundFinanceAmount(Number(categories.cash_deposit) || 0);
         }
 
+        /**
+         * 将净结余变动量写入流动资产。
+         * deltaNetBalance > 0 表示净流入（收入 > 支出+投资），流动资产增加；
+         * deltaNetBalance < 0 表示净流出，流动资产减少。
+         */
+        function applyNetBalanceDeltaToLiquidAssets(deltaNetBalance) {
+            const d = roundFinanceAmount(Number(deltaNetBalance) || 0);
+            if (Math.abs(d) < 0.000001) return;
+            const categories = getTotalAssetsCategories();
+            categories.cash_deposit = roundFinanceAmount((Number(categories.cash_deposit) || 0) + d);
+            setTotalAssetsCategories(categories);
+        }
+
         function getTotalAssetsCategories() {
             const raw = safeJsonValue(localStorage.getItem(plannerStatsScopedKey('planner_total_assets_categories')), null);
             if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -1042,7 +1058,7 @@
         }
 
         function getTotalAssets() {
-            return roundFinanceAmount(getTotalAssetsBase() + currentNetBalance);
+            return roundFinanceAmount(getTotalAssetsBase());
         }
 
         function syncAmountInputWidth(inputEl) {
@@ -1122,6 +1138,33 @@
             const raw = inputEl.value.trim();
             const parsed = parseFinancialAmount(raw, { allowNegative: false, allowBlank: true });
             const value = parsed.ok && !parsed.empty ? roundFinanceAmount(parsed.value) : 0;
+
+            if (cardType === 'assets' && category === 'cash_deposit') {
+                const oldCategories = getTotalAssetsCategories();
+                const oldCash = roundFinanceAmount(Number(oldCategories.cash_deposit) || 0);
+                const delta = roundFinanceAmount(value - oldCash);
+                if (Math.abs(delta) >= 0.000001) {
+                    const direction = delta > 0 ? '增加' : '减少';
+                    const ok = confirm(
+                        `流动资产与当前账面差额 ${formatCurrency(Math.abs(delta))}（${direction}）。\n确认后差值将计入当月校对差额。\n\n点「取消」则保留原值 ${formatCurrency(oldCash)}。`
+                    );
+                    if (!ok) {
+                        const masked = !getFinanceDataVisible();
+                        inputEl.value = masked ? '' : normalizeAmountForInput(oldCash);
+                        row.classList.remove('is-editing');
+                        return;
+                    }
+                    oldCategories.cash_deposit = value;
+                    setTotalAssetsCategories(oldCategories);
+                    const monthKey = getCurrentMonthKey(new Date());
+                    const adjustments = getReconcileAdjustments();
+                    const currentDelta = roundFinanceAmount(adjustments[monthKey] || 0);
+                    setReconcileAdjustment(monthKey, roundFinanceAmount(currentDelta + delta));
+                    row.classList.remove('is-editing');
+                    renderExpenseStats();
+                    return;
+                }
+            }
 
             if (cardType === 'assets') {
                 const categories = getTotalAssetsCategories();
@@ -1293,6 +1336,15 @@
                 financeStatsWeekOffset += 1;
             } else {
                 financeStatsMonthOffset += 1;
+            }
+            renderExpenseStats();
+        }
+
+        function goFinanceStatsNextPeriod() {
+            if (expensePeriod === 'week') {
+                financeStatsWeekOffset -= 1;
+            } else {
+                financeStatsMonthOffset -= 1;
             }
             renderExpenseStats();
         }
@@ -2114,6 +2166,7 @@
 
             const records = getWeeklyExpenseRecords();
             const index = records.findIndex(record => record.weekKey === weekKey);
+            const oldRecord = index >= 0 ? records[index] : null;
             const expenseByCategory = sanitizeCategoryValues({
                 fixed_expense: fixedExpense,
                 variable_expense: variableExpense
@@ -2127,6 +2180,12 @@
             const investmentValue = roundFinanceAmount(investment);
             const investmentReturnValue = roundFinanceAmount(investmentReturn);
             const weekDate = getDateFromWeekKey(weekKey) || new Date();
+
+            const oldNet = roundFinanceAmount(
+                (Number(oldRecord?.income) || 0) - (Number(oldRecord?.expense) || 0) - (Number(oldRecord?.investment) || 0)
+            );
+            const newNet = roundFinanceAmount(income - expense - investmentValue);
+            applyNetBalanceDeltaToLiquidAssets(roundFinanceAmount(newNet - oldNet));
 
             if (index >= 0) {
                 records[index] = {
@@ -2268,6 +2327,12 @@
             const investmentReturn = roundFinanceAmount(investmentReturnInput !== undefined
                 ? investmentReturnInput
                 : (Number(current?.investmentReturn) || 0));
+
+            const oldNet = roundFinanceAmount(
+                (Number(current?.income) || 0) - (Number(current?.expense) || 0) - (Number(current?.investment) || 0)
+            );
+            const newNet = roundFinanceAmount(income - expense - investment);
+            applyNetBalanceDeltaToLiquidAssets(roundFinanceAmount(newNet - oldNet));
 
             if (index >= 0) {
                 records[index] = {
@@ -2463,18 +2528,25 @@
             const periodLabelEl = document.getElementById('financePeriodLabel');
             if (periodLabelEl) {
                 periodLabelEl.textContent = expensePeriod === 'week'
-                    ? `· ${now.getFullYear()}年第${getISOWeekInfo(now).week}周`
-                    : `· ${now.getFullYear()}年${now.getMonth() + 1}月`;
+                    ? `${now.getFullYear()}年第${getISOWeekInfo(now).week}周`
+                    : `${now.getFullYear()}年${now.getMonth() + 1}月`;
             }
             const prevBtn = document.getElementById('financePeriodPrevBtn');
             const resetBtn = document.getElementById('financePeriodResetBtn');
+            const nextBtn = document.getElementById('financePeriodNextBtn');
+            const offset = expensePeriod === 'week' ? financeStatsWeekOffset : financeStatsMonthOffset;
             if (prevBtn) {
                 prevBtn.textContent = expensePeriod === 'week' ? '上周' : '上月';
                 prevBtn.setAttribute('title', expensePeriod === 'week' ? '切换到上一周' : '切换到上一月');
                 prevBtn.setAttribute('aria-label', expensePeriod === 'week' ? '切换到上一周' : '切换到上一月');
             }
+            if (nextBtn) {
+                nextBtn.hidden = offset === 0;
+                nextBtn.textContent = expensePeriod === 'week' ? '下周' : '下月';
+                nextBtn.setAttribute('title', expensePeriod === 'week' ? '切换到下一周' : '切换到下一月');
+                nextBtn.setAttribute('aria-label', expensePeriod === 'week' ? '切换到下一周' : '切换到下一月');
+            }
             if (resetBtn) {
-                const offset = expensePeriod === 'week' ? financeStatsWeekOffset : financeStatsMonthOffset;
                 resetBtn.hidden = offset === 0;
                 resetBtn.textContent = expensePeriod === 'week' ? '本周' : '本月';
                 resetBtn.setAttribute('title', expensePeriod === 'week' ? '回到本周数据' : '回到本月数据');
@@ -2693,6 +2765,19 @@
             left: calc(50% + 4px);
         }
 
+        .finance-period-outside {
+            align-self: flex-start;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .finance-period-outside .finance-period-row {
+            margin-left: 0;
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+
         .finance-period-row {
             display: inline-flex;
             align-items: center;
@@ -2702,7 +2787,8 @@
         }
 
         .finance-period-prev-btn,
-        .finance-period-reset-btn {
+        .finance-period-reset-btn,
+        .finance-period-next-btn {
             font-size: 12px;
             font-weight: 500;
             padding: 3px 10px;
@@ -2716,15 +2802,14 @@
         }
 
         .finance-period-prev-btn:hover,
-        .finance-period-reset-btn:hover {
+        .finance-period-reset-btn:hover,
+        .finance-period-next-btn:hover {
             background: var(--warm-gray-100);
             border-color: var(--warm-gray-300);
         }
 
         .finance-period-reset-btn {
-            padding: 3px 8px;
-            font-size: 11px;
-            color: var(--warm-gray-600);
+            color: var(--warm-gray-700);
         }
 
         .finance-header-actions {
@@ -3675,10 +3760,46 @@
         }
 
         .finance-summary {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .finance-summary-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: var(--spacing-md);
-            margin-bottom: var(--spacing-md);
+            align-items: stretch;
+        }
+
+        .finance-summary-grid .finance-period-outside {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .finance-summary-grid-cell-empty {
+            grid-column: 2;
+            grid-row: 1;
+            min-height: 0;
+            pointer-events: none;
+        }
+
+        .finance-summary-grid .finance-summary-item.is-expense-card {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .finance-summary-grid .finance-summary-item.is-income-card {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .finance-summary-grid #investmentReturnCard {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .finance-summary-grid .finance-summary-item-net {
+            grid-column: 2;
+            grid-row: 3;
         }
 
         .finance-summary-item {
@@ -4201,8 +4322,22 @@
                 grid-template-columns: 1fr;
             }
 
-            .finance-summary {
+            .finance-summary-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .finance-summary-grid .finance-period-outside,
+            .finance-summary-grid .finance-summary-grid-cell-empty,
+            .finance-summary-grid .finance-summary-item.is-expense-card,
+            .finance-summary-grid .finance-summary-item.is-income-card,
+            .finance-summary-grid #investmentReturnCard,
+            .finance-summary-grid .finance-summary-item-net {
+                grid-column: 1;
+                grid-row: auto;
+            }
+
+            .finance-summary-grid-cell-empty {
+                display: none;
             }
 
             .finance-summary > .finance-summary-item {

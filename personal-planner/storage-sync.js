@@ -9,6 +9,15 @@
     const REQUEST_TIMEOUT_MS = Math.max(900, Number(window.__PLANNER_SYNC_TIMEOUT_MS__) || 12000);
     const FAIL_COOLDOWN_MS = 30000;
 
+    function plannerExperienceSyncDisabled() {
+        try {
+            return window.PlannerAuth && typeof window.PlannerAuth.isExperienceTestAccount === 'function'
+                && window.PlannerAuth.isExperienceTestAccount();
+        } catch (err) {
+            return false;
+        }
+    }
+
     if (!window.localStorage) return;
     if (window.__plannerSharedStorageInitialized) return;
     window.__plannerSharedStorageInitialized = true;
@@ -31,6 +40,7 @@
 
     function shouldSyncKey(key) {
         if (!key) return false;
+        if (plannerExperienceSyncDisabled()) return false;
         // Never sync auth credentials/session/prefs.
         if (key.startsWith('planner_auth_')) return false;
         return key === 'sidebarCollapsed'
@@ -408,6 +418,7 @@
     }
 
     function bootstrap() {
+        if (plannerExperienceSyncDisabled()) return;
         resolveEndpoint((endpoint) => {
             if (!endpoint) return;
 
