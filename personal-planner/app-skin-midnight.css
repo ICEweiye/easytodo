@@ -176,9 +176,9 @@ html[data-app-skin="midnight"] .home-page .main-content::before {
         to bottom,
         transparent 0%,
         transparent calc(100% - 28px),
-        rgba(0, 0, 0, 0.18) 100%
+        rgba(0, 0, 0, 0.1) 100%
     ) !important;
-    box-shadow: inset 0 -22px 36px -14px rgba(0, 0, 0, 0.38) !important;
+    box-shadow: inset 0 -8px 14px -6px rgba(0, 0, 0, 0.18) !important;
 }
 
 html[data-app-skin="midnight"] .global-avatar-btn {
@@ -966,6 +966,38 @@ html[data-app-skin="midnight"] #reviewModal .review-emotion-slot:hover {
 html[data-app-skin="midnight"] #reviewModal .review-category-select.category-none {
     border-color: var(--midnight-border) !important;
     background: rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-app-skin="midnight"] #reviewModal .review-modal-subtitle {
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] #reviewModal .review-grai-intro {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: var(--midnight-border) !important;
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] #reviewModal .review-grai-timeline::before {
+    background: linear-gradient(
+        to bottom,
+        rgba(130, 233, 222, 0.35),
+        rgba(130, 233, 222, 0.06)
+    ) !important;
+}
+
+html[data-app-skin="midnight"] #reviewModal .review-grai-step .review-grai-letter {
+    background: rgba(130, 233, 222, 0.12) !important;
+    border-color: rgba(130, 233, 222, 0.28) !important;
+    color: var(--midnight-accent) !important;
+}
+
+html[data-app-skin="midnight"] #reviewModal .review-grai-step-title {
+    color: var(--midnight-ink) !important;
+}
+
+html[data-app-skin="midnight"] #reviewModal .review-grai-step-hint {
+    color: var(--midnight-muted) !important;
 }
 
 html[data-app-skin="midnight"] #weeklyReviewModal .weekly-review-category-row .weekly-review-category-input:focus,

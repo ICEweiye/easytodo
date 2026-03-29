@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <title>个人规划管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
@@ -719,12 +719,14 @@
 
         function getReviewEntryPreview(entry, maxLen = 56) {
             const rawText = String(
-                entry?.summary ||
+                entry?.reviewKind === 'event'
+                    ? (entry?.eventSubject || entry?.graiGoal || entry?.graiResult || entry?.graiAnalysis || entry?.graiImprovement || '')
+                    : (entry?.summary ||
                 entry?.tasks ||
                 entry?.keep ||
                 entry?.improve ||
                 entry?.stop ||
-                ''
+                '')
             );
             const text = previewText(rawText, maxLen);
             return text || '已记录复盘内容';
@@ -869,6 +871,14 @@
         }
 
         function reviewEntryCombinedUserPlainText(entry) {
+            if (entry?.reviewKind === 'event') {
+                const subj = normalizeInlineText(entry.eventSubject);
+                const body = ['graiGoal', 'graiResult', 'graiAnalysis', 'graiImprovement']
+                    .map((k) => normalizeInlineText(entry[k]))
+                    .filter(Boolean)
+                    .join('\n');
+                return [subj, body].filter(Boolean).join('\n');
+            }
             return ['summary', 'keep', 'improve', 'stop', 'tasks']
                 .map((k) => normalizeInlineText(entry[k]))
                 .filter(Boolean)
@@ -896,6 +906,16 @@
             if (value <= 6) return '状态回暖中';
             if (value <= 8) return '今天很不错';
             return '状态拉满';
+        }
+
+        function getEventReviewCheerText(score) {
+            const scoreNum = Number.parseFloat(score);
+            const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
+            if (value <= 2) return '先接纳，再拆解';
+            if (value <= 4) return '看见盲区就好';
+            if (value <= 6) return '有复盘就有收获';
+            if (value <= 8) return '沉淀得很清楚';
+            return '复盘拉满';
         }
 
         function renderDailyReviewCard() {
@@ -927,9 +947,22 @@
 
             const pickedKey = getDailyPickedReviewKey(entries);
             const picked = entries.find(entry => String(entry.poolKey) === pickedKey) || entries[0];
-            const summaryHtml = sectionPreviewHtml('总结', picked.summary, 9999);
-            const tasksPlain = normalizeInlineText(picked.tasks) || '';
-            const todayTaskText = escapeHtml(tasksPlain || '今日事项');
+            const isEventReview = picked.reviewKind === 'event';
+            const eventSubjectLine = isEventReview && normalizeInlineText(picked.eventSubject)
+                ? sectionPreviewHtml('主题', picked.eventSubject, 9999)
+                : '';
+            const summaryHtml = isEventReview
+                ? eventSubjectLine + [
+                    sectionPreviewHtml('G 目标', picked.graiGoal, 9999),
+                    sectionPreviewHtml('R 结果', picked.graiResult, 9999),
+                    sectionPreviewHtml('A 分析', picked.graiAnalysis, 9999),
+                    sectionPreviewHtml('I 改进', picked.graiImprovement, 9999)
+                ].filter(Boolean).join('')
+                : sectionPreviewHtml('总结', picked.summary, 9999);
+            const tasksPlain = isEventReview
+                ? (normalizeInlineText(picked.eventSubject) || normalizeInlineText(picked.graiGoal) || '')
+                : (normalizeInlineText(picked.tasks) || '');
+            const todayTaskText = escapeHtml(tasksPlain || (isEventReview ? '事件复盘' : '今日事项'));
             const combinedUser = reviewEntryCombinedUserPlainText(picked);
             const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
                 ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
@@ -940,7 +973,7 @@
                 : '';
             const todayTaskClass = taskFold ? `review-today-task-text ${taskFold}` : 'review-today-task-text';
             const scoreToneClass = getScoreToneClass(picked.score);
-            const cheerText = escapeHtml(getScoreCheerText(picked.score));
+            const cheerText = escapeHtml(isEventReview ? getEventReviewCheerText(picked.score) : getScoreCheerText(picked.score));
             const intensity = normalizeEmotionIntensity(picked.emotionIntensity || picked.energy) || '中';
             const emotionTags = normalizeEmotionTags(
                 picked.emotionTags,
@@ -955,12 +988,12 @@
                 const moodText = escapeHtml(`${getEmotionIntensityPrefix(tagIntensity)}${tag.mood}`);
                 return `<span class="review-today-mood-text" style="color:${moodPalette.border};">${moodText}</span>`;
             }).join('、');
-            const kissHtml = [
+            const kissHtml = isEventReview ? '' : [
                 sectionPreviewHtml('✅ 保持', picked.keep, 9999),
                 sectionPreviewHtml('⚠️ 改进', picked.improve, 9999),
                 sectionPreviewHtml('🚫 停止', picked.stop, 9999)
             ].filter(Boolean).join('');
-            const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const dividerHtml = !isEventReview && kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
             const revExpandLabel =
                 window.PlannerBackup && window.PlannerBackup.t ? window.PlannerBackup.t('review.expand') : '展开';
             const revExpandAria =
@@ -982,9 +1015,10 @@
                             ${kissHtml}
                             </div>`;
 
+            const contextLead = isEventReview ? '事件' : '今天';
             container.innerHTML = `
                 <div class="daily-review-link">
-                    <article class="review-card review-record-card">
+                    <article class="review-card review-record-card${isEventReview ? ' review-record-card--event' : ''}">
                         <div class="review-header">
                             <div class="review-header-main">
                                 <span class="review-period">${escapeHtml(picked.date || '--')}</span>
@@ -992,7 +1026,7 @@
                                     <span class="review-score-circle ${scoreToneClass}" title="评分 ${picked.score}/10">${picked.score}</span>
                                     <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
                                 </div>
-                                <span class="review-today-note"><strong>今天</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                                <span class="review-today-note"><strong>${contextLead}</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
                             </div>
                         </div>
                         <div class="review-content review-content-compact">
@@ -2162,7 +2196,7 @@ window.addEventListener('planner-storage-synced', () => {
             window.addEventListener('resize', scheduleSyncFade);
             document.addEventListener('planner-app-skin-change', () => requestAnimationFrame(scheduleSyncFade));
             mainContent.addEventListener('transitionend', (event) => {
-                if (event.propertyName === 'margin-left') {
+                if (event.propertyName === 'margin-left' || event.propertyName === 'left') {
                     scheduleSyncFade();
                 }
             });

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <title>复盘 - 个人规划管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
@@ -83,10 +83,10 @@
 
                     <section class="module review-type-panel" id="reviewTypePanel">
                         <div class="review-type-grid">
-                            <button type="button" class="review-type-card" onclick="openReviewModal()">每日记录</button>
+                            <button type="button" class="review-type-card" onclick="openReviewModal(null, 'daily')">每日记录</button>
                             <button type="button" class="review-type-card" onclick="openWeeklyReviewModal()">每周复盘</button>
                             <button type="button" class="review-type-card" onclick="openMonthlyReviewModal()">每月复盘</button>
-                            <button type="button" class="review-type-card" onclick="openReviewModal()">事件复盘</button>
+                            <button type="button" class="review-type-card" onclick="openReviewModal(null, 'event')">事件复盘</button>
                         </div>
                     </section>
                 </div>
@@ -95,9 +95,26 @@
                     <div class="module-header">
                         <h2 class="module-title">复盘记录</h2>
                     </div>
-                    <div class="weekly-review-list" id="weeklyReviewList"></div>
-                    <div class="weekly-review-list" id="monthlyReviewList"></div>
-                    <div class="review-list" id="reviewList"></div>
+                    <div class="tabs review-records-tabs" role="tablist" aria-label="复盘记录分类">
+                        <button type="button" class="tab-btn active" role="tab" aria-selected="true" id="reviewTabDaily" data-review-tab="daily" onclick="setReviewRecordsTab('daily')">每日记录</button>
+                        <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabWeekly" data-review-tab="weekly" onclick="setReviewRecordsTab('weekly')">每周复盘</button>
+                        <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabMonthly" data-review-tab="monthly" onclick="setReviewRecordsTab('monthly')">每月复盘</button>
+                        <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabEvent" data-review-tab="event" onclick="setReviewRecordsTab('event')">事件复盘</button>
+                    </div>
+                    <div class="tab-content review-records-tab-content">
+                        <div class="tab-panel active" role="tabpanel" id="reviewRecordsPanelDaily" data-review-tab-panel="daily" aria-labelledby="reviewTabDaily">
+                            <div class="review-list" id="reviewListDaily"></div>
+                        </div>
+                        <div class="tab-panel" role="tabpanel" id="reviewRecordsPanelWeekly" data-review-tab-panel="weekly" aria-labelledby="reviewTabWeekly">
+                            <div class="weekly-review-list" id="weeklyReviewList"></div>
+                        </div>
+                        <div class="tab-panel" role="tabpanel" id="reviewRecordsPanelMonthly" data-review-tab-panel="monthly" aria-labelledby="reviewTabMonthly">
+                            <div class="weekly-review-list" id="monthlyReviewList"></div>
+                        </div>
+                        <div class="tab-panel" role="tabpanel" id="reviewRecordsPanelEvent" data-review-tab-panel="event" aria-labelledby="reviewTabEvent">
+                            <div class="review-list" id="reviewListEvent"></div>
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>
@@ -106,15 +123,21 @@
     <div class="modal-overlay" id="reviewModal">
         <div class="modal modal-large review-modal">
             <h3 class="modal-title" id="reviewModalTitle">新增复盘记录</h3>
-            <section class="review-modal-section">
-                <h4 class="review-modal-section-title">记录部分</h4>
+            <p class="review-modal-subtitle" id="reviewModalSubtitle" hidden></p>
+            <div class="review-modal-body" id="reviewModalBody">
+            <section class="review-modal-section review-modal-section--shared">
+                <h4 class="review-modal-section-title" id="reviewBasicSectionTitle">基础信息</h4>
+                <div class="form-group review-modal-event-subject-wrap">
+                    <label class="form-label" for="reviewEventSubject">事件主题</label>
+                    <input type="text" class="form-input" id="reviewEventSubject" maxlength="120" placeholder="用一句话命名这件事，便于列表中识别（可选）" autocomplete="off">
+                </div>
                 <div class="form-row review-basic-row">
                     <div class="form-group">
-                        <label class="form-label">记录日期</label>
+                        <label class="form-label" id="reviewDateLabel">记录日期</label>
                         <input type="date" class="form-input" id="reviewDate">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">今日评分</label>
+                    <div class="form-group review-modal-hide-on-event">
+                        <label class="form-label" id="reviewScoreLabel">今日评分</label>
                         <select class="form-input" id="reviewScore">
                         <option value="1">1 分</option>
                         <option value="2">2 分</option>
@@ -129,7 +152,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">标签分类</label>
+                        <label class="form-label" id="reviewCategoryLabel">标签分类</label>
                     <select class="form-input review-category-select" id="reviewCategory" onchange="syncReviewCategorySelectStyle()">
                         <option value="none" selected>无</option>
                         <option value="life">生活</option>
@@ -140,6 +163,9 @@
                         </select>
                     </div>
                 </div>
+            </section>
+            <section class="review-modal-section review-modal-section--daily">
+                <h4 class="review-modal-section-title">记录部分</h4>
                 <div class="form-group">
                     <label class="form-label">总结</label>
                 <textarea class="form-input form-textarea review-textarea" id="reviewSummary" placeholder="先写下今天最核心的结论"></textarea>
@@ -148,9 +174,57 @@
                 <label class="form-label">今日事项</label>
                 <textarea class="form-input form-textarea review-textarea" id="reviewTasks" placeholder="记录今天完成或推进的关键事项"></textarea>
                 </div>
+            </section>
+            <section class="review-modal-section review-modal-section--event">
+                <h4 class="review-modal-section-title">GRAI 四步复盘</h4>
+                <p class="review-grai-intro">建议按顺序填写：先对齐<strong>当初目标</strong>，再对照<strong>实际结果</strong>，接着拆解<strong>原因</strong>，最后沉淀<strong>可复用改进</strong>。</p>
+                <ol class="review-grai-timeline" aria-label="GRAI 复盘步骤">
+                    <li class="review-grai-step">
+                        <div class="review-grai-step-head">
+                            <span class="review-grai-letter" aria-hidden="true">G</span>
+                            <div class="review-grai-step-text">
+                                <span class="review-grai-step-title">回顾目标（Goal）</span>
+                                <span class="review-grai-step-hint">当时想达成什么？成功标准是什么？</span>
+                            </div>
+                        </div>
+                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiGoal" rows="3" placeholder="写下初衷、预期结果或衡量标准，不必长，写清「想要什么」即可。"></textarea>
+                    </li>
+                    <li class="review-grai-step">
+                        <div class="review-grai-step-head">
+                            <span class="review-grai-letter" aria-hidden="true">R</span>
+                            <div class="review-grai-step-text">
+                                <span class="review-grai-step-title">评估结果（Result）</span>
+                                <span class="review-grai-step-hint">客观事实与关键差异</span>
+                            </div>
+                        </div>
+                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiResult" rows="3" placeholder="实际发生了什么？与目标相比，哪些符合、哪些偏离？尽量写事实，少评判。"></textarea>
+                    </li>
+                    <li class="review-grai-step">
+                        <div class="review-grai-step-head">
+                            <span class="review-grai-letter" aria-hidden="true">A</span>
+                            <div class="review-grai-step-text">
+                                <span class="review-grai-step-title">分析原因（Analysis）</span>
+                                <span class="review-grai-step-hint">解释「为什么」会这样</span>
+                            </div>
+                        </div>
+                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiAnalysis" rows="3" placeholder="成败的关键原因是什么？有哪些约束、假设或外部因素？主观与客观都可以写。"></textarea>
+                    </li>
+                    <li class="review-grai-step">
+                        <div class="review-grai-step-head">
+                            <span class="review-grai-letter" aria-hidden="true">I</span>
+                            <div class="review-grai-step-text">
+                                <span class="review-grai-step-title">总结改进（Improvement）</span>
+                                <span class="review-grai-step-hint">下次怎么做更好</span>
+                            </div>
+                        </div>
+                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiImprovement" rows="3" placeholder="提炼可执行的一条或几条：原则、检查项、具体行动；尽量可检验、可复用。"></textarea>
+                    </li>
+                </ol>
+            </section>
+            <section class="review-modal-section review-modal-section--shared review-modal-section--emotion review-modal-hide-on-event">
+                <h4 class="review-modal-section-title" id="reviewEmotionSectionTitle">情绪</h4>
                 <div class="form-row review-emotion-row">
                 <div class="form-group review-emotion-group">
-                    <label class="form-label">情绪</label>
                     <div class="review-emotion-slot-grid">
                         <button type="button" class="review-emotion-slot" id="reviewEmotionSlot0" onclick="openReviewEmotionModal(0)">选择情绪 1</button>
                         <button type="button" class="review-emotion-slot" id="reviewEmotionSlot1" onclick="openReviewEmotionModal(1)">选择情绪 2</button>
@@ -163,7 +237,7 @@
                 </div>
             </div>
             </section>
-            <section class="review-modal-section">
+            <section class="review-modal-section review-modal-section--daily">
                 <h4 class="review-modal-section-title">复盘部分</h4>
                 <div class="form-row review-kiss-row">
                     <div class="form-group">
@@ -189,6 +263,7 @@
                 </div>
             </div>
             </section>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-danger" id="reviewDeleteBtn" style="display:none;" onclick="deleteReview(editingReviewId)">删除</button>
                 <div style="flex:1;"></div>
@@ -555,8 +630,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">生活状态</label>
-                    <textarea class="form-input form-textarea weekly-review-textarea" id="monthlyReviewLife" placeholder="记录本月生活状态和感受"></textarea>
+                    <div class="weekly-review-field-header">
+                        <label class="form-label">生活状态</label>
+                    </div>
+                    <div class="weekly-review-input-wrap">
+                        <textarea class="form-input form-textarea weekly-review-textarea weekly-review-state-textarea" id="monthlyReviewLife" placeholder="记录本月生活状态和感受"></textarea>
+                    </div>
                 </div>
                 <div class="form-group">
                     <div class="weekly-review-field-header">
@@ -704,6 +783,7 @@
         let selectedWeeklyReviewOkrId = null;
         let currentKissTab = 'keep';
         let reviewLinkedTodoIds = [];
+        let reviewModalMode = 'daily';
         let reviewEmotionEditingSlot = 0;
         let pendingFocusReviewId = '';
         let heatmapScaleRaf = null;
@@ -1592,23 +1672,47 @@
             history.replaceState(null, '', `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}`);
         }
 
+        const REVIEW_RECORDS_TAB_IDS = ['daily', 'weekly', 'monthly', 'event'];
+        const REVIEW_RECORDS_TAB_STORAGE_KEY = 'planner_review_records_tab';
+
+        function setReviewRecordsTab(tab) {
+            const t = REVIEW_RECORDS_TAB_IDS.includes(tab) ? tab : 'daily';
+            document.querySelectorAll('.review-records-tabs [data-review-tab]').forEach(btn => {
+                const on = btn.getAttribute('data-review-tab') === t;
+                btn.classList.toggle('active', on);
+                btn.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            document.querySelectorAll('.review-records-tab-content [data-review-tab-panel]').forEach(panel => {
+                panel.classList.toggle('active', panel.getAttribute('data-review-tab-panel') === t);
+            });
+            try {
+                localStorage.setItem(REVIEW_RECORDS_TAB_STORAGE_KEY, t);
+            } catch (e) { /* ignore */ }
+        }
+
         function tryFocusPendingReviewCard() {
             if (!pendingFocusReviewId) return;
+            const entry = reviewEntries.find(e => String(e.id) === String(pendingFocusReviewId));
+            if (entry) {
+                setReviewRecordsTab(entry.reviewKind === 'event' ? 'event' : 'daily');
+            }
             const cards = Array.from(document.querySelectorAll('.review-record-card'));
             const target = cards.find(card => card.dataset.reviewId === pendingFocusReviewId);
             if (!target) return;
 
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target.classList.add('review-record-focus');
-            target.setAttribute('tabindex', '-1');
-            target.focus({ preventScroll: true });
-            setTimeout(() => {
-                target.classList.remove('review-record-focus');
-                target.removeAttribute('tabindex');
-            }, 2200);
+            requestAnimationFrame(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('review-record-focus');
+                target.setAttribute('tabindex', '-1');
+                target.focus({ preventScroll: true });
+                setTimeout(() => {
+                    target.classList.remove('review-record-focus');
+                    target.removeAttribute('tabindex');
+                }, 2200);
 
-            pendingFocusReviewId = '';
-            clearFocusReviewIdFromUrl();
+                pendingFocusReviewId = '';
+                clearFocusReviewIdFromUrl();
+            });
         }
 
         function getStoredTodos() {
@@ -1838,6 +1942,7 @@
         }
 
         function openReviewTodoModal() {
+            if (reviewModalMode === 'event') return;
             const reviewDate = document.getElementById('reviewDate')?.value || todayKey();
             const dueDate = nextDayKey(reviewDate);
 
@@ -1922,11 +2027,13 @@
                 intensity: fallbackIntensity
             };
             const primaryIntensity = normalizeEmotionIntensity(primaryTag.intensity) || fallbackIntensity;
+            const reviewKind = entry.reviewKind === 'event' ? 'event' : 'daily';
             return {
                 id: entry.id || generateId(),
                 date: toDateKey(entry.date || entry.createdAt),
                 score,
                 category: normalizeReviewCategory(entry.category),
+                reviewKind,
                 tasks: String(entry.tasks || '').trim(),
                 mood: emotionTags.map(tag => tag.mood).join('、'),
                 energy: primaryIntensity,
@@ -1940,6 +2047,11 @@
                 start: String(entry.start || '').trim(),
                 startTodoIds,
                 summary: String(entry.summary || '').trim(),
+                eventSubject: String(entry.eventSubject || '').trim(),
+                graiGoal: String(entry.graiGoal || '').trim(),
+                graiResult: String(entry.graiResult || '').trim(),
+                graiAnalysis: String(entry.graiAnalysis || '').trim(),
+                graiImprovement: String(entry.graiImprovement || '').trim(),
                 createdAt: entry.createdAt || new Date().toISOString(),
                 updatedAt: entry.updatedAt || new Date().toISOString()
             };
@@ -2064,7 +2176,41 @@
             dateEl.textContent = now.toLocaleDateString('zh-CN', options);
         }
 
-        function openReviewModal(id = null) {
+        function setReviewModalMode(mode) {
+            reviewModalMode = mode === 'event' ? 'event' : 'daily';
+            const root = document.getElementById('reviewModal');
+            if (!root) return;
+            root.classList.toggle('review-modal--event', reviewModalMode === 'event');
+            const dateLabel = document.getElementById('reviewDateLabel');
+            const scoreLabel = document.getElementById('reviewScoreLabel');
+            if (dateLabel) dateLabel.textContent = reviewModalMode === 'event' ? '复盘日期' : '记录日期';
+            if (scoreLabel) scoreLabel.textContent = '今日评分';
+            const basicTitle = document.getElementById('reviewBasicSectionTitle');
+            if (basicTitle) basicTitle.textContent = reviewModalMode === 'event' ? '事件档案' : '基础信息';
+            const catLabel = document.getElementById('reviewCategoryLabel');
+            if (catLabel) catLabel.textContent = reviewModalMode === 'event' ? '场景标签' : '标签分类';
+            const emoTitle = document.getElementById('reviewEmotionSectionTitle');
+            if (emoTitle) emoTitle.textContent = '情绪';
+            const sub = document.getElementById('reviewModalSubtitle');
+            if (sub) {
+                if (reviewModalMode === 'event') {
+                    sub.textContent = 'Goal → Result → Analysis → Improvement：对齐目标、对照结果、拆解原因、沉淀改进行动';
+                    sub.removeAttribute('hidden');
+                } else {
+                    sub.textContent = '';
+                    sub.setAttribute('hidden', '');
+                }
+            }
+        }
+
+        function clearReviewGraiInputs() {
+            ['reviewEventSubject', 'reviewGraiGoal', 'reviewGraiResult', 'reviewGraiAnalysis', 'reviewGraiImprovement'].forEach((fieldId) => {
+                const el = document.getElementById(fieldId);
+                if (el) el.value = '';
+            });
+        }
+
+        function openReviewModal(id = null, preferredKind = 'daily') {
             closeReviewTodoModal();
             closeReviewEmotionModal();
             editingReviewId = id;
@@ -2073,31 +2219,46 @@
             const deleteBtn = document.getElementById('reviewDeleteBtn');
 
             if (!id) {
+                const mode = preferredKind === 'event' ? 'event' : 'daily';
+                setReviewModalMode(mode);
                 reviewLinkedTodoIds = [];
-                titleEl.textContent = '新增复盘记录';
+                titleEl.textContent = mode === 'event' ? '新增事件复盘' : '新增复盘记录';
                 deleteBtn.style.display = 'none';
                 document.getElementById('reviewDate').value = todayKey();
                 document.getElementById('reviewScore').value = '7';
                 document.getElementById('reviewCategory').value = 'none';
-                document.getElementById('reviewTasks').value = '';
                 setReviewEmotionIntensity('中');
                 setReviewEmotionTags([]);
-                document.getElementById('reviewKeep').value = '';
-                document.getElementById('reviewImprove').value = '';
-                document.getElementById('reviewStop').value = '';
-                document.getElementById('reviewStart').value = '';
-                document.getElementById('reviewSummary').value = '';
+                if (mode === 'event') {
+                    document.getElementById('reviewTasks').value = '';
+                    document.getElementById('reviewKeep').value = '';
+                    document.getElementById('reviewImprove').value = '';
+                    document.getElementById('reviewStop').value = '';
+                    document.getElementById('reviewStart').value = '';
+                    document.getElementById('reviewSummary').value = '';
+                    clearReviewGraiInputs();
+                    document.getElementById('reviewEventSubject').value = '';
+                } else {
+                    clearReviewGraiInputs();
+                    document.getElementById('reviewTasks').value = '';
+                    document.getElementById('reviewKeep').value = '';
+                    document.getElementById('reviewImprove').value = '';
+                    document.getElementById('reviewStop').value = '';
+                    document.getElementById('reviewStart').value = '';
+                    document.getElementById('reviewSummary').value = '';
+                }
             } else {
                 const entry = reviewEntries.find(item => item.id == id);
                 if (!entry) return;
-                reviewLinkedTodoIds = getLinkedTodoIdsForEntry(entry);
+                const mode = entry.reviewKind === 'event' ? 'event' : 'daily';
+                setReviewModalMode(mode);
+                reviewLinkedTodoIds = mode === 'event' ? [] : getLinkedTodoIdsForEntry(entry);
 
-                titleEl.textContent = '编辑复盘记录';
+                titleEl.textContent = mode === 'event' ? '编辑事件复盘' : '编辑复盘记录';
                 deleteBtn.style.display = 'block';
                 document.getElementById('reviewDate').value = entry.date;
                 document.getElementById('reviewScore').value = String(entry.score || 7);
                 document.getElementById('reviewCategory').value = normalizeReviewCategory(entry.category);
-                document.getElementById('reviewTasks').value = entry.tasks || '';
                 setReviewEmotionIntensity(entry.emotionIntensity || entry.energy || '中');
                 setReviewEmotionTags(normalizeEmotionTags(
                     entry.emotionTags,
@@ -2106,11 +2267,27 @@
                     entry.emotionValence || entry.valence || '',
                     entry.emotionIntensity || entry.energy || '中'
                 ));
-                document.getElementById('reviewKeep').value = entry.keep || '';
-                document.getElementById('reviewImprove').value = entry.improve || '';
-                document.getElementById('reviewStop').value = entry.stop || '';
-                document.getElementById('reviewStart').value = entry.start || '';
-                document.getElementById('reviewSummary').value = entry.summary || '';
+                if (mode === 'event') {
+                    document.getElementById('reviewSummary').value = '';
+                    document.getElementById('reviewTasks').value = '';
+                    document.getElementById('reviewKeep').value = '';
+                    document.getElementById('reviewImprove').value = '';
+                    document.getElementById('reviewStop').value = '';
+                    document.getElementById('reviewStart').value = '';
+                    document.getElementById('reviewEventSubject').value = entry.eventSubject || '';
+                    document.getElementById('reviewGraiGoal').value = entry.graiGoal || '';
+                    document.getElementById('reviewGraiResult').value = entry.graiResult || '';
+                    document.getElementById('reviewGraiAnalysis').value = entry.graiAnalysis || '';
+                    document.getElementById('reviewGraiImprovement').value = entry.graiImprovement || '';
+                } else {
+                    clearReviewGraiInputs();
+                    document.getElementById('reviewTasks').value = entry.tasks || '';
+                    document.getElementById('reviewKeep').value = entry.keep || '';
+                    document.getElementById('reviewImprove').value = entry.improve || '';
+                    document.getElementById('reviewStop').value = entry.stop || '';
+                    document.getElementById('reviewStart').value = entry.start || '';
+                    document.getElementById('reviewSummary').value = entry.summary || '';
+                }
             }
 
             syncReviewCategorySelectStyle();
@@ -2124,10 +2301,12 @@
 
         function closeReviewModal() {
             document.getElementById('reviewModal').classList.remove('active');
+            document.getElementById('reviewModal').classList.remove('review-modal--event');
             closeReviewEmotionModal();
             closeReviewTodoModal();
             editingReviewId = null;
             reviewLinkedTodoIds = [];
+            reviewModalMode = 'daily';
         }
 
         function loadWeeklyReviews() {
@@ -2679,31 +2858,134 @@
 
         function saveReview() {
             const date = document.getElementById('reviewDate').value || todayKey();
-            const score = parseInt(document.getElementById('reviewScore').value, 10) || 7;
             const category = normalizeReviewCategory(document.getElementById('reviewCategory').value);
-            const tasks = document.getElementById('reviewTasks').value.trim();
-            const emotionArousal = normalizeEmotionArousal(document.getElementById('reviewEmotionArousal').value);
-            const emotionValence = normalizeEmotionValence(document.getElementById('reviewEmotionValence').value);
-            const emotionIntensity = normalizeEmotionIntensity(document.getElementById('reviewEnergy').value) || '中';
-            const emotionTags = normalizeEmotionTags(
-                getReviewEmotionTagsFromInput(),
-                document.getElementById('reviewMood').value,
-                emotionArousal,
-                emotionValence,
-                emotionIntensity
-            );
-            if (emotionTags.length > REVIEW_MAX_EMOTION_TAGS) {
-                alert(`每条复盘最多记录 ${REVIEW_MAX_EMOTION_TAGS} 种情绪`);
+            const isEvent = reviewModalMode === 'event';
+
+            let score;
+            let emotionTags;
+            let mood;
+            let primaryEmotionTag;
+            let energy;
+
+            if (isEvent) {
+                score = 7;
+                emotionTags = normalizeEmotionTags([], '平静', '低', '积极', '中');
+                mood = emotionTags.map(tag => tag.mood).join('、');
+                primaryEmotionTag = normalizeEmotionTag(
+                    emotionTags[emotionTags.length - 1] || { mood: '平静', arousal: '低', valence: '积极', intensity: '中' },
+                    '中'
+                ) || { mood: '平静', arousal: '低', valence: '积极', intensity: '中' };
+                energy = normalizeEmotionIntensity(primaryEmotionTag.intensity) || '中';
+            } else {
+                score = parseInt(document.getElementById('reviewScore').value, 10) || 7;
+                const emotionArousal = normalizeEmotionArousal(document.getElementById('reviewEmotionArousal').value);
+                const emotionValence = normalizeEmotionValence(document.getElementById('reviewEmotionValence').value);
+                const emotionIntensity = normalizeEmotionIntensity(document.getElementById('reviewEnergy').value) || '中';
+                emotionTags = normalizeEmotionTags(
+                    getReviewEmotionTagsFromInput(),
+                    document.getElementById('reviewMood').value,
+                    emotionArousal,
+                    emotionValence,
+                    emotionIntensity
+                );
+                if (emotionTags.length > REVIEW_MAX_EMOTION_TAGS) {
+                    alert(`每条复盘最多记录 ${REVIEW_MAX_EMOTION_TAGS} 种情绪`);
+                    return;
+                }
+                mood = emotionTags.map(tag => tag.mood).join('、');
+                primaryEmotionTag = normalizeEmotionTag({
+                    mood: emotionTags[emotionTags.length - 1]?.mood || mood || '平静',
+                    arousal: emotionTags[emotionTags.length - 1]?.arousal || emotionArousal,
+                    valence: emotionTags[emotionTags.length - 1]?.valence || emotionValence,
+                    intensity: emotionTags[emotionTags.length - 1]?.intensity || emotionIntensity
+                }, emotionIntensity) || emotionTags[emotionTags.length - 1] || { arousal: '低', valence: '积极', intensity: '中' };
+                energy = normalizeEmotionIntensity(primaryEmotionTag.intensity) || emotionIntensity;
+                setReviewEmotionIntensity(energy);
+                setReviewEmotionTags(emotionTags, primaryEmotionTag);
+            }
+
+            if (isEvent) {
+                const eventSubject = document.getElementById('reviewEventSubject').value.trim();
+                const graiGoal = document.getElementById('reviewGraiGoal').value.trim();
+                const graiResult = document.getElementById('reviewGraiResult').value.trim();
+                const graiAnalysis = document.getElementById('reviewGraiAnalysis').value.trim();
+                const graiImprovement = document.getElementById('reviewGraiImprovement').value.trim();
+                if (!graiGoal && !graiResult && !graiAnalysis && !graiImprovement) {
+                    alert('请至少填写一项 GRAI 内容');
+                    return;
+                }
+
+                if (editingReviewId) {
+                    const idx = reviewEntries.findIndex(item => item.id == editingReviewId);
+                    if (idx === -1) return;
+                    const previousLinkedIds = normalizeIdList(reviewEntries[idx].startTodoIds);
+                    reviewEntries[idx] = normalizeEntry({
+                        ...reviewEntries[idx],
+                        date,
+                        score,
+                        category,
+                        reviewKind: 'event',
+                        eventSubject,
+                        mood,
+                        energy,
+                        emotionIntensity: energy,
+                        emotionTags,
+                        emotionArousal: primaryEmotionTag.arousal,
+                        emotionValence: primaryEmotionTag.valence,
+                        tasks: '',
+                        keep: '',
+                        improve: '',
+                        stop: '',
+                        start: '',
+                        startTodoIds: [],
+                        summary: '',
+                        graiGoal,
+                        graiResult,
+                        graiAnalysis,
+                        graiImprovement,
+                        updatedAt: new Date().toISOString()
+                    });
+                    syncTodoReviewLinks(reviewEntries[idx].id, previousLinkedIds, []);
+                } else {
+                    const newReviewId = generateId();
+                    if (window.RewardPool) window.RewardPool.awardYellowStar('review-' + newReviewId);
+                    reviewEntries.push(normalizeEntry({
+                        id: newReviewId,
+                        date,
+                        score,
+                        category,
+                        reviewKind: 'event',
+                        eventSubject,
+                        mood,
+                        energy,
+                        emotionIntensity: energy,
+                        emotionTags,
+                        emotionArousal: primaryEmotionTag.arousal,
+                        emotionValence: primaryEmotionTag.valence,
+                        tasks: '',
+                        keep: '',
+                        improve: '',
+                        stop: '',
+                        start: '',
+                        startTodoIds: [],
+                        summary: '',
+                        graiGoal,
+                        graiResult,
+                        graiAnalysis,
+                        graiImprovement,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    }));
+                    syncTodoReviewLinks(newReviewId, [], []);
+                }
+
+                persistEntries();
+                renderAll();
+                closeReviewModal();
                 return;
             }
-            const mood = emotionTags.map(tag => tag.mood).join('、');
-            const primaryEmotionTag = normalizeEmotionTag({
-                mood: emotionTags[emotionTags.length - 1]?.mood || mood || '平静',
-                arousal: emotionTags[emotionTags.length - 1]?.arousal || emotionArousal,
-                valence: emotionTags[emotionTags.length - 1]?.valence || emotionValence,
-                intensity: emotionTags[emotionTags.length - 1]?.intensity || emotionIntensity
-            }, emotionIntensity) || emotionTags[emotionTags.length - 1] || { arousal: '低', valence: '积极', intensity: '中' };
-            const energy = normalizeEmotionIntensity(primaryEmotionTag.intensity) || emotionIntensity;
+
+            const tasks = document.getElementById('reviewTasks').value.trim();
             const keep = document.getElementById('reviewKeep').value.trim();
             const improve = document.getElementById('reviewImprove').value.trim();
             const stop = document.getElementById('reviewStop').value.trim();
@@ -2711,8 +2993,6 @@
             const summary = document.getElementById('reviewSummary').value.trim();
             const linkedTodoIds = getValidLinkedTodoIds(reviewLinkedTodoIds);
             const startValue = start || getTodoTitlesByIds(linkedTodoIds).join('\n');
-            setReviewEmotionIntensity(energy);
-            setReviewEmotionTags(emotionTags, primaryEmotionTag);
 
             if (!tasks && !keep && !improve && !stop && !startValue && !summary && linkedTodoIds.length === 0) {
                 alert('请至少填写一项复盘内容');
@@ -2729,6 +3009,8 @@
                     date,
                     score,
                     category,
+                    reviewKind: 'daily',
+                    eventSubject: '',
                     tasks,
                     mood,
                     energy,
@@ -2742,6 +3024,10 @@
                     start: startValue,
                     startTodoIds: linkedTodoIds,
                     summary,
+                    graiGoal: '',
+                    graiResult: '',
+                    graiAnalysis: '',
+                    graiImprovement: '',
                     updatedAt: new Date().toISOString()
                 });
                 syncTodoReviewLinks(reviewEntries[idx].id, previousLinkedIds, linkedTodoIds);
@@ -2753,6 +3039,8 @@
                     date,
                     score,
                     category,
+                    reviewKind: 'daily',
+                    eventSubject: '',
                     tasks,
                     mood,
                     energy,
@@ -2766,6 +3054,10 @@
                     start: startValue,
                     startTodoIds: linkedTodoIds,
                     summary,
+                    graiGoal: '',
+                    graiResult: '',
+                    graiAnalysis: '',
+                    graiImprovement: '',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 }));
@@ -2991,6 +3283,14 @@
         }
 
         function reviewEntryCombinedUserPlainText(entry) {
+            if (entry?.reviewKind === 'event') {
+                const subj = normalizeInlineText(entry.eventSubject);
+                const body = ['graiGoal', 'graiResult', 'graiAnalysis', 'graiImprovement']
+                    .map((k) => normalizeInlineText(entry[k]))
+                    .filter(Boolean)
+                    .join('\n');
+                return [subj, body].filter(Boolean).join('\n');
+            }
             return ['summary', 'keep', 'improve', 'stop', 'tasks']
                 .map((k) => normalizeInlineText(entry[k]))
                 .filter(Boolean)
@@ -3020,54 +3320,69 @@
             return '状态拉满';
         }
 
-        function renderReviewList() {
-            const container = document.getElementById('reviewList');
-            if (!container) return;
+        function getEventReviewCheerText(score) {
+            const scoreNum = Number.parseFloat(score);
+            const value = Number.isFinite(scoreNum) ? Math.max(0, Math.min(10, scoreNum)) : 0;
+            if (value <= 2) return '先接纳，再拆解';
+            if (value <= 4) return '看见盲区就好';
+            if (value <= 6) return '有复盘就有收获';
+            if (value <= 8) return '沉淀得很清楚';
+            return '复盘拉满';
+        }
 
-            if (reviewEntries.length === 0) {
-                container.innerHTML = '<div class="empty-state">暂无复盘记录，点击上方选择类型开始记录</div>';
-                return;
-            }
-
-            container.innerHTML = reviewEntries.map(entry => {
-                const safeEntryId = escapeJsString(entry.id);
-                const safeEntryIdAttr = escapeHtml(String(entry.id || ''));
-                const summaryHtml = sectionHtml('总结', entry.summary);
-                const tasksPlain = normalizeInlineText(entry.tasks) || '';
-                const todayTaskText = escapeHtml(tasksPlain || '今日事项');
-                const combinedUser = reviewEntryCombinedUserPlainText(entry);
-                const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
-                    ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
-                    : '';
-                const reviewCompactInnerClass = reviewBodyFold ? `review-compact-inner ${reviewBodyFold}` : 'review-compact-inner';
-                const taskFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
-                    ? PlannerBackup.userContentFoldClass(tasksPlain)
-                    : '';
-                const todayTaskClass = taskFold ? `review-today-task-text ${taskFold}` : 'review-today-task-text';
-                const scoreToneClass = getScoreToneClass(entry.score);
-                const cheerText = escapeHtml(getScoreCheerText(entry.score));
-                const intensity = normalizeEmotionIntensity(entry.emotionIntensity || entry.energy) || '中';
-                const emotionTags = normalizeEmotionTags(
-                    entry.emotionTags,
-                    entry.mood || '平静',
-                    entry.emotionArousal || entry.arousal,
-                    entry.emotionValence || entry.valence,
-                    intensity
-                );
-                const moodHtml = emotionTags.map(tag => {
-                    const tagIntensity = normalizeEmotionIntensity(tag.intensity) || intensity;
-                    const moodPalette = buildEmotionIntensityPalette(tag.arousal, tag.valence, tagIntensity);
-                    const moodText = escapeHtml(`${getEmotionIntensityPrefix(tagIntensity)}${tag.mood}`);
-                    return `<span class="review-today-mood-text" style="color:${moodPalette.border};">${moodText}</span>`;
-                }).join('、');
-                const kissHtml = [
-                    sectionPreviewHtml('✅ 保持', entry.keep),
-                    sectionPreviewHtml('⚠️ 改进', entry.improve),
-                    sectionPreviewHtml('🚫 停止', entry.stop)
-                ].filter(Boolean).join('');
-                const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
-                const compactBodyHtml = reviewBodyFold
-                    ? `<div class="review-compact-wrap">
+        function buildReviewEntryCardHtml(entry) {
+            const safeEntryId = escapeJsString(entry.id);
+            const safeEntryIdAttr = escapeHtml(String(entry.id || ''));
+            const isEventReview = entry?.reviewKind === 'event';
+            const eventSubjectBlock = isEventReview && normalizeInlineText(entry.eventSubject)
+                ? sectionHtml('主题', entry.eventSubject)
+                : '';
+            const summaryHtml = isEventReview
+                ? eventSubjectBlock + [
+                    sectionHtml('G 回顾目标', entry.graiGoal),
+                    sectionHtml('R 评估结果', entry.graiResult),
+                    sectionHtml('A 分析原因', entry.graiAnalysis),
+                    sectionHtml('I 总结改进', entry.graiImprovement)
+                ].join('')
+                : sectionHtml('总结', entry.summary);
+            const tasksPlain = isEventReview
+                ? (normalizeInlineText(entry.eventSubject) || normalizeInlineText(entry.graiGoal) || '')
+                : (normalizeInlineText(entry.tasks) || '');
+            const contextLead = isEventReview ? '事件' : '今天';
+            const contextMid = escapeHtml(tasksPlain || (isEventReview ? '事件复盘' : '今日事项'));
+            const combinedUser = reviewEntryCombinedUserPlainText(entry);
+            const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
+                ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
+                : '';
+            const reviewCompactInnerClass = reviewBodyFold ? `review-compact-inner ${reviewBodyFold}` : 'review-compact-inner';
+            const taskFold = window.PlannerBackup && typeof PlannerBackup.userContentFoldClass === 'function'
+                ? PlannerBackup.userContentFoldClass(tasksPlain)
+                : '';
+            const todayTaskClass = taskFold ? `review-today-task-text ${taskFold}` : 'review-today-task-text';
+            const scoreToneClass = getScoreToneClass(entry.score);
+            const cheerText = escapeHtml(isEventReview ? getEventReviewCheerText(entry.score) : getScoreCheerText(entry.score));
+            const intensity = normalizeEmotionIntensity(entry.emotionIntensity || entry.energy) || '中';
+            const emotionTags = normalizeEmotionTags(
+                entry.emotionTags,
+                entry.mood || '平静',
+                entry.emotionArousal || entry.arousal,
+                entry.emotionValence || entry.valence,
+                intensity
+            );
+            const moodHtml = emotionTags.map(tag => {
+                const tagIntensity = normalizeEmotionIntensity(tag.intensity) || intensity;
+                const moodPalette = buildEmotionIntensityPalette(tag.arousal, tag.valence, tagIntensity);
+                const moodText = escapeHtml(`${getEmotionIntensityPrefix(tagIntensity)}${tag.mood}`);
+                return `<span class="review-today-mood-text" style="color:${moodPalette.border};">${moodText}</span>`;
+            }).join('、');
+            const kissHtml = isEventReview ? '' : [
+                sectionPreviewHtml('✅ 保持', entry.keep),
+                sectionPreviewHtml('⚠️ 改进', entry.improve),
+                sectionPreviewHtml('🚫 停止', entry.stop)
+            ].filter(Boolean).join('');
+            const dividerHtml = !isEventReview && kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const compactBodyHtml = reviewBodyFold
+                ? `<div class="review-compact-wrap">
                         <div class="${reviewCompactInnerClass}">
                         ${summaryHtml}
                         ${dividerHtml}
@@ -3075,13 +3390,13 @@
                         </div>
                         <button type="button" class="review-card-expand-btn" aria-expanded="false" aria-label="展开或收起复盘正文" onclick="handleReviewCardExpandClick(this, event)"><span class="review-card-expand-label">展开</span><span class="review-card-expand-icon" aria-hidden="true">▼</span></button>
                     </div>`
-                    : `<div class="${reviewCompactInnerClass}">
+                : `<div class="${reviewCompactInnerClass}">
                         ${summaryHtml}
                         ${dividerHtml}
                         ${kissHtml}
                         </div>`;
-                return `
-                <article class="review-card review-record-card" data-review-id="${safeEntryIdAttr}" onclick="openReviewModal('${safeEntryId}')">
+            return `
+                <article class="review-card review-record-card ${isEventReview ? 'review-record-card--event' : ''}" data-review-id="${safeEntryIdAttr}" onclick="openReviewModal('${safeEntryId}')">
                     <div class="review-header">
                         <div class="review-header-main">
                             <span class="review-period">${entry.date}</span>
@@ -3089,7 +3404,7 @@
                                 <span class="review-score-circle ${scoreToneClass}" title="评分 ${entry.score}/10">${entry.score}</span>
                                 <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
                             </div>
-                            <span class="review-today-note"><strong>今天</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                            <span class="review-today-note"><strong>${contextLead}</strong><span class="${todayTaskClass}">${contextMid}</span><strong>时</strong>${moodHtml}</span>
                         </div>
                         <div class="review-header-right">
                             <button type="button" class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
@@ -3100,14 +3415,37 @@
                     </div>
                 </article>
             `;
-            }).join('');
+        }
+
+        function renderFilteredReviewList(containerId, filterFn, emptyHtml) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const filtered = reviewEntries.filter(filterFn);
+            if (filtered.length === 0) {
+                container.innerHTML = emptyHtml;
+                return;
+            }
+            container.innerHTML = filtered.map(entry => buildReviewEntryCardHtml(entry)).join('');
+        }
+
+        function renderDailyAndEventReviewLists() {
+            renderFilteredReviewList(
+                'reviewListDaily',
+                e => e.reviewKind !== 'event',
+                '<div class="empty-state">暂无每日记录，点击上方「每日记录」开始</div>'
+            );
+            renderFilteredReviewList(
+                'reviewListEvent',
+                e => e.reviewKind === 'event',
+                '<div class="empty-state">暂无事件复盘，点击上方「事件复盘」开始</div>'
+            );
         }
 
         function renderWeeklyReviewList() {
             const container = document.getElementById('weeklyReviewList');
             if (!container) return;
             if (weeklyReviewEntries.length === 0) {
-                container.innerHTML = '';
+                container.innerHTML = '<div class="empty-state">暂无每周复盘，点击上方「每周复盘」开始</div>';
                 return;
             }
             container.innerHTML = weeklyReviewEntries.map(entry => {
@@ -3142,7 +3480,7 @@
             const container = document.getElementById('monthlyReviewList');
             if (!container) return;
             if (monthlyReviewEntries.length === 0) {
-                container.innerHTML = '';
+                container.innerHTML = '<div class="empty-state">暂无每月复盘，点击上方「每月复盘」开始</div>';
                 return;
             }
 
@@ -3168,7 +3506,7 @@
             renderHeatmap();
             renderWeeklyReviewList();
             renderMonthlyReviewList();
-            renderReviewList();
+            renderDailyAndEventReviewLists();
             scheduleHeatmapScale();
             tryFocusPendingReviewCard();
         }
@@ -3176,12 +3514,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
 
+            let hadFocusReviewInUrl = false;
+            try {
+                hadFocusReviewInUrl = !!new URL(window.location.href).searchParams.get('focusReviewId');
+            } catch (e) { /* ignore */ }
             pendingFocusReviewId = getPendingFocusReviewIdFromUrl();
             updateCurrentDate();
             loadEntries();
             loadWeeklyReviews();
             loadMonthlyReviews();
             renderAll();
+            if (!hadFocusReviewInUrl) {
+                try {
+                    const saved = localStorage.getItem(REVIEW_RECORDS_TAB_STORAGE_KEY);
+                    if (saved && REVIEW_RECORDS_TAB_IDS.includes(saved)) setReviewRecordsTab(saved);
+                } catch (e) { /* ignore */ }
+            }
             window.addEventListener('resize', scheduleHeatmapScale);
             document.getElementById('reviewDate').value = todayKey();
             document.getElementById('reviewCategory').value = 'none';

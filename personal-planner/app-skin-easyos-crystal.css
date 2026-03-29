@@ -1,0 +1,295 @@
+/**
+ * Crystal Flow 晶面 — easyOS 独立浅色玻璃拟态主题（与「冰雪蓝」crystal-flow 分离）
+ * 全屏底图（media/easyos-crystal-bg.png）+ 玻璃主容器；Manrope、海军蓝标题 #001A41
+ * 仅 html[data-app-skin="easyos-crystal"] 下生效，不改变 DOM 与布局
+ */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+html[data-app-skin="easyos-crystal"] {
+    --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    --ec-ink: #001a41;
+    --ec-ink-soft: #0a2744;
+    --ec-muted: #5a6a7d;
+    --ec-accent: #2563eb;
+    --ec-accent-hover: #1d4ed8;
+    --ec-glass: rgba(255, 255, 255, 0.4);
+    --ec-glass-strong: rgba(255, 255, 255, 0.55);
+    --ec-border: rgba(255, 255, 255, 0.4);
+    --ec-blur: 40px;
+    --sidebar-bg: rgba(255, 255, 255, 0.38);
+
+    --warm-gray-50: #f7f9fc;
+    --warm-gray-100: #eef2f8;
+    --warm-gray-200: #dce4f0;
+    --warm-gray-300: #b8c5d6;
+    --warm-gray-400: #7d8fa3;
+    --warm-gray-500: var(--ec-muted);
+    --warm-gray-600: #3d4f63;
+    --warm-gray-700: #2a3a4d;
+    --warm-gray-900: var(--ec-ink-soft);
+    --warm-black: var(--ec-ink);
+
+    --primary-brown: var(--ec-accent);
+    --primary-sage: #6366f1;
+    --primary-apricot: #a855f7;
+    --primary-indigo: #3b82f6;
+    --primary-teal: #0ea5e9;
+
+    --okr-color-brown: #2563eb;
+    --okr-color-apricot: #8b5cf6;
+    --okr-color-sage: #ec4899;
+    --okr-color-pink: #f472b6;
+    --okr-color-indigo: #6366f1;
+    --okr-color-teal: #06b6d4;
+    --okr-color-coral: #f43f5e;
+    --okr-color-amber: #a78bfa;
+
+    --gradient-brown: linear-gradient(90deg, #2563eb 0%, #6366f1 100%);
+    --gradient-sage: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+    --gradient-apricot: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
+    --gradient-pink: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --surface-card-shadow: none;
+}
+
+html[data-app-skin="easyos-crystal"] body {
+    font-family: var(--font-sans);
+    color: var(--ec-muted);
+    letter-spacing: 0.01em;
+    /* 底图铺满视口，宽高变化时 cover 裁切适配；底部彩带优先居中 */
+    background-color: #f4f5f8;
+    background-image: url('media/easyos-crystal-bg.png');
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+html[data-app-skin="easyos-crystal"] .sidebar {
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(var(--ec-blur));
+    -webkit-backdrop-filter: blur(var(--ec-blur));
+    border: 1px solid var(--ec-border) !important;
+    /* 四角统一圆角（含贴视口侧时也适用 home-page 侧栏左缘） */
+    border-radius: var(--radius-lg) !important;
+    box-shadow: none !important;
+}
+
+html[data-app-skin="easyos-crystal"] .global-topbar-card {
+    background: var(--ec-glass-strong) !important;
+    backdrop-filter: blur(var(--ec-blur));
+    -webkit-backdrop-filter: blur(var(--ec-blur));
+    border: 1px solid var(--ec-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: none !important;
+}
+
+html[data-app-skin="easyos-crystal"] .global-topbar-brand-main {
+    color: var(--ec-ink);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+html[data-app-skin="easyos-crystal"] .global-topbar-brand-sub {
+    color: var(--ec-muted);
+    letter-spacing: 0.06em;
+}
+
+html[data-app-skin="easyos-crystal"] .module {
+    background: var(--ec-glass);
+    border: 1px solid var(--ec-border);
+    backdrop-filter: blur(var(--ec-blur));
+    -webkit-backdrop-filter: blur(var(--ec-blur));
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+}
+
+html[data-app-skin="easyos-crystal"] .module:hover {
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+html[data-app-skin="easyos-crystal"] .module-title,
+html[data-app-skin="easyos-crystal"] h1,
+html[data-app-skin="easyos-crystal"] h2 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--ec-ink);
+}
+
+html[data-app-skin="easyos-crystal"] .space-name {
+    color: var(--ec-ink);
+    letter-spacing: -0.03em;
+}
+
+html[data-app-skin="easyos-crystal"] .nav-item {
+    letter-spacing: 0.02em;
+    color: var(--ec-muted);
+    border-radius: var(--radius-md);
+}
+
+html[data-app-skin="easyos-crystal"] .nav-item:hover {
+    background: rgba(37, 99, 235, 0.08);
+    color: var(--ec-ink);
+}
+
+html[data-app-skin="easyos-crystal"] .nav-item.active {
+    background: rgba(37, 99, 235, 0.14);
+    color: var(--ec-accent);
+    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+html[data-app-skin="easyos-crystal"] .btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
+    color: #fff !important;
+    border-radius: var(--radius-md);
+    box-shadow: none !important;
+}
+
+html[data-app-skin="easyos-crystal"] .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
+    color: #fff !important;
+}
+
+html[data-app-skin="easyos-crystal"] .btn-secondary {
+    border: 1px solid var(--ec-border);
+    color: var(--ec-ink);
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+html[data-app-skin="easyos-crystal"] .form-input,
+html[data-app-skin="easyos-crystal"] select.form-input,
+html[data-app-skin="easyos-crystal"] textarea {
+    border: 1px solid var(--ec-border);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--ec-ink-soft);
+    border-radius: var(--radius-sm);
+}
+
+html[data-app-skin="easyos-crystal"] .form-input:focus {
+    border-color: rgba(37, 99, 235, 0.45);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+html[data-app-skin="easyos-crystal"] .home-page .main-content::before {
+    background-color: transparent !important;
+    background-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent calc(100% - 28px),
+        rgba(255, 255, 255, 0.12) 100%
+    ) !important;
+    box-shadow: inset 0 -8px 14px -6px rgba(19, 32, 52, 0.07) !important;
+}
+
+html[data-app-skin="easyos-crystal"] .global-avatar-btn {
+    background: linear-gradient(145deg, #2563eb, #6366f1) !important;
+    border-radius: 999px;
+}
+
+html[data-app-skin="easyos-crystal"] .nav-icon-btn:hover,
+html[data-app-skin="easyos-crystal"] .global-topbar .global-tool-btn:hover {
+    color: var(--ec-ink);
+    background: rgba(37, 99, 235, 0.1);
+    border-radius: var(--radius-sm);
+}
+
+html[data-app-skin="easyos-crystal"] .header {
+    border-bottom-color: var(--ec-border);
+}
+
+html[data-app-skin="easyos-crystal"] .privacy-card,
+html[data-app-skin="easyos-crystal"] .profile-module {
+    background: var(--ec-glass);
+    border: 1px solid var(--ec-border);
+    backdrop-filter: blur(var(--ec-blur));
+    -webkit-backdrop-filter: blur(var(--ec-blur));
+    border-radius: var(--radius-lg);
+}
+
+html[data-app-skin="easyos-crystal"] a {
+    color: var(--ec-accent);
+}
+
+html[data-app-skin="easyos-crystal"] a:hover {
+    color: var(--ec-accent-hover);
+}
+
+html[data-app-skin="easyos-crystal"] .todo-board-card {
+    border: 1px solid var(--ec-border);
+    background: var(--ec-glass);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+}
+
+/* 今日事项 / 本月要事：与日历格线沟槽 var(--warm-gray-200)、1px 一致 */
+html[data-app-skin="easyos-crystal"] .home-todo-module .todo-board-card.today,
+html[data-app-skin="easyos-crystal"] .home-todo-module .todo-board-card.priority {
+    border: 1px solid var(--warm-gray-200);
+}
+
+html[data-app-skin="easyos-crystal"] .home-todo-module .todo-board-card.today .todo-board-card-header,
+html[data-app-skin="easyos-crystal"] .home-todo-module .todo-board-card.priority .todo-board-card-header {
+    border-bottom-color: var(--warm-gray-200);
+}
+
+/* 外层 .module 已有玻璃描边，去掉时间轴内层重复白边 */
+html[data-app-skin="easyos-crystal"] .home-timeline-module .timeline-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+html[data-app-skin="easyos-crystal"] .review-card,
+html[data-app-skin="easyos-crystal"] .weekly-review-card {
+    border: 1px solid var(--ec-border);
+    border-radius: var(--radius-lg);
+}
+
+html[data-app-skin="easyos-crystal"] .modal {
+    background: var(--ec-glass-strong);
+    border: 1px solid var(--ec-border);
+    backdrop-filter: blur(var(--ec-blur));
+    -webkit-backdrop-filter: blur(var(--ec-blur));
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+}
+
+html[data-app-skin="easyos-crystal"] .modal-overlay {
+    background: rgba(0, 26, 65, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+html[data-app-skin="easyos-crystal"] .stats-module,
+html[data-app-skin="easyos-crystal"] .finance-card {
+    border: 1px solid var(--ec-border);
+    border-radius: var(--radius-lg);
+}
+
+html[data-app-skin="easyos-crystal"] .reading-item {
+    border: 1px solid var(--ec-border);
+    border-radius: var(--radius-lg);
+}
+
+/* 外层 .module 已有玻璃描边，去掉阅读清单内层逐本白框（归档等其它页 .reading-item 仍保留上条） */
+html[data-app-skin="easyos-crystal"] .home-reading-module .reading-item {
+    border: none;
+    box-shadow: none;
+    border-radius: var(--radius-sm);
+}
+
+html[data-app-skin="easyos-crystal"] .site-card {
+    border: 1px solid var(--ec-border);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+}

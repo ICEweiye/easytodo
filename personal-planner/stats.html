@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <title>统计 - 个人规划管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
@@ -11,6 +11,7 @@
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <script src="theme.js"></script>
+    <script src="finance-assets.js"></script>
 </head>
 <body class="home-page">
     <div class="app-layout">
@@ -124,8 +125,8 @@
                     <div class="expense-entry reconcile-entry" id="reconcileEntry" hidden>
                         <div class="reconcile-entry-row">
                             <input type="text" class="form-input reconcile-display" id="reconcileStatAmount" value="账面流动资产 ¥0" readonly>
-                            <input type="text" inputmode="decimal" class="form-input" id="reconcileActualInput" step="0.01" placeholder="实际流动资产">
-                            <input type="text" class="form-input reconcile-display" id="reconcileDiffAmount" value="校对差额 ¥0" readonly>
+                            <input type="text" inputmode="decimal" class="form-input" id="reconcileActualInput" step="0.01" placeholder="实际流动资产金额">
+                            <input type="text" class="form-input reconcile-display" id="reconcileDiffAmount" value="校对差额 --" readonly>
                             <button class="btn btn-secondary" type="button" onclick="saveReconcileActual()">校对</button>
                             <button class="btn btn-secondary" type="button" onclick="clearReconcileForCurrentMonth()" aria-label="撤销当月校对">撤销</button>
                         </div>
@@ -147,19 +148,17 @@
                                 </div>
                             </div>
                             <div class="finance-balance-category-values">
-                                <div class="finance-balance-value-row balance-editable-row" data-card="assets" data-category="cash_deposit" onclick="startBalanceCategoryEdit('cash_deposit','assets')">
+                                <div class="finance-balance-value-row finance-asset-profile-nav-row" role="button" tabindex="0" title="前往设置修改流动资产" onclick="confirmNavigateToProfileAssetEdit('cash_deposit')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();confirmNavigateToProfileAssetEdit('cash_deposit');}">
                                     <span class="finance-balance-amount-wrap">
                                         <span class="finance-balance-currency">¥</span>
                                         <span class="finance-balance-value-text assets" id="cashDepositDisplay">0</span>
-                                        <input type="text" inputmode="decimal" class="form-input finance-balance-input finance-balance-category-input" id="cashDepositInput" data-card="assets" data-category="cash_deposit" step="0.01" placeholder="0">
                                     </span>
                                     <span class="finance-category-icon-badge" data-category="cash_deposit" title="流动资产">流</span>
                                 </div>
-                                <div class="finance-balance-value-row balance-editable-row" data-card="assets" data-category="physical_asset" onclick="startBalanceCategoryEdit('physical_asset','assets')">
+                                <div class="finance-balance-value-row finance-asset-profile-nav-row" role="button" tabindex="0" title="前往设置修改实物资产" onclick="confirmNavigateToProfileAssetEdit('physical_asset')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();confirmNavigateToProfileAssetEdit('physical_asset');}">
                                     <span class="finance-balance-amount-wrap">
                                         <span class="finance-balance-currency">¥</span>
                                         <span class="finance-balance-value-text assets" id="physicalAssetDisplay">0</span>
-                                        <input type="text" inputmode="decimal" class="form-input finance-balance-input finance-balance-category-input" id="physicalAssetInput" data-card="assets" data-category="physical_asset" step="0.01" placeholder="0">
                                     </span>
                                     <span class="finance-category-icon-badge" data-category="physical_asset" title="实物资产">实</span>
                                 </div>
@@ -855,11 +854,18 @@
 
             if (!getFinanceDataVisible()) {
                 diffEl.value = formatFinanceDisplayLabel('校对差额', 0);
+                diffEl.classList.remove('balance-positive', 'balance-negative');
                 return;
             }
             const raw = inputEl.value.trim();
             const parsed = parseFinancialAmount(raw, { allowNegative: true, allowBlank: true });
-            const safeActual = parsed.ok && !parsed.empty ? parsed.value : 0;
+            const hasActual = parsed.ok && !parsed.empty;
+            if (!hasActual) {
+                diffEl.value = '校对差额 --';
+                diffEl.classList.remove('balance-positive', 'balance-negative');
+                return;
+            }
+            const safeActual = parsed.value;
             const diff = safeActual - statAmount;
 
             diffEl.value = formatFinanceDisplayLabel('校对差额', diff);
@@ -899,10 +905,41 @@
             const bookLiquid = getLiquidAssets();
             statEl.value = formatFinanceDisplayLabel('账面流动资产', bookLiquid);
             if (document.activeElement !== inputEl) {
-                inputEl.value = masked ? `¥${FINANCE_DATA_MASK}` : normalizeAmountForInput(getReconcileActualAmount());
+                const storedActual = getReconcileActualAmount();
+                if (masked) {
+                    inputEl.value = `¥${FINANCE_DATA_MASK}`;
+                } else if (Math.abs(roundFinanceAmount(storedActual)) < 0.000001) {
+                    inputEl.value = '';
+                } else {
+                    inputEl.value = normalizeAmountForInput(storedActual);
+                }
             }
             updateReconcileDiff(bookLiquid);
         }
+
+        /** 流动资产变更后同步月度校对面板（账面流动资产、校对差额与图表） */
+        function syncMonthlyReconcilePanelFromLiquid(monthKey) {
+            const mk = monthKey || getCurrentMonthKey(getFinanceStatsViewDate());
+            const book = roundFinanceAmount(getLiquidAssets());
+            const records = getReconcileDisplayRecords();
+            const rec = records[mk];
+            if (rec) {
+                const actual = roundFinanceAmount(rec.actualAmount);
+                const diff = roundFinanceAmount(actual - book);
+                setReconcileDisplayRecord(mk, {
+                    statAmount: book,
+                    actualAmount: actual,
+                    diffAmount: diff
+                });
+            }
+            renderReconcileEntry();
+            renderExpenseStats();
+        }
+
+        window.addEventListener('planner-liquid-assets-updated', function (ev) {
+            const mk = ev && ev.detail && ev.detail.monthKey;
+            syncMonthlyReconcilePanelFromLiquid(mk);
+        });
 
         function clearReconcileForCurrentMonth() {
             const monthKey = getCurrentMonthKey(getFinanceStatsViewDate());
@@ -914,8 +951,9 @@
             localStorage.setItem(getReconcileDisplayStorageKey(), JSON.stringify(displayRecords));
             localStorage.setItem(getReconcileAdjustmentStorageKey(), JSON.stringify(adjustments));
             const inputEl = document.getElementById('reconcileActualInput');
-            if (inputEl) inputEl.value = '0.00';
+            if (inputEl) inputEl.value = '';
             setReconcileActualAmount(0);
+            renderReconcileEntry();
             renderExpenseStats();
         }
 
@@ -927,7 +965,7 @@
             const raw = inputEl.value.trim();
             if (raw === '') {
                 setReconcileActualAmount(0);
-                inputEl.value = '0.00';
+                inputEl.value = '';
                 updateReconcileDiff(getLiquidAssets());
                 return;
             }
@@ -954,6 +992,7 @@
                 diffAmount: diff
             });
             setReconcileAdjustment(monthKey, nextDelta);
+            renderReconcileEntry();
             renderExpenseStats();
         }
 
@@ -961,7 +1000,12 @@
             const inputEl = document.getElementById('reconcileActualInput');
             if (!inputEl) return;
 
-            inputEl.value = normalizeAmountForInput(getReconcileActualAmount());
+            const amt = getReconcileActualAmount();
+            if (Math.abs(roundFinanceAmount(amt)) < 0.000001) {
+                inputEl.value = '';
+            } else {
+                inputEl.value = normalizeAmountForInput(amt);
+            }
 
             inputEl.addEventListener('input', () => {
                 const monthKey = getCurrentMonthKey(getFinanceStatsViewDate());
@@ -992,14 +1036,16 @@
             }
         }
 
-        function getTotalAssetsBase() {
-            const categories = getTotalAssetsCategories();
-            return sumCategoryValues(categories, ASSET_CATEGORY_KEYS);
+        function getTotalAssetsCategories() {
+            return FinanceAssets.getTotalAssetsCategories();
+        }
+
+        function setTotalAssetsCategories(values) {
+            FinanceAssets.setTotalAssetsCategories(values);
         }
 
         function getLiquidAssets() {
-            const categories = getTotalAssetsCategories();
-            return roundFinanceAmount(Number(categories.cash_deposit) || 0);
+            return FinanceAssets.getLiquidAssets();
         }
 
         /**
@@ -1008,31 +1054,7 @@
          * deltaNetBalance < 0 表示净流出，流动资产减少。
          */
         function applyNetBalanceDeltaToLiquidAssets(deltaNetBalance) {
-            const d = roundFinanceAmount(Number(deltaNetBalance) || 0);
-            if (Math.abs(d) < 0.000001) return;
-            const categories = getTotalAssetsCategories();
-            categories.cash_deposit = roundFinanceAmount((Number(categories.cash_deposit) || 0) + d);
-            setTotalAssetsCategories(categories);
-        }
-
-        function getTotalAssetsCategories() {
-            const raw = safeJsonValue(localStorage.getItem(plannerStatsScopedKey('planner_total_assets_categories')), null);
-            if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-                return sanitizeCategoryValues(raw, ASSET_CATEGORY_KEYS);
-            }
-
-            const rawBase = localStorage.getItem(plannerStatsScopedKey('planner_total_assets_base'));
-            const rawLegacy = localStorage.getItem(plannerStatsScopedKey('planner_total_assets'));
-            const rawValue = rawBase !== null ? rawBase : rawLegacy;
-            const legacyBase = parseStoredNumber(rawValue);
-            return sanitizeCategoryValues({
-                cash_deposit: legacyBase,
-                physical_asset: 0
-            }, ASSET_CATEGORY_KEYS);
-        }
-
-        function setTotalAssetsCategories(values) {
-            localStorage.setItem(plannerStatsScopedKey('planner_total_assets_categories'), JSON.stringify(sanitizeCategoryValues(values, ASSET_CATEGORY_KEYS)));
+            FinanceAssets.applyNetBalanceDeltaToLiquidAssets(deltaNetBalance);
         }
 
         function getTotalLiabilitiesCategories() {
@@ -1058,7 +1080,7 @@
         }
 
         function getTotalAssets() {
-            return roundFinanceAmount(getTotalAssetsBase());
+            return FinanceAssets.getTotalAssets();
         }
 
         function syncAmountInputWidth(inputEl) {
@@ -1076,21 +1098,11 @@
         }
 
         function renderTotalAssets() {
-            const cashEl = document.getElementById('cashDepositDisplay');
-            const physicalEl = document.getElementById('physicalAssetDisplay');
-            const totalEl = document.getElementById('totalAssetsDisplay');
-            const cashInput = document.getElementById('cashDepositInput');
-            const physicalInput = document.getElementById('physicalAssetInput');
-            if (!cashEl || !physicalEl) return;
-            const masked = !getFinanceDataVisible();
-            const categories = getTotalAssetsCategories();
-            const cashVal = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.cash_deposit);
-            const physicalVal = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.physical_asset);
-            cashEl.textContent = cashVal;
-            physicalEl.textContent = physicalVal;
-            if (cashInput && document.activeElement !== cashInput) cashInput.value = masked ? '' : normalizeAmountForInput(categories.cash_deposit);
-            if (physicalInput && document.activeElement !== physicalInput) physicalInput.value = masked ? '' : normalizeAmountForInput(categories.physical_asset);
-            if (totalEl) totalEl.textContent = formatFinanceDisplay(getTotalAssets());
+            FinanceAssets.renderAssetCard({
+                cashDisplay: 'cashDepositDisplay',
+                physicalDisplay: 'physicalAssetDisplay',
+                totalDisplay: 'totalAssetsDisplay'
+            });
             renderReconcileEntry();
         }
 
@@ -1112,15 +1124,27 @@
             if (totalEl) totalEl.textContent = formatFinanceDisplay(getTotalLiabilities());
         }
 
+        function confirmNavigateToProfileAssetEdit(category) {
+            if (!getFinanceDataVisible()) return;
+            const meta = CATEGORY_ICON_META[category];
+            const label = meta && meta.label ? meta.label : '资产';
+            if (!window.confirm(`是否前往「安全与隐私」设置页修改${label}？`)) return;
+            try {
+                sessionStorage.setItem('profileFinanceFocusCategory', category);
+            } catch (err) {
+                /* ignore */
+            }
+            window.location.href = 'profile.html#privacySecuritySection';
+        }
+
         function startBalanceCategoryEdit(category, cardType) {
             if (!getFinanceDataVisible()) return;
-            const inputId = cardType === 'assets'
-                ? (category === 'cash_deposit' ? 'cashDepositInput' : 'physicalAssetInput')
-                : (category === 'short_term_liability' ? 'shortTermLiabilityInput' : 'longTermLiabilityInput');
+            if (cardType === 'assets') return;
+            const inputId = category === 'short_term_liability' ? 'shortTermLiabilityInput' : 'longTermLiabilityInput';
             const inputEl = document.getElementById(inputId);
             const row = inputEl && inputEl.closest('.balance-editable-row');
             if (!inputEl || !row) return;
-            const categories = cardType === 'assets' ? getTotalAssetsCategories() : getTotalLiabilitiesCategories();
+            const categories = getTotalLiabilitiesCategories();
             inputEl.value = normalizeAmountForInput(Number(categories[category]) || 0);
             syncAmountInputWidth(inputEl);
             row.classList.add('is-editing');
@@ -1139,38 +1163,7 @@
             const parsed = parseFinancialAmount(raw, { allowNegative: false, allowBlank: true });
             const value = parsed.ok && !parsed.empty ? roundFinanceAmount(parsed.value) : 0;
 
-            if (cardType === 'assets' && category === 'cash_deposit') {
-                const oldCategories = getTotalAssetsCategories();
-                const oldCash = roundFinanceAmount(Number(oldCategories.cash_deposit) || 0);
-                const delta = roundFinanceAmount(value - oldCash);
-                if (Math.abs(delta) >= 0.000001) {
-                    const direction = delta > 0 ? '增加' : '减少';
-                    const ok = confirm(
-                        `流动资产与当前账面差额 ${formatCurrency(Math.abs(delta))}（${direction}）。\n确认后差值将计入当月校对差额。\n\n点「取消」则保留原值 ${formatCurrency(oldCash)}。`
-                    );
-                    if (!ok) {
-                        const masked = !getFinanceDataVisible();
-                        inputEl.value = masked ? '' : normalizeAmountForInput(oldCash);
-                        row.classList.remove('is-editing');
-                        return;
-                    }
-                    oldCategories.cash_deposit = value;
-                    setTotalAssetsCategories(oldCategories);
-                    const monthKey = getCurrentMonthKey(new Date());
-                    const adjustments = getReconcileAdjustments();
-                    const currentDelta = roundFinanceAmount(adjustments[monthKey] || 0);
-                    setReconcileAdjustment(monthKey, roundFinanceAmount(currentDelta + delta));
-                    row.classList.remove('is-editing');
-                    renderExpenseStats();
-                    return;
-                }
-            }
-
-            if (cardType === 'assets') {
-                const categories = getTotalAssetsCategories();
-                categories[category] = value;
-                setTotalAssetsCategories(categories);
-            } else if (cardType === 'liabilities') {
+            if (cardType === 'liabilities') {
                 const categories = getTotalLiabilitiesCategories();
                 categories[category] = value;
                 setTotalLiabilitiesCategories(categories);
@@ -1184,7 +1177,7 @@
         }
 
         function initBalanceCategoryEditors() {
-            const inputIds = ['cashDepositInput', 'physicalAssetInput', 'shortTermLiabilityInput', 'longTermLiabilityInput'];
+            const inputIds = ['shortTermLiabilityInput', 'longTermLiabilityInput'];
             inputIds.forEach(id => {
                 const inputEl = document.getElementById(id);
                 if (!inputEl) return;
@@ -3466,8 +3459,6 @@
         #weeklyInvestmentInput,
         #weeklyInvestmentReturnInput,
         #investmentReturnInput,
-        #cashDepositInput,
-        #physicalAssetInput,
         #shortTermLiabilityInput,
         #longTermLiabilityInput,
         #reconcileActualInput,
@@ -3489,10 +3480,6 @@
         #weeklyInvestmentInput::-webkit-inner-spin-button,
         #weeklyInvestmentReturnInput::-webkit-outer-spin-button,
         #weeklyInvestmentReturnInput::-webkit-inner-spin-button,
-        #cashDepositInput::-webkit-outer-spin-button,
-        #cashDepositInput::-webkit-inner-spin-button,
-        #physicalAssetInput::-webkit-outer-spin-button,
-        #physicalAssetInput::-webkit-inner-spin-button,
         #shortTermLiabilityInput::-webkit-outer-spin-button,
         #shortTermLiabilityInput::-webkit-inner-spin-button,
         #longTermLiabilityInput::-webkit-outer-spin-button,
@@ -3628,6 +3615,11 @@
         }
 
         .finance-balance-value-text.assets {
+            color: #b8922e;
+        }
+
+        /* 总资产卡片内分项的 ¥ 与主金额统一（展示行无 balance-editable-row 时也生效） */
+        #totalAssetsCard .finance-balance-currency {
             color: #b8922e;
         }
 
@@ -3956,6 +3948,27 @@
 
         .finance-balance-input.investment-return {
             font-weight: 500;
+        }
+
+        .finance-asset-profile-nav-row {
+            cursor: pointer;
+        }
+
+        .finance-asset-profile-nav-row:focus-visible {
+            outline: 2px solid var(--primary-500, #228be6);
+            outline-offset: 2px;
+        }
+
+        #investmentReturnInput:focus::placeholder {
+            opacity: 0;
+        }
+
+        #investmentReturnInput:focus::-webkit-input-placeholder {
+            opacity: 0;
+        }
+
+        #investmentReturnInput:focus::-moz-placeholder {
+            opacity: 0;
         }
 
         .finance-summary-sub-value.up {

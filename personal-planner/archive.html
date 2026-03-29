@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <title>归档 - 个人规划管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
@@ -704,25 +704,41 @@
                 const dateTs = parseDateTs(entry.date) ?? parseDateTs(entry.createdAt);
                 const score = toFiniteNumber(entry.score, 7);
                 const category = REVIEW_CATEGORY_META[String(entry.category || '')] || '工作';
+                const isEventReview = entry.reviewKind === 'event';
                 const summaryText = String(entry.summary || '--');
                 const tasksText = String(entry.tasks || '--');
                 const keepText = String(entry.keep || '--');
                 const improveText = String(entry.improve || '--');
                 const stopText = String(entry.stop || '--');
                 const startText = String(entry.start || '--');
+                const eventSubjectText = String(entry.eventSubject || '--');
+                const graiGoalText = String(entry.graiGoal || '--');
+                const graiResultText = String(entry.graiResult || '--');
+                const graiAnalysisText = String(entry.graiAnalysis || '--');
+                const graiImprovementText = String(entry.graiImprovement || '--');
                 const preview = trimPreview(
-                    entry.summary || entry.tasks || entry.keep || entry.improve || entry.stop || entry.start,
+                    isEventReview
+                        ? [entry.eventSubject, entry.graiGoal, entry.graiResult, entry.graiAnalysis, entry.graiImprovement].map(t => String(t || '').trim()).filter(Boolean).join(' ')
+                        : (entry.summary || entry.tasks || entry.keep || entry.improve || entry.stop || entry.start),
                     44
                 ) || '复盘记录';
                 const subtitle = `${category} · 评分 ${score}/10`;
-                return createArchiveRecord(
-                    'review',
-                    preview,
-                    subtitle,
-                    dateTs,
-                    '复盘',
-                    `${entry.mood || ''} ${entry.energy || ''}`,
-                    [
+                const detailRows = isEventReview
+                    ? [
+                        { label: '类型', value: '事件复盘（GRAI）' },
+                        { label: '预览', value: preview },
+                        { label: '日期', value: formatDate(dateTs) },
+                        { label: '分类', value: category },
+                        { label: '评分', value: `${score}/10` },
+                        { label: '情绪', value: String(entry.mood || '--') },
+                        { label: '精力', value: String(entry.energy || '--') },
+                        { label: '事件主题', value: eventSubjectText },
+                        { label: 'G 回顾目标', value: graiGoalText },
+                        { label: 'R 评估结果', value: graiResultText },
+                        { label: 'A 分析原因', value: graiAnalysisText },
+                        { label: 'I 总结改进', value: graiImprovementText }
+                    ]
+                    : [
                         { label: '类型', value: '复盘' },
                         { label: '预览', value: preview },
                         { label: '日期', value: formatDate(dateTs) },
@@ -736,24 +752,49 @@
                         { label: '改进', value: improveText },
                         { label: '停止', value: stopText },
                         { label: '行动', value: startText }
-                    ],
+                    ];
+                return createArchiveRecord(
+                    'review',
+                    preview,
+                    subtitle,
+                    dateTs,
+                    '复盘',
+                    `${entry.mood || ''} ${entry.energy || ''}`,
+                    detailRows,
                     {
-                        review: {
-                            summary: summaryText,
-                            tasks: tasksText,
-                            keep: keepText,
-                            improve: improveText,
-                            stop: stopText,
-                            start: startText,
-                            category,
-                            score,
-                            mood: String(entry.mood || '--'),
-                            energy: String(entry.energy || '--'),
-                            emotionIntensity: String(entry.emotionIntensity || entry.energy || '中'),
-                            emotionTags: Array.isArray(entry.emotionTags) ? entry.emotionTags : [],
-                            emotionArousal: String(entry.emotionArousal || entry.arousal || ''),
-                            emotionValence: String(entry.emotionValence || entry.valence || '')
-                        }
+                        review: isEventReview
+                            ? {
+                                reviewKind: 'event',
+                                eventSubject: eventSubjectText,
+                                graiGoal: graiGoalText,
+                                graiResult: graiResultText,
+                                graiAnalysis: graiAnalysisText,
+                                graiImprovement: graiImprovementText,
+                                category,
+                                score,
+                                mood: String(entry.mood || '--'),
+                                energy: String(entry.energy || '--'),
+                                emotionIntensity: String(entry.emotionIntensity || entry.energy || '中'),
+                                emotionTags: Array.isArray(entry.emotionTags) ? entry.emotionTags : [],
+                                emotionArousal: String(entry.emotionArousal || entry.arousal || ''),
+                                emotionValence: String(entry.emotionValence || entry.valence || '')
+                            }
+                            : {
+                                summary: summaryText,
+                                tasks: tasksText,
+                                keep: keepText,
+                                improve: improveText,
+                                stop: stopText,
+                                start: startText,
+                                category,
+                                score,
+                                mood: String(entry.mood || '--'),
+                                energy: String(entry.energy || '--'),
+                                emotionIntensity: String(entry.emotionIntensity || entry.energy || '中'),
+                                emotionTags: Array.isArray(entry.emotionTags) ? entry.emotionTags : [],
+                                emotionArousal: String(entry.emotionArousal || entry.arousal || ''),
+                                emotionValence: String(entry.emotionValence || entry.valence || '')
+                            }
                     }
                 );
             });

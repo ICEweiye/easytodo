@@ -1,0 +1,239 @@
+/**
+ * 冰雪蓝（crystal-flow）— 冰晶 / 天蓝 / 霜白玻璃质感
+ * 冷白蓝底、冰蓝强调、描边偏青蓝；与 Serene 同范围覆盖，仅在选择时生效
+ */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+html[data-app-skin="crystal-flow"] {
+    --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    /* 冰蓝主色（偏天蓝，非青绿） */
+    --cf-primary: #2f7ec8;
+    --cf-primary-hover: #256bb3;
+    --cf-primary-soft: rgba(47, 126, 200, 0.14);
+    --cf-primary-border: rgba(47, 126, 200, 0.22);
+    --cf-primary-glow: rgba(47, 126, 200, 0.2);
+    --cf-ice-deep: #1e5a9a;
+    --cf-sidebar: rgba(248, 252, 255, 0.58);
+    --sidebar-bg: var(--cf-sidebar);
+    /* 霜白页底 */
+    --cf-page: #eef6fc;
+    --cf-ink: #153548;
+    --cf-muted: #5a7d92;
+    --cf-border: rgba(80, 140, 195, 0.22);
+    --cf-card-border: rgba(100, 160, 210, 0.18);
+    --cf-glass: rgba(255, 255, 255, 0.82);
+    --warm-gray-50: var(--cf-page);
+    --warm-gray-100: #e2eef8;
+    --warm-gray-200: #c8dff0;
+    --warm-gray-300: #9fc0dc;
+    --warm-gray-400: #6b8faf;
+    --warm-gray-500: var(--cf-muted);
+    --warm-gray-600: #416883;
+    --warm-gray-700: #2f4f66;
+    --warm-gray-900: #1a3346;
+    --warm-black: var(--cf-ink);
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    /* 大板块无外层投影（侧栏 / 模块 / 待办卡等） */
+    --surface-card-shadow: none;
+}
+
+html[data-app-skin="crystal-flow"] body {
+    font-family: var(--font-sans);
+    background-color: var(--cf-page);
+    color: var(--cf-ink);
+    letter-spacing: 0.01em;
+    background-image:
+        linear-gradient(168deg, #d8e9f6 0%, #e8f2fa 42%, #dceef7 55%, #f2f8fd 100%);
+    background-attachment: fixed;
+}
+
+html[data-app-skin="crystal-flow"] .sidebar {
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(18px) saturate(1.08);
+    -webkit-backdrop-filter: blur(18px) saturate(1.08);
+    border-right: 1px solid var(--cf-border) !important;
+}
+
+html[data-app-skin="crystal-flow"] .home-page .sidebar {
+    background: var(--sidebar-bg) !important;
+    border: 1px solid var(--cf-border) !important;
+    box-shadow: var(--surface-card-shadow) !important;
+}
+
+html[data-app-skin="crystal-flow"] .global-topbar-card {
+    background: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(18px) saturate(1.06);
+    -webkit-backdrop-filter: blur(18px) saturate(1.06);
+    border: 1px solid var(--cf-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-app-skin="crystal-flow"] .global-topbar-brand-main {
+    color: var(--cf-ink);
+    letter-spacing: 0.06em;
+    font-weight: 700;
+}
+
+html[data-app-skin="crystal-flow"] .module {
+    background: var(--cf-glass);
+    border: 1px solid var(--cf-card-border);
+    backdrop-filter: blur(10px) saturate(1.05);
+    -webkit-backdrop-filter: blur(10px) saturate(1.05);
+    box-shadow: none;
+}
+
+html[data-app-skin="crystal-flow"] .module:hover {
+    box-shadow: none;
+    border-color: var(--cf-primary-border);
+}
+
+html[data-app-skin="crystal-flow"] .module-title,
+html[data-app-skin="crystal-flow"] h1,
+html[data-app-skin="crystal-flow"] h2 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--cf-ink);
+}
+
+html[data-app-skin="crystal-flow"] .nav-item {
+    letter-spacing: 0.02em;
+}
+
+html[data-app-skin="crystal-flow"] .nav-item:hover {
+    background: var(--cf-primary-soft);
+    color: var(--cf-ink);
+}
+
+html[data-app-skin="crystal-flow"] .nav-item.active {
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--cf-primary);
+    box-shadow: inset 0 0 0 1px var(--cf-primary-border);
+}
+
+html[data-app-skin="crystal-flow"] .btn-primary {
+    background: linear-gradient(180deg, #4290d9 0%, var(--cf-primary) 100%) !important;
+    color: #fff !important;
+}
+
+html[data-app-skin="crystal-flow"] .btn-primary:hover {
+    background: linear-gradient(180deg, var(--cf-primary) 0%, var(--cf-primary-hover) 100%) !important;
+    color: #fff !important;
+}
+
+html[data-app-skin="crystal-flow"] .btn-secondary {
+    border-color: var(--cf-border);
+    color: var(--cf-ink);
+}
+
+html[data-app-skin="crystal-flow"] .form-input,
+html[data-app-skin="crystal-flow"] select.form-input,
+html[data-app-skin="crystal-flow"] textarea {
+    border-color: var(--cf-card-border);
+    background: rgba(255, 255, 255, 0.92);
+}
+
+html[data-app-skin="crystal-flow"] .form-input:focus {
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 2px var(--cf-primary-glow);
+}
+
+html[data-app-skin="crystal-flow"] .home-page .main-content::before {
+    background-color: transparent !important;
+    background-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent calc(100% - 28px),
+        rgba(230, 242, 252, 0.45) 100%
+    ) !important;
+    box-shadow: inset 0 -8px 14px -6px rgba(180, 210, 235, 0.12) !important;
+}
+
+html[data-app-skin="crystal-flow"] .global-avatar-btn {
+    background: linear-gradient(145deg, #5aa3e6, var(--cf-ice-deep)) !important;
+}
+
+html[data-app-skin="crystal-flow"] .nav-icon-btn:hover,
+html[data-app-skin="crystal-flow"] .global-topbar .global-tool-btn:hover {
+    color: var(--cf-primary);
+    background: var(--cf-primary-soft);
+}
+
+html[data-app-skin="crystal-flow"] .header {
+    border-bottom-color: var(--cf-border);
+}
+
+html[data-app-skin="crystal-flow"] .space-name {
+    letter-spacing: -0.03em;
+}
+
+html[data-app-skin="crystal-flow"] .privacy-card,
+html[data-app-skin="crystal-flow"] .profile-module {
+    border-color: var(--cf-card-border);
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: none;
+}
+
+html[data-app-skin="crystal-flow"] a {
+    color: var(--cf-primary);
+}
+
+html[data-app-skin="crystal-flow"] a:hover {
+    color: var(--cf-primary-hover);
+}
+
+html[data-app-skin="crystal-flow"] .todo-board-card {
+    border: 1px solid var(--cf-card-border);
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.88);
+}
+
+/* 今日事项 / 本月要事：与日历 .todo-calendar-panel、格线沟槽同色同 1px */
+html[data-app-skin="crystal-flow"] .home-todo-module .todo-board-card.today,
+html[data-app-skin="crystal-flow"] .home-todo-module .todo-board-card.priority {
+    border: 1px solid var(--warm-gray-200);
+}
+
+html[data-app-skin="crystal-flow"] .home-todo-module .todo-board-card.today .todo-board-card-header,
+html[data-app-skin="crystal-flow"] .home-todo-module .todo-board-card.priority .todo-board-card-header {
+    border-bottom-color: var(--warm-gray-200);
+}
+
+html[data-app-skin="crystal-flow"] .timeline-container {
+    border-color: var(--cf-card-border);
+    box-shadow: none;
+}
+
+html[data-app-skin="crystal-flow"] .review-card,
+html[data-app-skin="crystal-flow"] .weekly-review-card {
+    border-color: var(--cf-card-border);
+}
+
+html[data-app-skin="crystal-flow"] .modal {
+    background: var(--cf-glass);
+    border: 1px solid var(--cf-card-border);
+    backdrop-filter: blur(14px) saturate(1.05);
+    -webkit-backdrop-filter: blur(14px) saturate(1.05);
+    box-shadow: none;
+    border-radius: 12px;
+}
+
+html[data-app-skin="crystal-flow"] .modal-overlay {
+    background: rgba(15, 38, 62, 0.36);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+html[data-app-skin="crystal-flow"] .stats-module,
+html[data-app-skin="crystal-flow"] .finance-card,
+html[data-app-skin="crystal-flow"] .reading-item {
+    border-color: var(--cf-card-border);
+    box-shadow: none;
+}
+
+html[data-app-skin="crystal-flow"] .site-card {
+    border-color: var(--cf-card-border);
+    box-shadow: none;
+}

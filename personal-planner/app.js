@@ -80,15 +80,7 @@ const defaultData = {
     ]
 };
 
-function getPlannerEmptyDemoData() {
-    return { projects: [], okrs: [], books: [] };
-}
-
 function getPlannerInitialFallbacks() {
-    try {
-        var u = window.PlannerAuth && PlannerAuth.getCurrentUser && PlannerAuth.getCurrentUser();
-        if (u && u.isDemo) return getPlannerEmptyDemoData();
-    } catch (e) { /* ignore */ }
     return defaultData;
 }
 

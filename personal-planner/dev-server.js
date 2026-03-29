@@ -27,9 +27,9 @@ let lastBackupAt = 0;
 const ACCESS_CODE_FILE = path.join(ROOT_DIR, '.planner-access-code');
 const SESSION_COOKIE = 'planner_sid';
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
-/** 体验账号 test：仅本地试用，会话 30 分钟 */
-const EXPERIENCE_TEST_ACCOUNT = 'test';
-const EXPERIENCE_TEST_SESSION_MS = 30 * 60 * 1000;
+/** 体验账号 demo：仅本地试用，会话 30 分钟 */
+const EXPERIENCE_ACCOUNT = 'demo';
+const EXPERIENCE_SESSION_MS = 30 * 60 * 1000;
 const activeSessions = new Map();
 
 function loadOrCreateAccessCode() {
@@ -286,25 +286,21 @@ function tryUseInviteCode(code, account) {
     return true;
 }
 
-function seedDemoUser() {
+function seedExperienceAccountUser() {
     try {
-        const row = db.prepare('SELECT id FROM users WHERE account = ?').get('demo');
+        const row = db.prepare('SELECT id FROM users WHERE account = ?').get(EXPERIENCE_ACCOUNT);
         if (!row) {
             const salt = crypto.randomBytes(16).toString('hex');
             const hash = hashPassword('123456', salt);
-            db.prepare('INSERT INTO users (account, password_hash, salt) VALUES (?, ?, ?)').run('demo', hash, salt);
+            db.prepare('INSERT INTO users (account, password_hash, salt) VALUES (?, ?, ?)').run(EXPERIENCE_ACCOUNT, hash, salt);
         }
     } catch (_) {}
 }
 
-function seedExperienceTestUser() {
+/** 合并账号：移除已废弃的 test 行（体验账号现为 demo） */
+function removeObsoleteTestUser() {
     try {
-        const row = db.prepare('SELECT id FROM users WHERE account = ?').get(EXPERIENCE_TEST_ACCOUNT);
-        if (!row) {
-            const salt = crypto.randomBytes(16).toString('hex');
-            const hash = hashPassword('123456', salt);
-            db.prepare('INSERT INTO users (account, password_hash, salt) VALUES (?, ?, ?)').run(EXPERIENCE_TEST_ACCOUNT, hash, salt);
-        }
+        db.prepare('DELETE FROM users WHERE account = ?').run('test');
     } catch (_) {}
 }
 
@@ -959,8 +955,8 @@ function initStorageLayer() {
     db = openDatabase();
     initDatabaseSchema();
     seedDatabaseFromLegacyIfNeeded();
-    seedDemoUser();
-    seedExperienceTestUser();
+    removeObsoleteTestUser();
+    seedExperienceAccountUser();
 }
 
 initStorageLayer();
@@ -1012,8 +1008,8 @@ function handleAuth(req, res, pathname) {
                 sendJson(res, 401, { ok: false, error: '密码错误' });
                 return;
             }
-            const isExperienceTest = user.account.toLowerCase() === EXPERIENCE_TEST_ACCOUNT;
-            const sessionTtl = isExperienceTest ? EXPERIENCE_TEST_SESSION_MS : SESSION_MAX_AGE_MS;
+            const isExperience = user.account.toLowerCase() === EXPERIENCE_ACCOUNT;
+            const sessionTtl = isExperience ? EXPERIENCE_SESSION_MS : SESSION_MAX_AGE_MS;
             const token = createSession(sessionTtl);
             res.writeHead(200, getCorsHeaders({
                 'Content-Type': 'application/json; charset=utf-8',
@@ -1023,7 +1019,7 @@ function handleAuth(req, res, pathname) {
             res.end(JSON.stringify({
                 ok: true,
                 account: user.account,
-                ...(isExperienceTest ? { experienceTest: true, sessionTtlMs: EXPERIENCE_TEST_SESSION_MS } : {})
+                ...(isExperience ? { experienceTest: true, sessionTtlMs: EXPERIENCE_SESSION_MS } : {})
             }));
         }).catch(() => sendJson(res, 400, { ok: false, error: 'Bad request' }));
         return;
@@ -1038,8 +1034,8 @@ function handleAuth(req, res, pathname) {
                 sendJson(res, 400, { ok: false, error: '请输入账号和密码' });
                 return;
             }
-            if (account.toLowerCase() === EXPERIENCE_TEST_ACCOUNT) {
-                sendJson(res, 400, { ok: false, error: '体验账号 test 由系统预留，不可注册。' });
+            if (account.toLowerCase() === EXPERIENCE_ACCOUNT) {
+                sendJson(res, 400, { ok: false, error: '体验账号 demo 由系统预留，不可注册。' });
                 return;
             }
             const existing = db.prepare('SELECT id FROM users WHERE account = ?').get(account);
@@ -1084,8 +1080,8 @@ function handleAuth(req, res, pathname) {
                 sendJson(res, 400, { ok: false, error: '请输入密码' });
                 return;
             }
-            if (account.toLowerCase() === 'demo' || account.toLowerCase() === EXPERIENCE_TEST_ACCOUNT) {
-                sendJson(res, 400, { ok: false, error: '演示/体验账号不可注销' });
+            if (account.toLowerCase() === EXPERIENCE_ACCOUNT) {
+                sendJson(res, 400, { ok: false, error: '体验账号不可注销' });
                 return;
             }
             const user = db.prepare('SELECT * FROM users WHERE account = ?').get(account);

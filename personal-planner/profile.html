@@ -16,7 +16,7 @@
             }
         })();
     </script>
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script src="utf8-utils.js"></script>
@@ -24,6 +24,7 @@
     <script src="backup-client.js"></script>
     <script src="theme.js"></script>
     <script src="reward-pool.js"></script>
+    <script src="finance-assets.js"></script>
     <style>
         .profile-shell {
             max-width: 920px;
@@ -359,6 +360,117 @@
             color: #2f7d3e;
         }
 
+        /* 安全隐私 · 财务信息（与统计页 expense-entry 输入形式一致） */
+        #privacyFinanceAssetsWrap .privacy-finance-assets-summary {
+            margin-bottom: var(--spacing-md);
+        }
+
+        #privacyFinanceAssetsWrap .finance-summary-main {
+            min-width: 0;
+        }
+
+        #privacyFinanceAssetsWrap .finance-summary-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--warm-gray-600);
+            margin-bottom: 2px;
+        }
+
+        #privacyFinanceAssetsWrap .finance-balance-main-value {
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        #privacyFinanceAssetsWrap .finance-balance-main-value.assets {
+            color: #b8922e;
+        }
+
+        #privacyFinanceAssetsWrap .expense-entry {
+            margin-bottom: 0;
+        }
+
+        #privacyFinanceAssetsWrap .expense-entry-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .privacy-finance-expense-row .form-input {
+            width: 100%;
+            min-width: 0;
+            max-width: none;
+        }
+
+        #privacyFinanceAssetsWrap .finance-input-group {
+            position: relative;
+            display: block;
+            min-width: 0;
+        }
+
+        #privacyFinanceAssetsWrap .finance-input-group-with-icon .form-input {
+            padding-right: 44px;
+        }
+
+        #privacyFinanceAssetsWrap .finance-category-icon-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--warm-gray-200);
+            background: var(--warm-gray-100);
+            color: var(--warm-gray-700);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* 与财务统计分类色一致：流动=青绿，实物=棕金 */
+        #privacyFinanceAssetsWrap .finance-category-icon-btn[data-category="cash_deposit"] {
+            background: rgba(31, 156, 168, 0.14);
+            border-color: rgba(31, 156, 168, 0.32);
+            color: #1b7f88;
+        }
+
+        #privacyFinanceAssetsWrap .finance-category-icon-btn[data-category="physical_asset"] {
+            background: rgba(155, 122, 26, 0.16);
+            border-color: rgba(155, 122, 26, 0.35);
+            color: #7f6414;
+        }
+
+        #privacyFinanceAssetsWrap .finance-category-icon-text {
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        #privacyCashDepositInput,
+        #privacyPhysicalAssetInput {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        #privacyCashDepositInput::-webkit-outer-spin-button,
+        #privacyCashDepositInput::-webkit-inner-spin-button,
+        #privacyPhysicalAssetInput::-webkit-outer-spin-button,
+        #privacyPhysicalAssetInput::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        @media (max-width: 560px) {
+            #privacyFinanceAssetsWrap .expense-entry-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
         #profileAppearanceSection .profile-appearance-status-sink {
             display: none !important;
         }
@@ -653,6 +765,8 @@
                                 <select class="form-input profile-appearance-select" id="appearanceAppSkin" aria-label="界面主题">
                                     <option value="classic">默认（暖灰）</option>
                                     <option value="serene">Serene Canvas</option>
+                                    <option value="crystal-flow">冰雪蓝</option>
+                                    <option value="easyos-crystal">Crystal Flow（晶面）</option>
                                     <option value="midnight">Midnight Focus</option>
                                 </select>
                             </div>
@@ -729,6 +843,37 @@
                     </div>
 
                     <div class="privacy-shell">
+                        <article class="privacy-card" id="privacyFinanceAssetsBlock">
+                            <h3>财务信息</h3>
+                            <div class="privacy-finance-assets" id="privacyFinanceAssetsWrap">
+                                <div class="privacy-finance-assets-summary">
+                                    <div class="finance-summary-item finance-balance-item" id="privacyTotalAssetsCard">
+                                        <div class="finance-summary-main">
+                                            <div class="finance-summary-label">总资产</div>
+                                            <div class="finance-balance-main-value assets" id="privacyTotalAssetsDisplay">¥0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="expense-entry">
+                                    <div class="expense-entry-row privacy-finance-expense-row">
+                                        <div class="finance-input-group finance-input-group-with-icon">
+                                            <input type="text" inputmode="decimal" class="form-input" id="privacyCashDepositInput" data-card="assets" data-category="cash_deposit" min="0" step="0.01" placeholder="流动资产金额" autocomplete="off">
+                                            <button type="button" class="finance-category-icon-btn" data-category="cash_deposit" tabindex="-1" aria-hidden="true" title="流动资产">
+                                                <span class="finance-category-icon-text">流</span>
+                                            </button>
+                                        </div>
+                                        <div class="finance-input-group finance-input-group-with-icon">
+                                            <input type="text" inputmode="decimal" class="form-input" id="privacyPhysicalAssetInput" data-card="assets" data-category="physical_asset" min="0" step="0.01" placeholder="实物资产金额" autocomplete="off">
+                                            <button type="button" class="finance-category-icon-btn" data-category="physical_asset" tabindex="-1" aria-hidden="true" title="实物资产">
+                                                <span class="finance-category-icon-text">实</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="privacy-status" id="privacyFinanceAssetsStatus" aria-live="polite"></div>
+                        </article>
+
                         <article class="privacy-card">
                             <h3>数据备份</h3>
                             <p>将数据库备份到本地目录，建议在重要修改前先备份。</p>
@@ -933,6 +1078,24 @@
 
                 if (!accountEl || !nicknameEl || !phoneEl || !emailEl || !bioEl || !avatarPreviewEl || !formEl || !resetBtn || !logoutBtn) {
                     return;
+                }
+
+                if (window.FinanceAssets && document.getElementById('privacyFinanceAssetsWrap')) {
+                    var privacyFinanceIds = {
+                        totalDisplay: 'privacyTotalAssetsDisplay',
+                        cashInput: 'privacyCashDepositInput',
+                        physicalInput: 'privacyPhysicalAssetInput'
+                    };
+                    FinanceAssets.initAssetEditors(privacyFinanceIds, function () {
+                        setPrivacyStatus('privacyFinanceAssetsStatus', '资产数据已保存', 'is-success');
+                        setTimeout(function () {
+                            var el = document.getElementById('privacyFinanceAssetsStatus');
+                            if (el) {
+                                el.textContent = '';
+                                el.classList.remove('is-error', 'is-success');
+                            }
+                        }, 2800);
+                    });
                 }
 
                 var store = readProfileStore();
@@ -1461,14 +1624,38 @@
 
                 var hash = (window.location && window.location.hash) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('profilePanelHash')) || '';
                 if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('profilePanelHash');
+                var financeFocusCategory = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('profileFinanceFocusCategory');
                 if (hash === '#privacySecuritySection' || hash === '#privacy') {
                     showPanel('privacy');
                     if (window.location.hash !== hash) history.replaceState(null, '', window.location.pathname + (window.location.search || '') + hash);
-                    requestAnimationFrame(function () {
-                        scrollPanelToTop();
-                        setTimeout(scrollPanelToTop, 50);
-                        setTimeout(scrollPanelToTop, 150);
-                    });
+                    var skipPrivacyTopScroll = financeFocusCategory === 'cash_deposit' || financeFocusCategory === 'physical_asset';
+                    if (!skipPrivacyTopScroll) {
+                        requestAnimationFrame(function () {
+                            scrollPanelToTop();
+                            setTimeout(scrollPanelToTop, 50);
+                            setTimeout(scrollPanelToTop, 150);
+                        });
+                    }
+                    if (financeFocusCategory === 'cash_deposit' || financeFocusCategory === 'physical_asset') {
+                        try {
+                            sessionStorage.removeItem('profileFinanceFocusCategory');
+                        } catch (e) {}
+                        var focusInputId = financeFocusCategory === 'physical_asset' ? 'privacyPhysicalAssetInput' : 'privacyCashDepositInput';
+                        setTimeout(function () {
+                            var el = document.getElementById(focusInputId);
+                            if (el) {
+                                el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                                setTimeout(function () {
+                                    el.focus();
+                                    if (typeof el.select === 'function') el.select();
+                                }, 320);
+                            }
+                        }, 80);
+                    } else if (financeFocusCategory) {
+                        try {
+                            sessionStorage.removeItem('profileFinanceFocusCategory');
+                        } catch (e2) {}
+                    }
                 } else if (hash === '#profileAppearanceSection' || hash === '#appearance') {
                     showPanel('appearance');
                     if (window.location.hash !== hash) history.replaceState(null, '', window.location.pathname + (window.location.search || '') + hash);
@@ -1477,8 +1664,18 @@
                         setTimeout(scrollPanelToTop, 50);
                         setTimeout(scrollPanelToTop, 150);
                     });
+                    if (financeFocusCategory) {
+                        try {
+                            sessionStorage.removeItem('profileFinanceFocusCategory');
+                        } catch (e3) {}
+                    }
                 } else {
                     showPanel('userinfo');
+                    if (financeFocusCategory) {
+                        try {
+                            sessionStorage.removeItem('profileFinanceFocusCategory');
+                        } catch (e4) {}
+                    }
                 }
 
                 var appearanceStartPageEl = document.getElementById('appearanceStartPage');

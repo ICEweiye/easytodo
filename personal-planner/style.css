@@ -1,4 +1,6 @@
 @import url('app-skin.css');
+@import url('app-skin-crystal-flow.css');
+@import url('app-skin-easyos-crystal.css');
 @import url('app-skin-midnight.css');
 
 :root {
@@ -55,6 +57,8 @@
     --sidebar-collapsed-width: 60px;
     --sidebar-tool-gap: 4px;
     --layout-page-gutter: 30px;
+    /* Logo 顶栏底缘到主滚动区的间距（与 .home-page --panel-gap 一致） */
+    --topbar-content-gap: 16px;
     --sidebar-content-gap: 16px;
     --sidebar-top-offset: 96px;
     --sidebar-brand-width: 120px;
@@ -101,6 +105,22 @@ body {
     line-height: 1.6;
     min-height: 100vh;
     overflow-x: hidden;
+}
+
+/* 主应用布局：文档不滚动，仅主内容 .container 内滚动；可视区顶缘 = Logo 区底 + 16px */
+html:has(body.home-page) {
+    height: 100%;
+    overflow: hidden;
+}
+
+body.home-page {
+    height: 100%;
+    overflow: hidden;
+}
+
+body.home-page .app-layout {
+    min-height: 100%;
+    height: 100%;
 }
 
 body:has(.modal-overlay.active),
@@ -693,15 +713,13 @@ body:has(.todo-date-modal-overlay.active) {
 }
 
 /* ===== 首页仪表盘布局 ===== */
+/* 水平方向不再加 padding：主列已由 fixed main 的 left/right 与视口对齐，避免与 --layout-page-gutter 形成「双 30px」过大空白 */
 .home-page .home-dashboard {
     max-width: none;
-    padding: 16px 30px 30px 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0 0 30px 0;
     --home-gutter: 16px;
-}
-
-.home-page .main-content {
-    min-height: 100vh;
-    overflow-y: auto;
 }
 
 .home-grid {
@@ -1363,10 +1381,6 @@ body:has(.todo-date-modal-overlay.active) {
     .home-page .home-okr-module .okr-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .home-page .main-content {
-        scrollbar-gutter: stable both-edges;
-    }
 }
 /* Pad */
 @media (min-width: 768px) and (max-width: 1199px) {
@@ -1376,14 +1390,6 @@ body:has(.todo-date-modal-overlay.active) {
 
     .home-page .sidebar.collapsed {
         width: 60px;
-    }
-
-    .home-page .main-content {
-        margin-left: 146px;
-    }
-
-    .home-page .sidebar.collapsed + .main-content {
-        margin-left: 60px;
     }
 
     .home-page .sidebar-header {
@@ -1440,8 +1446,36 @@ body:has(.todo-date-modal-overlay.active) {
         --todo-switch-offset: 0px;
         margin-top: 0;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-rows: 1fr;
-        height: 165px;
+        grid-template-rows: auto;
+        height: auto;
+        min-height: 0;
+        align-items: stretch;
+    }
+
+    /* Pad：本月要事无 .today 的全局展开规则，在固定高度下易被裁切；与今日事项一致按内容撑开 */
+    .home-todo-module .todo-board-card.priority .todo-board-card-body {
+        flex: 0 0 auto;
+        min-height: auto;
+    }
+
+    .home-todo-module .todo-board-card.priority .todo-board-card-list {
+        height: auto;
+        min-height: 0;
+        overflow-y: visible;
+    }
+
+    .home-todo-module .todo-board-card.priority.is-empty .todo-board-card-body {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .home-todo-module .todo-board-card.priority.is-empty .todo-board-card-list {
+        height: 100%;
+        min-height: 100%;
+    }
+
+    .home-todo-module .todo-kanban-stack .todo-board-card.is-empty {
+        min-height: 150px;
     }
 
     .home-todo-module .todo-calendar-cell {
@@ -1465,14 +1499,6 @@ body:has(.todo-date-modal-overlay.active) {
 
     .home-page .sidebar.collapsed {
         width: 60px;
-    }
-
-    .home-page .main-content {
-        margin-left: 120px;
-    }
-
-    .home-page .sidebar.collapsed + .main-content {
-        margin-left: 60px;
     }
 
     .home-page .sidebar-header {
@@ -1983,7 +2009,11 @@ body:has(.todo-date-modal-overlay.active) {
 
 /* ===== Sidebar Card Overrides ===== */
 .home-page {
-    --panel-gap: 16px;
+    /* 侧栏右缘与主内容左缘间距（与 :root --sidebar-content-gap 一致） */
+    --sidebar-content-gap: 16px;
+    /* 主内容区右缘与顶栏 Logo 带（.global-topbar 固定层）右缘对齐 */
+    --home-topbar-inline-end: var(--layout-page-gutter);
+    --panel-gap: var(--topbar-content-gap);
     --topbar-fixed-height: 58px;
     /* 主区顶遮罩底缘柔化高度（与 ::before 的 mask 呼应） */
     --home-main-fade-soft: 56px;
@@ -1999,7 +2029,7 @@ body:has(.todo-date-modal-overlay.active) {
     position: fixed;
     top: var(--layout-page-gutter);
     left: var(--layout-page-gutter);
-    right: 30px;
+    right: var(--home-topbar-inline-end);
     padding: 0;
     z-index: 40;
 }
@@ -2013,22 +2043,54 @@ body:has(.todo-date-modal-overlay.active) {
 .home-page .main-content {
     /* 滚动遮罩：高度默认同侧栏顶公式，index 脚本改为侧栏顶视口 Y；裁切左边为主内容列左缘（脚本用 getBoundingClientRect 覆盖更准确） */
     --home-main-fade-height: calc(var(--layout-page-gutter) + var(--topbar-fixed-height) + var(--panel-gap));
-    --home-main-fade-clip-left: calc(var(--sidebar-width) + var(--layout-page-gutter) + var(--sidebar-content-gap));
-    margin-left: calc(var(--sidebar-width) + var(--layout-page-gutter) + var(--sidebar-content-gap));
-    min-height: 100vh;
-    overflow-y: auto;
-    padding-top: calc(var(--layout-page-gutter) + var(--topbar-fixed-height));
-    position: relative;
-    transition: margin-left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+    --home-main-fade-clip-left: calc(var(--layout-page-gutter) + var(--sidebar-width) + var(--sidebar-content-gap));
+    /* 固定可视区：顶 = Logo 板块底缘往下 16px，底 = 视口底；左 = 侧栏右缘 + 16px gap；右与顶栏固定层右对齐 */
+    position: fixed;
+    top: calc(var(--layout-page-gutter) + var(--topbar-fixed-height) + var(--topbar-content-gap));
+    left: calc(var(--layout-page-gutter) + var(--sidebar-width) + var(--sidebar-content-gap));
+    right: var(--home-topbar-inline-end);
+    bottom: 0;
+    margin-left: 0;
+    width: auto;
+    min-height: 0;
+    padding-top: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+    transition: left 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .home-page .main-content.with-global-topbar {
-    overflow: visible;
+    overflow: hidden;
+}
+
+.home-page .main-content.with-global-topbar > .container {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.home-page .main-content.with-global-topbar > .container::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
 }
 
 /* 侧栏收起宽度时，主内容左缘与变量公式一致（无 index 脚本时用） */
 .home-page .sidebar.collapsed ~ .main-content {
-    --home-main-fade-clip-left: calc(var(--sidebar-collapsed-width) + var(--layout-page-gutter) + var(--sidebar-content-gap));
+    --home-main-fade-clip-left: calc(var(--layout-page-gutter) + var(--sidebar-collapsed-width) + var(--sidebar-content-gap));
+    left: calc(var(--layout-page-gutter) + var(--sidebar-collapsed-width) + var(--sidebar-content-gap));
 }
 
 .home-page .main-content::before {
@@ -2045,9 +2107,9 @@ body:has(.todo-date-modal-overlay.active) {
         to bottom,
         transparent 0%,
         transparent calc(100% - 28px),
-        rgba(245, 243, 240, 0.45) 100%
+        rgba(245, 243, 240, 0.22) 100%
     );
-    box-shadow: inset 0 -22px 36px -14px rgba(245, 243, 240, 0.85);
+    box-shadow: inset 0 -8px 14px -6px rgba(245, 243, 240, 0.32);
     /* 从遮罩底边向上渐隐整块叠层：正文滚入时自下而上「溶入」背景，避免硬切一条色带 */
     -webkit-mask-image: linear-gradient(
         to bottom,
@@ -2113,7 +2175,8 @@ html.planner-sidebar-retracted .home-page .sidebar {
 
 /* 与顶栏 global-topbar 的 left 一致；不再保留「侧栏与主区间距」——侧栏已收起 */
 html.planner-sidebar-retracted .home-page .main-content {
-    margin-left: var(--layout-page-gutter) !important;
+    left: var(--layout-page-gutter) !important;
+    right: var(--home-topbar-inline-end) !important;
     --home-main-fade-clip-left: var(--layout-page-gutter);
 }
 
@@ -2133,18 +2196,18 @@ html.planner-sidebar-retracted .main-content {
 
 @media (min-width: 768px) and (max-width: 1199px) {
     .home-page {
-        --layout-page-gutter: 24px;
+        --layout-page-gutter: 30px;
         --sidebar-content-gap: 16px;
         --topbar-fixed-height: 54px;
     }
 
     .home-page .main-content {
-        margin-left: calc(var(--sidebar-width) + var(--layout-page-gutter) + var(--sidebar-content-gap));
+        left: calc(var(--layout-page-gutter) + var(--sidebar-width) + var(--sidebar-content-gap));
     }
 
     .home-page .global-topbar-card {
         min-height: 54px;
-        padding: 6px 30px 6px 14px;
+        padding: 6px var(--home-topbar-inline-end) 6px 14px;
     }
     .home-page .global-topbar-logo {
         margin-left: calc((var(--sidebar-width) - 156px) / 2 - 14px);
@@ -2157,13 +2220,13 @@ html.planner-sidebar-retracted .main-content {
 
 @media (max-width: 767px) {
     .home-page {
-        --layout-page-gutter: var(--spacing-md);
+        --layout-page-gutter: 30px;
         --sidebar-content-gap: 16px;
         --topbar-fixed-height: 50px;
     }
 
     .home-page .main-content {
-        margin-left: calc(var(--sidebar-width) + var(--layout-page-gutter) + var(--sidebar-content-gap));
+        left: calc(var(--layout-page-gutter) + var(--sidebar-width) + var(--sidebar-content-gap));
     }
 }
 .kr-item.kr-completed .kr-progress-fill {
@@ -3271,6 +3334,15 @@ select.form-input option:hover {
     background: var(--warm-gray-200);
 }
 
+/* 固定 42 格：与 .todo-calendar-panel 内圆角对齐，选中态 2px 描边也走圆弧 */
+.todo-calendar-grid > :nth-child(36) {
+    border-bottom-left-radius: calc(var(--radius-lg) - 1px);
+}
+
+.todo-calendar-grid > :nth-child(42) {
+    border-bottom-right-radius: calc(var(--radius-lg) - 1px);
+}
+
 .todo-calendar-cell {
     min-height: 64px;
     position: relative;
@@ -4244,8 +4316,29 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     margin-bottom: var(--spacing-xs);
 }
 
+.review-records-tabs.tabs {
+    margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.review-records-tabs .tab-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+.review-records-tab-content.tab-content {
+    margin-bottom: 0;
+}
+
 .review-records-section .weekly-review-list {
     margin-bottom: var(--spacing-sm);
+}
+
+.review-records-section .weekly-review-list > .empty-state,
+.review-records-section .review-list > .empty-state {
+    grid-column: 1 / -1;
 }
 
 .review-heat-panel {
@@ -5005,8 +5098,46 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     padding: 16px;
 }
 
+#reviewModal.review-modal--event .modal.review-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: min(92vh, 760px);
+}
+
+#reviewModal.review-modal--event .review-modal-body {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+}
+
 #reviewModal .modal-title {
     margin-bottom: 8px;
+}
+
+#reviewModal .review-modal-subtitle {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--warm-gray-600);
+    margin: -4px 0 12px 0;
+    padding: 0;
+}
+
+#reviewModal .review-modal-body {
+    min-height: 0;
+}
+
+#reviewModal.review-modal--event .review-modal-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+    margin-right: -4px;
+}
+
+#reviewModal.review-modal--event .modal-actions {
+    flex-shrink: 0;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--warm-gray-100);
 }
 
 #reviewModal .review-modal-section {
@@ -5027,6 +5158,131 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
 
 #reviewModal .review-modal-section:not(:first-child) .review-modal-section-title {
     margin-top: 4px;
+}
+
+#reviewModal .review-modal-section--event {
+    display: none;
+}
+
+#reviewModal.review-modal--event .review-modal-section--event {
+    display: block;
+}
+
+#reviewModal.review-modal--event .review-modal-section--daily {
+    display: none;
+}
+
+#reviewModal.review-modal--event .review-modal-hide-on-event {
+    display: none !important;
+}
+
+#reviewModal.review-modal--event .review-basic-row {
+    grid-template-columns: minmax(140px, 1fr) minmax(130px, 1fr);
+}
+
+#reviewModal:not(.review-modal--event) .review-modal-event-subject-wrap {
+    display: none;
+}
+
+.review-grai-intro {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--warm-gray-600);
+    margin: 0 0 14px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--warm-gray-50);
+    border: 1px solid var(--warm-gray-100);
+}
+
+.review-grai-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+.review-grai-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(
+        to bottom,
+        rgba(160, 128, 112, 0.35),
+        rgba(160, 128, 112, 0.08)
+    );
+    border-radius: 1px;
+}
+
+.review-grai-step {
+    position: relative;
+    padding: 0 0 18px 0;
+    padding-left: 44px;
+    margin: 0;
+}
+
+.review-grai-step:last-child {
+    padding-bottom: 0;
+}
+
+.review-grai-step-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.review-grai-step .review-grai-letter {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--primary-brown);
+    background: rgba(160, 128, 112, 0.14);
+    border: 1px solid rgba(160, 128, 112, 0.22);
+    flex-shrink: 0;
+}
+
+.review-grai-step-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 2px;
+}
+
+.review-grai-step-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--warm-gray-800);
+}
+
+.review-grai-step-hint {
+    font-size: 12px;
+    color: var(--warm-gray-500);
+    line-height: 1.4;
+}
+
+#reviewModal.review-modal--event .review-grai-step .review-textarea {
+    min-height: 76px;
+}
+
+.review-record-card--event .review-period::after {
+    content: ' · 事件';
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--warm-gray-500);
+    margin-left: 4px;
 }
 
 #reviewModal .form-group {
@@ -5756,7 +6012,8 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     margin-bottom: 4px;
 }
 
-#weeklyReviewModal .weekly-review-state-textarea {
+#weeklyReviewModal .weekly-review-state-textarea,
+#monthlyReviewModal .weekly-review-state-textarea {
     min-height: 72px;
 }
 
