@@ -1,6 +1,9 @@
 /**
- * UTF-8 乱码检测与修复工具
- * 用于防止和修复 UTF-8 被错误解析为 Latin-1/GBK 等编码导致的乱码
+ * UTF-8 乱码检测与修复工具（安全版）
+ *
+ * 设计原则：绝不删除或替换用户内容中的任何字符。
+ * 修复仅限于：整段完全匹配已知乱码映射表的短字符串（如站点分类名）。
+ * 对用户撰写的长文本（复盘、待办等），一律原样保留，杜绝数据丢失。
  */
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) {
@@ -11,7 +14,6 @@
 }(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
-    /** 已知乱码 → 正确文本的映射（UTF-8 被误读为 Latin-1 的常见结果） */
     var KNOWN_MOJIBAKE_MAP = {
         '甯哥敤宸ュ叿': '常用工具',
         '瀛︿範璧勬簮': '学习资源',
@@ -22,10 +24,6 @@
         '寮€鍙戞枃妗': 'Web 开发文档'
     };
 
-    /**
-     * 尝试修复 UTF-8 被误读为 Latin-1 的乱码
-     * 仅当字符串全部为 Latin-1 可表示字符（0-255）时尝试，否则返回 null
-     */
     function tryRepairLatin1Mojibake(str) {
         if (typeof str !== 'string' || str.length === 0) return null;
         var bytes = new Uint8Array(str.length);
@@ -42,41 +40,42 @@
     }
 
     /**
-     * 检测字符串是否可能为乱码（含替换符、问号、已知乱码模式等）
+     * 仅对完全由 Latin-1 范围字符（≤0xFF）组成的短字符串判定为乱码候选。
+     * 不再检测 \uFFFD、连续问号或单个中文字符——这些误判会导致丢字。
      */
     function looksCorrupted(str) {
-        if (typeof str !== 'string') return true;
-        if (/\uFFFD/.test(str)) return true;
-        if (/\?{2,}/.test(str)) return true;
-        if (/[甯濞鎼嗛曟搸樼彴鈥€锟]/.test(str)) return true;
-        return false;
+        if (typeof str !== 'string') return false;
+        if (str.length === 0 || str.length > 120) return false;
+        for (var i = 0; i < str.length; i += 1) {
+            if (str.charCodeAt(i) > 0xFF) return false;
+        }
+        return true;
     }
 
     /**
-     * 对字符串进行乱码修复，返回修复后的结果
-     * 优先使用已知映射，其次尝试 Latin-1 修复
+     * 非破坏性修复：仅当整段精确匹配已知乱码映射时才替换，
+     * 否则尝试 Latin-1→UTF-8 重解码，若失败则原样返回。
+     * 绝不删除 \uFFFD 或任何字符。
      */
     function repairString(str) {
         if (typeof str !== 'string') return str;
-        var s = str;
-        s = s.replace(/\uFFFD/g, '');
-        var trimmed = s.trim();
-        if (!trimmed) return s;
+
+        var trimmed = str.trim();
+        if (!trimmed) return str;
 
         var mapped = KNOWN_MOJIBAKE_MAP[trimmed];
         if (mapped) return mapped;
 
-        if (trimmed.includes('寮€鍙戞枃妗')) return trimmed.replace(/寮€鍙戞枃妗/g, 'Web 开发文档');
+        var repaired = tryRepairLatin1Mojibake(str);
+        if (repaired !== null && repaired !== str) return repaired;
 
-        var repaired = tryRepairLatin1Mojibake(s);
-        if (repaired !== null && !looksCorrupted(repaired)) return repaired;
-
-        return s;
+        return str;
     }
 
     /**
-     * 确保字符串为有效 UTF-8 文本，若检测到乱码则尝试修复
-     * 对 JSON 内的字符串递归处理
+     * 递归处理 JSON 结构中的字符串。
+     * 仅对满足 looksCorrupted 的短 Latin-1 字符串尝试修复，
+     * 用户填写的中文长文本不会被触碰。
      */
     function ensureValidUtf8(value) {
         if (typeof value === 'string') {
@@ -101,11 +100,11 @@
         return value;
     }
 
-    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|planner_monthly_reviews|life_categories|life_sites|planner_todos|planner_okrs|planner_acc_|planner_reward_pool)/;
+    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|planner_monthly_reviews|life_categories|life_sites|planner_todos|planner_okrs_archive|planner_okrs|planner_acc_|planner_reward_pool)/;
 
     /**
-     * 对存储对象中所有字符串值进行乱码修复
-     * 对结构化 JSON 键（复盘、待办等）始终递归修复，不依赖 looksCorrupted
+     * 对存储对象的字符串值做安全处理。
+     * 保留所有键（包括非字符串值），不再对结构化 JSON 键做强制解析修复。
      */
     function repairStorageData(data) {
         if (!data || typeof data !== 'object') return data;
@@ -114,15 +113,18 @@
             if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
             var val = data[key];
             if (typeof val === 'string') {
-                var shouldRepair = looksCorrupted(val) || STRUCTURED_JSON_KEYS.test(key);
-                if (shouldRepair) {
+                if (looksCorrupted(val)) {
+                    val = repairString(val);
+                } else if (STRUCTURED_JSON_KEYS.test(key)) {
                     try {
                         var parsed = JSON.parse(val);
                         val = JSON.stringify(ensureValidUtf8(parsed));
                     } catch (e) {
-                        val = repairString(val);
+                        // JSON 解析失败，原样保留
                     }
                 }
+                result[key] = val;
+            } else {
                 result[key] = val;
             }
         }

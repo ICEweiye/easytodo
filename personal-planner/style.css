@@ -1758,14 +1758,214 @@ body:has(.todo-date-modal-overlay.active) {
     gap: var(--spacing-md);
 }
 
+/* 无目标时占位文案水平、垂直居中 */
+.okr-grid.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+}
+
+.home-okr-module #okrGrid.is-empty {
+    flex: 1;
+    min-height: 220px;
+}
+
 .okr-card {
     background: white;
     border-radius: var(--radius-md);
-    padding: var(--spacing-md);
+    padding: 0;
     position: relative;
     border: 1px solid var(--warm-gray-200);
     box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
     min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    /* 供动机/可行性展开区宽度 = 卡片宽 − 色条 26px，右缘贴齐卡片 */
+    container-type: inline-size;
+    container-name: okr-card;
+}
+
+/* 左侧主题色条：动机 / 可行性 / 复盘；动机与可行性可展开查看编辑内容 */
+.okr-card-colorbar {
+    flex: 0 0 26px;
+    width: 26px;
+    min-width: 26px;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    --okr-bar: var(--okr-color-brown);
+    user-select: none;
+    position: relative;
+    z-index: 2;
+}
+
+.okr-colorbar-cell {
+    flex: 1 1 0;
+    min-height: 2.25rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.okr-colorbar-cell--review {
+    flex: 1 1 0;
+    min-height: 2.25rem;
+}
+
+button.okr-colorbar-segment--review {
+    border: none;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    appearance: none;
+    width: 100%;
+    color: rgba(255, 255, 255, 0.96);
+    font-family: var(--font-sans);
+}
+
+button.okr-colorbar-segment--review:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.95);
+    outline-offset: -2px;
+}
+
+.okr-colorbar-segment {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--okr-bar);
+    color: rgba(255, 255, 255, 0.96);
+    font-family: var(--font-sans);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    line-height: 1.15;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+button.okr-colorbar-segment--btn {
+    border: none;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    appearance: none;
+    color: #ffffff;
+    width: 100%;
+    /* 勿用 font: inherit，否则会覆盖 .okr-colorbar-segment 的竖排小字样式 */
+}
+
+.okr-colorbar-segment span {
+    display: inline-block;
+}
+
+button.okr-colorbar-segment--btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.95);
+    outline-offset: -2px;
+}
+
+.okr-colorbar-panel {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    max-width: 0;
+    overflow: hidden;
+    transition: max-width 0.24s ease;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+.okr-colorbar-cell.is-open .okr-colorbar-panel {
+    max-width: min(280px, calc(100vw - 40px));
+    max-width: calc(100cqw - 26px);
+    pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .okr-colorbar-panel {
+        transition: none;
+    }
+}
+
+.okr-colorbar-panel-inner {
+    height: 100%;
+    min-width: min(280px, calc(100vw - 40px));
+    min-width: calc(100cqw - 26px);
+    width: 100%;
+    max-width: none;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    /* 该 OKR 主题色以 10% 与白色混合（等价于 10% 不透明叠在白底上） */
+    background: color-mix(in srgb, var(--okr-card-accent, var(--okr-color-brown)) 10%, #ffffff);
+    border: 1px solid var(--warm-gray-200);
+    border-left: none;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    box-shadow: 4px 0 14px rgba(45, 41, 38, 0.1);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--warm-gray-900);
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-break: break-word;
+}
+
+/* 仅「无内容」占位时：在展开区水平垂直居中 */
+.okr-colorbar-panel-inner:has(> .okr-colorbar-empty:only-child) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.okr-colorbar-empty {
+    font-family: inherit;
+    font-style: normal;
+    color: var(--warm-gray-500);
+}
+
+.okr-card-colorbar > .okr-colorbar-cell:nth-child(1) .okr-colorbar-segment {
+    filter: brightness(1.06);
+}
+
+.okr-card-colorbar > .okr-colorbar-cell:nth-child(2) .okr-colorbar-segment {
+    filter: brightness(0.98);
+}
+
+.okr-card-colorbar > .okr-colorbar-cell:nth-child(3) .okr-colorbar-segment {
+    filter: brightness(0.92);
+    border-bottom: none;
+}
+
+.okr-review-modal-target {
+    margin: 0 0 var(--spacing-sm);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    color: var(--warm-gray-900);
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.okr-card-body {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-width: 0;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     overflow: hidden;
 }
 
@@ -2523,6 +2723,181 @@ html.planner-sidebar-retracted .main-content {
     z-index: 150;
 }
 
+/* 主页单目标复盘弹窗：低于 OKR 编辑弹窗 */
+#okrReviewModal.modal-overlay {
+    z-index: 145;
+}
+
+#okrReviewModal .okr-review-edit-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    /* 左列至少容纳 5×52px + 4×8px 自评行 + 圆环列与间距；内边距与 .modal 一致为 18px，内容区至少 560px 故 max-width ≥ 596，取 600 */
+    max-width: 600px;
+}
+
+#okrReviewModal .okr-review-edit-modal > .modal-title {
+    margin-bottom: 0;
+}
+
+#okrReviewModal .okr-review-modal-hero {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px 8px;
+}
+
+#okrReviewModal .okr-review-modal-hero-main {
+    flex: 1 1 0;
+    min-width: 292px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+#okrReviewModal .okr-review-modal-hero-main .okr-review-modal-target {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+#okrReviewModal .okr-review-modal-hero-ring {
+    container-type: size;
+    container-name: okr-review-ring;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    width: min(260px, 40vw);
+    min-width: 120px;
+}
+
+#okrReviewModal .okr-review-modal-hero-ring .okr-review-modal-ring.ring-container {
+    margin: 0;
+    margin-left: 0;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
+    max-width: 100%;
+    max-height: 100%;
+    flex-shrink: 0;
+}
+
+#okrReviewModal .okr-review-modal-hero-ring .ring-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#okrReviewModal .okr-review-modal-hero-ring .ring-text {
+    font-size: clamp(13px, 22cqmin, 34px);
+}
+
+#okrReviewModal .okr-review-edit-modal > .form-group {
+    margin-bottom: 0;
+}
+
+#okrReviewModal .okr-review-edit-modal > .modal-actions {
+    margin-top: 0;
+}
+
+#okrReviewModal .okr-review-self-score-group .form-label {
+    margin-bottom: 8px;
+}
+
+#okrReviewModal .okr-review-modal-hero-main .okr-review-self-score-group {
+    margin-bottom: 0;
+}
+
+#okrReviewModal .okr-review-score-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow: visible;
+}
+
+#okrReviewModal .okr-review-score-btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 52px;
+    padding: 8px 10px;
+    border: 1px solid var(--warm-gray-200);
+    border-radius: var(--radius-sm);
+    background: var(--warm-gray-50);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+#okrReviewModal .okr-review-score-btn .okr-review-score-emoji {
+    font-size: 22px;
+    line-height: 1;
+}
+
+#okrReviewModal .okr-review-score-btn .okr-review-score-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--warm-gray-600);
+    font-family: var(--font-sans);
+}
+
+#okrReviewModal .okr-review-score-btn:hover {
+    border-color: var(--primary-brown);
+    background: rgba(160, 128, 112, 0.06);
+}
+
+#okrReviewModal .okr-review-score-btn.is-selected {
+    border-color: var(--primary-brown);
+    background: rgba(160, 128, 112, 0.12);
+    box-shadow: 0 0 0 2px rgba(160, 128, 112, 0.12);
+}
+
+/* OKR 编辑弹窗：各主区块之间统一间距（避免标题用 --spacing-md、表单项用 12px 不一致） */
+#okrModal .modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+#okrModal .modal > .modal-title {
+    margin-bottom: 0;
+}
+
+#okrModal .modal > .form-group,
+#okrModal .modal > .form-row,
+#okrModal .modal > .okr-modal-tail-fields {
+    margin-bottom: 0;
+}
+
+#okrModal .modal > .form-row > .form-group {
+    margin-bottom: 0;
+}
+
+/* 动机 / 可行性 / 备注 / 颜色：与弹窗其它主区块同一套 gap，内层不再叠 .modal .form-group 的 margin */
+#okrModal .okr-modal-tail-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    min-width: 0;
+}
+
+#okrModal .okr-modal-tail-fields > .form-group {
+    margin-bottom: 0;
+}
+
+#okrModal .modal textarea.form-input.form-textarea {
+    display: block;
+    margin: 0;
+}
+
+#okrModal .modal > .modal-actions {
+    margin-top: 0;
+}
+
 .todo-delete-confirm-text {
     margin: 0 0 8px 0;
     font-size: 14px;
@@ -2880,6 +3255,13 @@ select.form-input {
     padding-right: 40px;
 }
 
+/* 占位「--」避免被字体连字合成一根横线 */
+.form-date-text-input::placeholder {
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "calt" 0, "dlig" 0;
+    letter-spacing: 0.08em;
+}
+
 .date-picker-trigger {
     position: absolute;
     top: 50%;
@@ -3217,6 +3599,14 @@ select.form-input option:hover {
 
     .modal .form-group {
         margin-bottom: 10px;
+    }
+
+    #okrModal .modal {
+        gap: 10px;
+    }
+
+    #okrModal .okr-modal-tail-fields {
+        gap: 10px;
     }
 
     .modal .form-textarea {
@@ -3992,7 +4382,7 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     justify-content: center;
     width: 16px;
     height: 16px;
-    margin-left: 6px;
+    margin-left: 2px;
     border-radius: 5px;
     border: 1px solid #d2c9bf;
     background: #f1ebe4;
@@ -4091,7 +4481,7 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
 }
 
 .todo-important-inline {
-    margin-left: 6px;
+    margin-left: 2px;
     vertical-align: middle;
     height: 16px;
     font-size: 11px;
@@ -4339,6 +4729,76 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
 .review-records-section .weekly-review-list > .empty-state,
 .review-records-section .review-list > .empty-state {
     grid-column: 1 / -1;
+}
+
+/* 复盘页 · 目标复盘标签（主页 OKR 侧栏「复盘」写入 planner_okr_reviews） */
+.okr-target-review-card .review-header-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+}
+
+.okr-target-review-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--warm-gray-900);
+}
+
+.okr-target-review-updated {
+    font-size: 12px;
+    color: var(--warm-gray-500);
+    font-weight: 500;
+}
+
+.okr-target-review-empty-note {
+    margin: 0;
+    font-size: 13px;
+    color: var(--warm-gray-500);
+    font-style: italic;
+}
+
+.okr-target-review-self {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--warm-gray-800);
+}
+
+.okr-target-review-self .okr-target-review-emoji {
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.okr-target-review-score-text {
+    font-weight: 600;
+    color: var(--warm-gray-700);
+}
+
+.okr-target-review-block {
+    margin-bottom: 10px;
+}
+
+.okr-target-review-block:last-child {
+    margin-bottom: 0;
+}
+
+.okr-target-review-block-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--warm-gray-500);
+    margin-bottom: 4px;
+    font-family: var(--font-sans);
+}
+
+.okr-target-review-block-body {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--warm-gray-900);
+    word-break: break-word;
 }
 
 .review-heat-panel {
@@ -4679,6 +5139,10 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--spacing-sm);
+}
+
+#reviewListEvent.review-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .review-list > * {
@@ -5196,24 +5660,24 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
 }
 
 .review-grai-timeline {
+    --review-grai-letter-w: 32px;
+    --review-grai-line-w: 2px;
     list-style: none;
     margin: 0;
     padding: 0;
     position: relative;
 }
 
+/* 竖线与字母圆水平轴对称（居中穿过圆心）；线段在圆后由字母块实底遮挡，不会从圆内透出 */
 .review-grai-timeline::before {
     content: '';
     position: absolute;
-    left: 15px;
+    left: calc(var(--review-grai-letter-w) / 2 - var(--review-grai-line-w) / 2);
     top: 8px;
     bottom: 8px;
-    width: 2px;
-    background: linear-gradient(
-        to bottom,
-        rgba(160, 128, 112, 0.35),
-        rgba(160, 128, 112, 0.08)
-    );
+    width: var(--review-grai-line-w);
+    z-index: 0;
+    background: rgba(160, 128, 112, 0.22);
     border-radius: 1px;
 }
 
@@ -5239,16 +5703,18 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     position: absolute;
     left: 0;
     top: 0;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: var(--review-grai-letter-w, 32px);
+    height: var(--review-grai-letter-w, 32px);
     border-radius: 10px;
     font-size: 14px;
     font-weight: 800;
     color: var(--primary-brown);
-    background: rgba(160, 128, 112, 0.14);
+    /* 实色底遮挡时间轴竖线，无渐变 */
+    background: #f2edea;
     border: 1px solid rgba(160, 128, 112, 0.22);
     flex-shrink: 0;
 }
@@ -5277,12 +5743,270 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     min-height: 76px;
 }
 
-.review-record-card--event .review-period::after {
-    content: ' · 事件';
-    font-weight: 600;
-    font-size: 12px;
+.review-grai-step--kiss .review-event-kiss-fields {
+    width: 100%;
+}
+
+.review-grai-step--kiss .review-event-kiss-fields .review-kiss-row:last-child {
+    margin-bottom: 0;
+}
+
+.review-grai-step--analysis-quad .review-grai-analysis-grid .review-kiss-row:last-child {
+    margin-bottom: 0;
+}
+
+.review-record-card--event {
+    min-height: 0;
+}
+
+.review-record-card--event .review-header {
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+}
+
+.review-record-card--event .review-event-card__body {
+    margin-top: 4px;
+}
+
+.review-event-card__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.review-event-card__hero {
+    margin: 0 0 2px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f8f5f3;
+    border: 1px solid rgba(160, 128, 112, 0.18);
+}
+
+.review-event-card__subject {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--warm-gray-900);
+}
+
+.review-event-card__prose {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--warm-gray-800);
+}
+
+.review-event-card__prose p {
+    margin: 0;
+}
+
+.review-event-card__empty {
+    margin: 8px 0 0;
+    font-size: 13px;
     color: var(--warm-gray-500);
-    margin-left: 4px;
+}
+
+.review-event-card__block {
+    border-radius: 12px;
+    border: 1px solid rgba(212, 206, 199, 0.35);
+    background: rgba(255, 255, 255, 0.72);
+    overflow: hidden;
+}
+
+.review-event-card__block-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(251, 249, 247, 0.95);
+    border-bottom: 1px solid rgba(212, 206, 199, 0.28);
+}
+
+.review-event-card__letter {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--primary-brown);
+    background: #f1ece8;
+    border: 1px solid rgba(160, 128, 112, 0.22);
+}
+
+.review-event-card__block-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--warm-gray-800);
+    line-height: 1.3;
+}
+
+.review-event-card__block-body {
+    padding: 10px 12px 12px;
+}
+
+.review-event-card__field-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.review-event-card__result-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.review-event-card__result-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
+.review-event-card__result-eval {
+    min-width: 0;
+}
+
+.review-event-card__result-cell {
+    padding: 8px 10px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 206, 199, 0.38);
+    background: rgba(255, 255, 255, 0.72);
+    min-width: 0;
+}
+
+.review-event-card__result-cell--full {
+    grid-column: 1 / -1;
+}
+
+.review-event-card__analysis-quad {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
+.review-event-card__analysis-cell {
+    padding: 8px 10px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 206, 199, 0.38);
+    background: rgba(255, 255, 255, 0.72);
+    min-width: 0;
+}
+
+.review-event-card__analysis-cell--good {
+    border-color: rgba(76, 156, 93, 0.32);
+    background: rgba(76, 156, 93, 0.07);
+}
+
+.review-event-card__analysis-cell--bad {
+    border-color: rgba(184, 71, 71, 0.28);
+    background: rgba(212, 104, 104, 0.07);
+}
+
+.review-event-card__field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--warm-gray-600);
+    text-transform: none;
+    margin-bottom: 4px;
+}
+
+.review-event-card__field-value {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--warm-gray-800);
+}
+
+.review-event-card__field-value p {
+    margin: 0;
+}
+
+.review-event-card__field-value p + p {
+    margin-top: 0.35em;
+}
+
+.review-event-card__kiss-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.review-event-card__kiss-cell {
+    border-radius: 10px;
+    padding: 8px 10px 10px;
+    border: 1px solid rgba(212, 206, 199, 0.4);
+    background: var(--warm-gray-50);
+    min-width: 0;
+}
+
+.review-event-card__kiss-cell--full {
+    grid-column: 1 / -1;
+}
+
+.review-event-card__kiss-cell--keep { border-color: rgba(76, 156, 93, 0.35); background: rgba(76, 156, 93, 0.06); }
+.review-event-card__kiss-cell--improve { border-color: rgba(204, 140, 60, 0.4); background: rgba(236, 161, 78, 0.09); }
+.review-event-card__kiss-cell--stop { border-color: rgba(184, 71, 71, 0.35); background: rgba(212, 104, 104, 0.07); }
+.review-event-card__kiss-cell--start { border-color: rgba(46, 95, 141, 0.35); background: rgba(120, 158, 200, 0.1); }
+.review-event-card__kiss-cell--legacy { border-style: dashed; background: rgba(160, 128, 112, 0.06); }
+
+.review-event-card__kiss-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.review-event-card__kiss-badge {
+    font-size: 10px;
+    font-weight: 800;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(212, 206, 199, 0.45);
+    color: var(--warm-gray-700);
+}
+
+.review-event-card__kiss-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--warm-gray-800);
+}
+
+.review-event-card__kiss-hint {
+    font-size: 11px;
+    color: var(--warm-gray-500);
+    margin-left: auto;
+}
+
+.review-event-card__kiss-body {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--warm-gray-800);
+}
+
+@media (max-width: 520px) {
+    .review-event-card__kiss-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .review-event-card__analysis-quad {
+        grid-template-columns: 1fr;
+    }
+
+    .review-event-card__result-pair {
+        grid-template-columns: 1fr;
+    }
 }
 
 #reviewModal .form-group {
@@ -5435,6 +6159,26 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
 
 #reviewModal .review-kiss-row {
     gap: 8px;
+}
+
+#reviewModal .review-grai-analysis-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+#reviewModal .review-grai-result-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+#reviewModal .review-grai-result-eval-row {
+    grid-template-columns: 1fr;
+}
+
+.review-grai-step--result-split .review-grai-result-grid .review-kiss-row:last-child {
+    margin-bottom: 0;
 }
 
 #reviewModal #reviewStop {
@@ -5611,8 +6355,9 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     white-space: nowrap;
 }
 
-/* ===== 周复盘弹窗 ===== */
-#weeklyReviewModal .modal.weekly-review-modal {
+/* ===== 周 / 月复盘弹窗（共用 weekly-review-* 类名） ===== */
+#weeklyReviewModal .modal.weekly-review-modal,
+#monthlyReviewModal .modal.weekly-review-modal {
     max-width: 720px;
     overflow: visible;
 }
@@ -5629,21 +6374,25 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     margin-bottom: 0;
 }
 
-#weeklyReviewModal .weekly-review-meta-row {
+#weeklyReviewModal .weekly-review-meta-row,
+#monthlyReviewModal .weekly-review-meta-row {
     margin-bottom: 0;
 }
 
-#weeklyReviewModal .weekly-review-textarea {
+#weeklyReviewModal .weekly-review-textarea,
+#monthlyReviewModal .weekly-review-textarea {
     min-height: 72px;
 }
 
-#weeklyReviewModal .weekly-review-score-inline {
+#weeklyReviewModal .weekly-review-score-inline,
+#monthlyReviewModal .weekly-review-score-inline {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-#weeklyReviewModal .weekly-review-state-hint {
+#weeklyReviewModal .weekly-review-state-hint,
+#monthlyReviewModal .weekly-review-state-hint {
     font-size: 12px;
     color: var(--warm-gray-500);
 }
@@ -5870,7 +6619,8 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     box-sizing: border-box;
 }
 
-#weeklyReviewModal .weekly-review-input-wrap .weekly-review-textarea.empty {
+#weeklyReviewModal .weekly-review-input-wrap .weekly-review-textarea.empty,
+#monthlyReviewModal .weekly-review-input-wrap .weekly-review-textarea.empty {
     min-height: 38px;
 }
 
@@ -6017,7 +6767,8 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     min-height: 72px;
 }
 
-#weeklyReviewModal .weekly-review-score-display {
+#weeklyReviewModal .weekly-review-score-display,
+#monthlyReviewModal .weekly-review-score-display {
     display: inline-block;
     min-width: 56px;
     padding: 6px 12px;
@@ -6156,6 +6907,12 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     margin-bottom: var(--spacing-md);
 }
 
+/* 复盘记录 · 每周复盘：卡片略宽，便于展示多段摘要 */
+#weeklyReviewList.weekly-review-list {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
 .weekly-review-card {
     border: 1px solid rgba(212, 206, 199, 0.25);
     border-radius: var(--radius-sm);
@@ -6214,6 +6971,269 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* 复盘记录 · 每周复盘卡片（结构化摘要） */
+.weekly-review-record-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border-color: rgba(160, 128, 112, 0.18);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 1) 0%, rgba(250, 248, 246, 0.98) 100%);
+}
+
+.weekly-review-record-card:hover {
+    border-color: rgba(160, 128, 112, 0.28);
+    box-shadow: 0 4px 14px rgba(45, 41, 38, 0.07);
+}
+
+.weekly-review-record-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(212, 206, 199, 0.35);
+}
+
+.weekly-review-record-card__week {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--warm-gray-900);
+    line-height: 1.35;
+    min-width: 0;
+}
+
+.weekly-review-record-card__head-aside {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.weekly-review-record-card__pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.weekly-review-record-card__pill--adjust {
+    color: #8a4a12;
+    background: rgba(236, 161, 78, 0.22);
+    border: 1px solid rgba(212, 132, 45, 0.35);
+}
+
+.weekly-review-record-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+.weekly-review-record-card__section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.weekly-review-record-card__section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.04em;
+    color: var(--warm-gray-500);
+}
+
+.weekly-review-record-card__para {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--warm-gray-700);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.weekly-review-record-card__event-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.weekly-review-record-card__event-item {
+    position: relative;
+    padding-left: 12px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--warm-gray-700);
+}
+
+.weekly-review-record-card__event-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(160, 128, 112, 0.55);
+}
+
+.weekly-review-record-card__event-more {
+    font-size: 12px;
+    color: var(--warm-gray-500);
+    font-style: italic;
+    padding-left: 12px;
+}
+
+.weekly-review-record-card__section--state .weekly-review-record-card__state-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.weekly-review-record-card__state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--warm-gray-700);
+    border: 1px solid transparent;
+}
+
+.weekly-review-record-card__state--good {
+    background: rgba(122, 154, 125, 0.1);
+    border-color: rgba(122, 154, 125, 0.22);
+}
+
+.weekly-review-record-card__state--low {
+    background: rgba(212, 104, 104, 0.08);
+    border-color: rgba(212, 104, 104, 0.2);
+}
+
+.weekly-review-record-card__state-key {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 4px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.weekly-review-record-card__state--good .weekly-review-record-card__state-key {
+    color: #2f6a3a;
+    background: rgba(122, 154, 125, 0.22);
+}
+
+.weekly-review-record-card__state--low .weekly-review-record-card__state-key {
+    color: #8a2f2f;
+    background: rgba(212, 104, 104, 0.18);
+}
+
+.weekly-review-record-card__state-text {
+    min-width: 0;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 卡片中分类标签行 */
+.weekly-review-record-card__cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.weekly-review-record-card__cat-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+}
+
+.weekly-review-record-card__cat-pill {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    border-radius: 999px;
+    white-space: nowrap;
+    margin-top: 1px;
+}
+
+.weekly-review-record-card__cat-pill.category-life {
+    background: rgba(242, 216, 95, 0.25);
+    color: #8a6a00;
+    border: 1px solid rgba(222, 190, 56, 0.4);
+}
+
+.weekly-review-record-card__cat-pill.category-work {
+    background: rgba(122, 154, 125, 0.2);
+    color: #2f6a3a;
+    border: 1px solid rgba(107, 140, 110, 0.4);
+}
+
+.weekly-review-record-card__cat-pill.category-study {
+    background: rgba(140, 180, 220, 0.2);
+    color: #2e5f8d;
+    border: 1px solid rgba(120, 158, 200, 0.4);
+}
+
+.weekly-review-record-card__cat-pill.category-important {
+    background: rgba(212, 104, 104, 0.18);
+    color: #8a2f2f;
+    border: 1px solid rgba(184, 71, 71, 0.4);
+}
+
+.weekly-review-record-card__cat-pill.category-goal {
+    background: rgba(236, 161, 78, 0.18);
+    color: #a65a00;
+    border: 1px solid rgba(212, 132, 45, 0.42);
+}
+
+.weekly-review-record-card__cat-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--warm-gray-700);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.weekly-review-record-card__empty {
+    font-size: 13px;
+    color: var(--warm-gray-500);
+    line-height: 1.5;
+    padding: 0 2px;
+    font-style: italic;
 }
 
 #reviewTodoModal .modal {
@@ -6290,6 +7310,10 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
 @media (max-width: 768px) {
     .review-list {
         grid-template-columns: 1fr;
+    }
+
+    #reviewListEvent.review-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .kiss-grid,

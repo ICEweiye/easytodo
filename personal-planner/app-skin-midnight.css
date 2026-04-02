@@ -34,19 +34,7 @@ html[data-app-skin="midnight"] {
     --primary-indigo: var(--midnight-accent);
     --primary-teal: var(--midnight-accent);
 
-    --okr-color-brown: #82e9de;
-    --okr-color-apricot: #6dd4c8;
-    --okr-color-sage: #5ec4b8;
-    --okr-color-pink: #9ae8df;
-    --okr-color-indigo: #82e9de;
-    --okr-color-teal: #6dd4c8;
-    --okr-color-coral: #82e9de;
-    --okr-color-amber: #6dd4c8;
-
-    --gradient-brown: linear-gradient(90deg, #5ec4b8 0%, var(--midnight-accent) 100%);
-    --gradient-sage: linear-gradient(90deg, #5ec4b8 0%, var(--midnight-accent) 100%);
-    --gradient-apricot: linear-gradient(90deg, #5ec4b8 0%, var(--midnight-accent) 100%);
-    --gradient-pink: linear-gradient(90deg, #5ec4b8 0%, var(--midnight-accent) 100%);
+    /* OKR 色板与 :root 一致，不在此覆盖为单色，否则编辑目标弹窗色块 / 卡片色条与真实存储色不一致 */
 
     --radius-sm: 12px;
     --radius-md: 12px;
@@ -590,6 +578,63 @@ html[data-app-skin="midnight"] .review-header {
     border-bottom-color: var(--midnight-border) !important;
 }
 
+html[data-app-skin="midnight"] .review-event-card__hero {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__letter {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(130, 233, 222, 0.22) !important;
+    color: var(--midnight-accent) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__subject {
+    color: var(--midnight-ink) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__block {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__block-head {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-bottom-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__field-label,
+html[data-app-skin="midnight"] .review-event-card__kiss-hint {
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__field-value,
+html[data-app-skin="midnight"] .review-event-card__kiss-body,
+html[data-app-skin="midnight"] .review-event-card__prose {
+    color: var(--midnight-ink) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__kiss-cell {
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__analysis-cell,
+html[data-app-skin="midnight"] .review-event-card__result-cell {
+    background: rgba(0, 0, 0, 0.18) !important;
+    border-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__analysis-cell--good {
+    background: rgba(76, 156, 93, 0.12) !important;
+    border-color: rgba(130, 233, 222, 0.22) !important;
+}
+
+html[data-app-skin="midnight"] .review-event-card__analysis-cell--bad {
+    background: rgba(212, 104, 104, 0.1) !important;
+    border-color: rgba(255, 150, 130, 0.22) !important;
+}
+
 /* 复盘卡片内「激励」短句（随评分色阶）：提高明度，避免在深色底上发灰发闷 */
 html[data-app-skin="midnight"] .review-cheer-badge.score-tone-deep-red {
     background: rgba(255, 120, 120, 0.18) !important;
@@ -624,6 +669,100 @@ html[data-app-skin="midnight"] .weekly-review-card:hover {
 
 html[data-app-skin="midnight"] .weekly-review-card-week {
     color: var(--midnight-ink) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card {
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.04) 0%, var(--midnight-surface) 100%) !important;
+    border-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__head {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__week {
+    color: var(--midnight-ink) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__section-label {
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__para,
+html[data-app-skin="midnight"] .weekly-review-record-card__event-item {
+    color: rgba(255, 255, 255, 0.82) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__event-more {
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__event-item::before {
+    background: rgba(130, 233, 222, 0.55) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__pill--adjust {
+    color: #ffd89a !important;
+    background: rgba(255, 180, 100, 0.12) !important;
+    border-color: rgba(255, 200, 140, 0.25) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__state--good {
+    background: rgba(130, 233, 222, 0.08) !important;
+    border-color: rgba(130, 233, 222, 0.22) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__state--low {
+    background: rgba(255, 120, 120, 0.08) !important;
+    border-color: rgba(255, 140, 140, 0.2) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__state--good .weekly-review-record-card__state-key {
+    color: var(--midnight-accent) !important;
+    background: rgba(130, 233, 222, 0.16) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__state--low .weekly-review-record-card__state-key {
+    color: #ffb0b0 !important;
+    background: rgba(255, 120, 120, 0.15) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__cat-text {
+    color: rgba(255, 255, 255, 0.82) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__cat-pill.category-life {
+    background: rgba(242, 216, 95, 0.12) !important;
+    color: #f0d860 !important;
+    border-color: rgba(222, 190, 56, 0.28) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__cat-pill.category-work {
+    background: rgba(130, 233, 222, 0.1) !important;
+    color: var(--midnight-accent) !important;
+    border-color: rgba(130, 233, 222, 0.25) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__cat-pill.category-study {
+    background: rgba(140, 180, 220, 0.12) !important;
+    color: #a0c8f0 !important;
+    border-color: rgba(140, 180, 220, 0.3) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__cat-pill.category-important {
+    background: rgba(255, 120, 120, 0.1) !important;
+    color: #ffb0b0 !important;
+    border-color: rgba(255, 140, 140, 0.25) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__cat-pill.category-goal {
+    background: rgba(255, 180, 100, 0.1) !important;
+    color: #ffd89a !important;
+    border-color: rgba(255, 200, 140, 0.28) !important;
+}
+
+html[data-app-skin="midnight"] .weekly-review-record-card__empty {
+    color: var(--midnight-muted) !important;
 }
 
 /* 周复盘弹窗内编辑行 / 添加行 */
@@ -740,6 +879,25 @@ html[data-app-skin="midnight"] .archive-item {
     border-color: var(--midnight-border) !important;
 }
 
+html[data-app-skin="midnight"] .okr-archive-badge {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] .okr-archive-detail-block {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .okr-archive-detail-block-label {
+    color: var(--midnight-muted) !important;
+}
+
+html[data-app-skin="midnight"] .okr-archive-detail-block-body {
+    color: var(--midnight-ink) !important;
+}
+
 html[data-app-skin="midnight"] .archive-item-clickable:hover {
     background: rgba(255, 255, 255, 0.06) !important;
     border-color: rgba(255, 255, 255, 0.16) !important;
@@ -772,6 +930,11 @@ html[data-app-skin="midnight"] .archive-finance-header,
 html[data-app-skin="midnight"] .archive-detail-header {
     background: var(--midnight-surface) !important;
     border-bottom-color: var(--midnight-border) !important;
+}
+
+html[data-app-skin="midnight"] .archive-detail-footer {
+    background: var(--midnight-surface) !important;
+    border-top-color: var(--midnight-border) !important;
 }
 
 html[data-app-skin="midnight"] .archive-finance-close,
@@ -979,15 +1142,11 @@ html[data-app-skin="midnight"] #reviewModal .review-grai-intro {
 }
 
 html[data-app-skin="midnight"] #reviewModal .review-grai-timeline::before {
-    background: linear-gradient(
-        to bottom,
-        rgba(130, 233, 222, 0.35),
-        rgba(130, 233, 222, 0.06)
-    ) !important;
+    background: rgba(130, 233, 222, 0.22) !important;
 }
 
 html[data-app-skin="midnight"] #reviewModal .review-grai-step .review-grai-letter {
-    background: rgba(130, 233, 222, 0.12) !important;
+    background: #1c2423 !important;
     border-color: rgba(130, 233, 222, 0.28) !important;
     color: var(--midnight-accent) !important;
 }

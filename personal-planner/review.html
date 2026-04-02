@@ -11,6 +11,7 @@
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <script src="theme.js"></script>
+    <script src="input-helpers.js"></script>
     <script src="reward-pool.js"></script>
     <script src="app.js"></script>
 </head>
@@ -100,6 +101,7 @@
                         <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabWeekly" data-review-tab="weekly" onclick="setReviewRecordsTab('weekly')">每周复盘</button>
                         <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabMonthly" data-review-tab="monthly" onclick="setReviewRecordsTab('monthly')">每月复盘</button>
                         <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabEvent" data-review-tab="event" onclick="setReviewRecordsTab('event')">事件复盘</button>
+                        <button type="button" class="tab-btn" role="tab" aria-selected="false" id="reviewTabOkr" data-review-tab="okr" onclick="setReviewRecordsTab('okr')">目标复盘</button>
                     </div>
                     <div class="tab-content review-records-tab-content">
                         <div class="tab-panel active" role="tabpanel" id="reviewRecordsPanelDaily" data-review-tab-panel="daily" aria-labelledby="reviewTabDaily">
@@ -113,6 +115,9 @@
                         </div>
                         <div class="tab-panel" role="tabpanel" id="reviewRecordsPanelEvent" data-review-tab-panel="event" aria-labelledby="reviewTabEvent">
                             <div class="review-list" id="reviewListEvent"></div>
+                        </div>
+                        <div class="tab-panel" role="tabpanel" id="reviewRecordsPanelOkr" data-review-tab-panel="okr" aria-labelledby="reviewTabOkr">
+                            <div class="review-list" id="okrTargetReviewList"></div>
                         </div>
                     </div>
                 </section>
@@ -177,7 +182,7 @@
             </section>
             <section class="review-modal-section review-modal-section--event">
                 <h4 class="review-modal-section-title">GRAI 四步复盘</h4>
-                <p class="review-grai-intro">建议按顺序填写：先对齐<strong>当初目标</strong>，再对照<strong>实际结果</strong>，接着拆解<strong>原因</strong>，最后沉淀<strong>可复用改进</strong>。</p>
+                <p class="review-grai-intro">建议按顺序填写：先对齐<strong>当初目标</strong>，再写清<strong>预期、实际与评估</strong>，接着拆解<strong>原因</strong>，最后沉淀<strong>可复用改进</strong>。</p>
                 <ol class="review-grai-timeline" aria-label="GRAI 复盘步骤">
                     <li class="review-grai-step">
                         <div class="review-grai-step-head">
@@ -187,29 +192,67 @@
                                 <span class="review-grai-step-hint">当时想达成什么？成功标准是什么？</span>
                             </div>
                         </div>
-                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiGoal" rows="3" placeholder="写下初衷、预期结果或衡量标准，不必长，写清「想要什么」即可。"></textarea>
+                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiGoal" rows="3" placeholder="写下初衷、目的或衡量标准，不必长，写清「想要什么」即可。"></textarea>
                     </li>
-                    <li class="review-grai-step">
+                    <li class="review-grai-step review-grai-step--result-split">
                         <div class="review-grai-step-head">
                             <span class="review-grai-letter" aria-hidden="true">R</span>
                             <div class="review-grai-step-text">
                                 <span class="review-grai-step-title">评估结果（Result）</span>
-                                <span class="review-grai-step-hint">客观事实与关键差异</span>
+                                <span class="review-grai-step-hint">对照预期与实际，再给出评估</span>
                             </div>
                         </div>
-                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiResult" rows="3" placeholder="实际发生了什么？与目标相比，哪些符合、哪些偏离？尽量写事实，少评判。"></textarea>
+                        <div class="review-grai-result-grid">
+                            <div class="form-row review-kiss-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiRExpected">预期结果</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiRExpected" rows="3" placeholder="当时期望达成的结果或可验证标准"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiRActual">实际结果</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiRActual" rows="3" placeholder="客观事实：实际发生了什么"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-row review-kiss-row review-grai-result-eval-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiREval">结果评估</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiREval" rows="3" placeholder="与预期的差异、完成度与简要结论（可含符合/偏离程度）"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </li>
-                    <li class="review-grai-step">
+                    <li class="review-grai-step review-grai-step--analysis-quad">
                         <div class="review-grai-step-head">
                             <span class="review-grai-letter" aria-hidden="true">A</span>
                             <div class="review-grai-step-text">
                                 <span class="review-grai-step-title">分析原因（Analysis）</span>
-                                <span class="review-grai-step-hint">解释「为什么」会这样</span>
+                                <span class="review-grai-step-hint">从好 / 坏两面，分别梳理主观与客观因素</span>
                             </div>
                         </div>
-                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiAnalysis" rows="3" placeholder="成败的关键原因是什么？有哪些约束、假设或外部因素？主观与客观都可以写。"></textarea>
+                        <div class="review-grai-analysis-grid">
+                            <div class="form-row review-kiss-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiAGoodSubj">好 · 主观</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiAGoodSubj" rows="3" placeholder="如态度、判断、意愿、能力认知等内在因素"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiAGoodObj">好 · 客观</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiAGoodObj" rows="3" placeholder="如资源、时机、环境支持等有利条件"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-row review-kiss-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiABadSubj">坏 · 主观</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiABadSubj" rows="3" placeholder="如疏忽、策略偏差、准备不足等"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewGraiABadObj">坏 · 客观</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewGraiABadObj" rows="3" placeholder="如约束、外部变化、不可控因素等"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </li>
-                    <li class="review-grai-step">
+                    <li class="review-grai-step review-grai-step--kiss">
                         <div class="review-grai-step-head">
                             <span class="review-grai-letter" aria-hidden="true">I</span>
                             <div class="review-grai-step-text">
@@ -217,7 +260,28 @@
                                 <span class="review-grai-step-hint">下次怎么做更好</span>
                             </div>
                         </div>
-                        <textarea class="form-input form-textarea review-textarea" id="reviewGraiImprovement" rows="3" placeholder="提炼可执行的一条或几条：原则、检查项、具体行动；尽量可检验、可复用。"></textarea>
+                        <div class="review-event-kiss-fields">
+                            <div class="form-row review-kiss-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewEventKissKeep">Keep（需要保持）</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewEventKissKeep" rows="3" placeholder="继续保持的做法、状态或习惯"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewEventKissImprove">Improve（需要改进）</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewEventKissImprove" rows="3" placeholder="存在问题与优化方向"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-row review-kiss-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewEventKissStop">Stop（需要停止）</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewEventKissStop" rows="3" placeholder="应停止的低效行为、错误方式"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reviewEventKissStart">Start（需要行动）</label>
+                                    <textarea class="form-input form-textarea review-textarea" id="reviewEventKissStart" rows="3" placeholder="下一步要启动的具体行动或可验证承诺"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </li>
                 </ol>
             </section>
@@ -393,7 +457,7 @@
                 <div class="form-group">
                     <label class="form-label">开始日期</label>
                     <div class="date-picker-field">
-                        <input type="text" class="form-input form-date-text-input" id="okrStartDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <input type="text" class="form-input form-date-text-input" id="okrStartDate" placeholder="--" inputmode="numeric" autocomplete="off">
                         <button type="button" class="date-picker-trigger" data-input-id="okrStartDate" data-native-id="okrStartDateNative" aria-label="选择开始日期">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="4" width="18" height="18" rx="2"></rect>
@@ -408,7 +472,7 @@
                 <div class="form-group">
                     <label class="form-label">结束日期</label>
                     <div class="date-picker-field">
-                        <input type="text" class="form-input form-date-text-input" id="okrEndDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <input type="text" class="form-input form-date-text-input" id="okrEndDate" placeholder="--" inputmode="numeric" autocomplete="off">
                         <button type="button" class="date-picker-trigger" data-input-id="okrEndDate" data-native-id="okrEndDateNative" aria-label="选择结束日期">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="4" width="18" height="18" rx="2"></rect>
@@ -432,21 +496,31 @@
                 <div class="kr-editor-container" id="krEditorContainer"></div>
                 <button type="button" class="add-kr-editor-btn" onclick="addKrEditor()"><span>+ 添加关键结果</span></button>
             </div>
-            <div class="form-group">
-                <label class="form-label">备注</label>
-                <textarea class="form-input form-textarea" id="okrMemo" placeholder="记录一些想法、备注..." rows="3"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">颜色</label>
-                <div class="color-selector" id="okrColorSelector">
-                    <button type="button" class="color-btn color-brown selected" data-color="brown" title="棕色" onclick="selectOkrColor('brown')"></button>
-                    <button type="button" class="color-btn color-apricot" data-color="apricot" title="杏色" onclick="selectOkrColor('apricot')"></button>
-                    <button type="button" class="color-btn color-sage" data-color="sage" title="鼠尾草绿" onclick="selectOkrColor('sage')"></button>
-                    <button type="button" class="color-btn color-pink" data-color="pink" title="粉色" onclick="selectOkrColor('pink')"></button>
-                    <button type="button" class="color-btn color-indigo" data-color="indigo" title="靛蓝" onclick="selectOkrColor('indigo')"></button>
-                    <button type="button" class="color-btn color-teal" data-color="teal" title="青色" onclick="selectOkrColor('teal')"></button>
-                    <button type="button" class="color-btn color-coral" data-color="coral" title="珊瑚红" onclick="selectOkrColor('coral')"></button>
-                    <button type="button" class="color-btn color-amber" data-color="amber" title="琥珀色" onclick="selectOkrColor('amber')"></button>
+            <div class="okr-modal-tail-fields">
+                <div class="form-group">
+                    <label class="form-label">动机</label>
+                    <textarea class="form-input form-textarea" id="okrMotivation" placeholder="为何设定此目标、内在驱动力…" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">可行性</label>
+                    <textarea class="form-input form-textarea" id="okrFeasibility" placeholder="资源、条件、路径是否具备…" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">备注</label>
+                    <textarea class="form-input form-textarea" id="okrMemo" placeholder="记录一些想法、备注..." rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">颜色</label>
+                    <div class="color-selector" id="okrColorSelector">
+                        <button type="button" class="color-btn color-brown selected" data-color="brown" title="棕色" onclick="selectOkrColor('brown')"></button>
+                        <button type="button" class="color-btn color-apricot" data-color="apricot" title="杏色" onclick="selectOkrColor('apricot')"></button>
+                        <button type="button" class="color-btn color-sage" data-color="sage" title="鼠尾草绿" onclick="selectOkrColor('sage')"></button>
+                        <button type="button" class="color-btn color-pink" data-color="pink" title="粉色" onclick="selectOkrColor('pink')"></button>
+                        <button type="button" class="color-btn color-indigo" data-color="indigo" title="靛蓝" onclick="selectOkrColor('indigo')"></button>
+                        <button type="button" class="color-btn color-teal" data-color="teal" title="青色" onclick="selectOkrColor('teal')"></button>
+                        <button type="button" class="color-btn color-coral" data-color="coral" title="珊瑚红" onclick="selectOkrColor('coral')"></button>
+                        <button type="button" class="color-btn color-amber" data-color="amber" title="琥珀色" onclick="selectOkrColor('amber')"></button>
+                    </div>
                 </div>
             </div>
             <div class="modal-actions">
@@ -603,6 +677,8 @@
                         <label class="form-label">评分</label>
                         <div class="weekly-review-score-inline">
                             <span class="weekly-review-score-display" id="monthlyReviewScoreDisplay">7.0 分</span>
+                            <input type="hidden" id="monthlyReviewScore" value="7">
+                            <span class="weekly-review-state-hint">本月每日复盘评分的平均分</span>
                         </div>
                     </div>
                 </div>
@@ -705,12 +781,7 @@
                 const raw = localStorage.getItem(plannerScopedKey(logicalKey));
                 if (!raw) return null;
                 try {
-                    var parsed = JSON.parse(raw);
-                    if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' &&
-                        (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' || logicalKey === 'planner_review_archive_entries' || logicalKey === 'planner_weekly_reviews' || logicalKey === 'planner_monthly_reviews')) {
-                        return window.Utf8Utils.ensureValidUtf8(parsed);
-                    }
-                    return parsed;
+                    return JSON.parse(raw);
                 } catch (err) {
                     console.error('读取本地数据失败:', logicalKey, err);
                     return null;
@@ -1672,7 +1743,8 @@
             history.replaceState(null, '', `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}`);
         }
 
-        const REVIEW_RECORDS_TAB_IDS = ['daily', 'weekly', 'monthly', 'event'];
+        const REVIEW_RECORDS_TAB_IDS = ['daily', 'weekly', 'monthly', 'event', 'okr'];
+        const OKR_TARGET_REVIEWS_STORAGE_KEY = 'planner_okr_reviews';
         const REVIEW_RECORDS_TAB_STORAGE_KEY = 'planner_review_records_tab';
 
         function setReviewRecordsTab(tab) {
@@ -1688,6 +1760,7 @@
             try {
                 localStorage.setItem(REVIEW_RECORDS_TAB_STORAGE_KEY, t);
             } catch (e) { /* ignore */ }
+            if (t === 'okr') renderOkrTargetReviewList();
         }
 
         function tryFocusPendingReviewCard() {
@@ -1727,6 +1800,41 @@
         function getStoredOkrs() {
             const okrs = StorageUtil.get(OKR_STORAGE_KEY);
             return Array.isArray(okrs) ? okrs : [];
+        }
+
+        function getOkrTargetReviewsMap() {
+            const raw = StorageUtil.get(OKR_TARGET_REVIEWS_STORAGE_KEY);
+            return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+        }
+
+        const OKR_TARGET_SELF_SCORE_EMOJI = ['', '😫', '😟', '😐', '🙂', '🤩'];
+
+        function normalizeOkrTargetReviewRecord(rec) {
+            const r = rec || {};
+            const hasNewShape = 'reflection' in r || 'outlook' in r || 'more' in r || 'selfScore' in r;
+            const reflection = hasNewShape ? String(r.reflection || '') : String(r.notes || '');
+            let selfScore = parseInt(r.selfScore, 10);
+            if (!Number.isFinite(selfScore) || selfScore < 1 || selfScore > 5) {
+                selfScore = null;
+            }
+            return {
+                outlook: String(r.outlook || ''),
+                reflection,
+                more: String(r.more || ''),
+                selfScore
+            };
+        }
+
+        function formatOkrTargetReviewUpdatedAt(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (!Number.isFinite(d.getTime())) return String(iso);
+            const y = d.getFullYear();
+            const m = `${d.getMonth() + 1}`.padStart(2, '0');
+            const day = `${d.getDate()}`.padStart(2, '0');
+            const h = `${d.getHours()}`.padStart(2, '0');
+            const min = `${d.getMinutes()}`.padStart(2, '0');
+            return `${y}-${m}-${day} ${h}:${min}`;
         }
 
         function getLinkedTodoIdsForEntry(entry) {
@@ -2049,8 +2157,43 @@
                 summary: String(entry.summary || '').trim(),
                 eventSubject: String(entry.eventSubject || '').trim(),
                 graiGoal: String(entry.graiGoal || '').trim(),
-                graiResult: String(entry.graiResult || '').trim(),
-                graiAnalysis: String(entry.graiAnalysis || '').trim(),
+                graiResultExpected: String(entry.graiResultExpected || '').trim(),
+                graiResultActual: String(entry.graiResultActual || '').trim(),
+                graiResultEvaluation: String(entry.graiResultEvaluation || '').trim(),
+                graiResult: (() => {
+                    const rEx = String(entry.graiResultExpected || '').trim();
+                    const rAc = String(entry.graiResultActual || '').trim();
+                    const rEv = String(entry.graiResultEvaluation || '').trim();
+                    const rAny = rEx || rAc || rEv;
+                    if (rAny) {
+                        return buildGraiResultCombined({
+                            expected: rEx,
+                            actual: rAc,
+                            evaluation: rEv
+                        });
+                    }
+                    return String(entry.graiResult || '').trim();
+                })(),
+                graiAnalysisGoodSubjective: String(entry.graiAnalysisGoodSubjective || '').trim(),
+                graiAnalysisGoodObjective: String(entry.graiAnalysisGoodObjective || '').trim(),
+                graiAnalysisBadSubjective: String(entry.graiAnalysisBadSubjective || '').trim(),
+                graiAnalysisBadObjective: String(entry.graiAnalysisBadObjective || '').trim(),
+                graiAnalysis: (() => {
+                    const gGoodSubj = String(entry.graiAnalysisGoodSubjective || '').trim();
+                    const gGoodObj = String(entry.graiAnalysisGoodObjective || '').trim();
+                    const gBadSubj = String(entry.graiAnalysisBadSubjective || '').trim();
+                    const gBadObj = String(entry.graiAnalysisBadObjective || '').trim();
+                    const quadAny = gGoodSubj || gGoodObj || gBadSubj || gBadObj;
+                    if (quadAny) {
+                        return buildGraiAnalysisCombined({
+                            goodSubjective: gGoodSubj,
+                            goodObjective: gGoodObj,
+                            badSubjective: gBadSubj,
+                            badObjective: gBadObj
+                        });
+                    }
+                    return String(entry.graiAnalysis || '').trim();
+                })(),
                 graiImprovement: String(entry.graiImprovement || '').trim(),
                 createdAt: entry.createdAt || new Date().toISOString(),
                 updatedAt: entry.updatedAt || new Date().toISOString()
@@ -2193,21 +2336,232 @@
             if (emoTitle) emoTitle.textContent = '情绪';
             const sub = document.getElementById('reviewModalSubtitle');
             if (sub) {
-                if (reviewModalMode === 'event') {
-                    sub.textContent = 'Goal → Result → Analysis → Improvement：对齐目标、对照结果、拆解原因、沉淀改进行动';
-                    sub.removeAttribute('hidden');
-                } else {
-                    sub.textContent = '';
-                    sub.setAttribute('hidden', '');
-                }
+                sub.textContent = '';
+                sub.setAttribute('hidden', '');
             }
         }
 
         function clearReviewGraiInputs() {
-            ['reviewEventSubject', 'reviewGraiGoal', 'reviewGraiResult', 'reviewGraiAnalysis', 'reviewGraiImprovement'].forEach((fieldId) => {
+            ['reviewEventSubject', 'reviewGraiGoal',
+                'reviewGraiRExpected', 'reviewGraiRActual', 'reviewGraiREval',
+                'reviewGraiAGoodSubj', 'reviewGraiAGoodObj', 'reviewGraiABadSubj', 'reviewGraiABadObj',
+                'reviewEventKissKeep', 'reviewEventKissImprove', 'reviewEventKissStop', 'reviewEventKissStart'
+            ].forEach((fieldId) => {
                 const el = document.getElementById(fieldId);
                 if (el) el.value = '';
             });
+        }
+
+        function fillReviewEventKissFromEntry(entry) {
+            const kKeep = document.getElementById('reviewEventKissKeep');
+            const kImprove = document.getElementById('reviewEventKissImprove');
+            const kStop = document.getElementById('reviewEventKissStop');
+            const kStart = document.getElementById('reviewEventKissStart');
+            if (!kKeep || !kImprove || !kStop || !kStart) return;
+            const hasKiss = ['keep', 'improve', 'stop', 'start'].some((key) => String(entry[key] || '').trim());
+            if (hasKiss) {
+                kKeep.value = entry.keep || '';
+                kImprove.value = entry.improve || '';
+                kStop.value = entry.stop || '';
+                kStart.value = entry.start || '';
+                return;
+            }
+            const legacy = String(entry.graiImprovement || '').trim();
+            kKeep.value = '';
+            kImprove.value = legacy;
+            kStop.value = '';
+            kStart.value = '';
+        }
+
+        const GRAI_RESULT_R_MARK = {
+            expected: '【预期】',
+            actual: '【实际】',
+            evaluation: '【评估】'
+        };
+
+        const GRAI_RESULT_R_ORDER = [
+            ['expected', GRAI_RESULT_R_MARK.expected],
+            ['actual', GRAI_RESULT_R_MARK.actual],
+            ['evaluation', GRAI_RESULT_R_MARK.evaluation]
+        ];
+
+        function buildGraiResultCombined(q) {
+            const parts = [];
+            GRAI_RESULT_R_ORDER.forEach(([key, mark]) => {
+                const text = String(q[key] || '').trim();
+                if (text) parts.push(`${mark}\n${text}`);
+            });
+            return parts.join('\n\n');
+        }
+
+        function tryParseMarkedGraiResult(text) {
+            const raw = String(text || '').trim();
+            if (!raw) return null;
+            const hasMark = GRAI_RESULT_R_ORDER.some(([, m]) => raw.includes(m));
+            if (!hasMark) return null;
+            const out = { expected: '', actual: '', evaluation: '' };
+            const hits = [];
+            GRAI_RESULT_R_ORDER.forEach(([key, mark]) => {
+                const idx = raw.indexOf(mark);
+                if (idx !== -1) hits.push({ key, idx, len: mark.length });
+            });
+            hits.sort((a, b) => a.idx - b.idx);
+            hits.forEach((h, i) => {
+                const start = h.idx + h.len;
+                const end = i + 1 < hits.length ? hits[i + 1].idx : raw.length;
+                out[h.key] = raw.slice(start, end).replace(/^\s*\n+/, '').replace(/\n+\s*$/, '').trim();
+            });
+            if (hits.length && hits[0].idx > 0) {
+                const prefix = raw.slice(0, hits[0].idx).trim();
+                if (prefix) {
+                    out.actual = out.actual ? `${prefix}\n${out.actual}` : prefix;
+                }
+            }
+            return out;
+        }
+
+        function fillGraiResultSplitInputs(entry) {
+            const elEx = document.getElementById('reviewGraiRExpected');
+            const elAc = document.getElementById('reviewGraiRActual');
+            const elEv = document.getElementById('reviewGraiREval');
+            if (!elEx || !elAc || !elEv) return;
+            const fromEntry = {
+                expected: String(entry.graiResultExpected || '').trim(),
+                actual: String(entry.graiResultActual || '').trim(),
+                evaluation: String(entry.graiResultEvaluation || '').trim()
+            };
+            if (fromEntry.expected || fromEntry.actual || fromEntry.evaluation) {
+                elEx.value = fromEntry.expected;
+                elAc.value = fromEntry.actual;
+                elEv.value = fromEntry.evaluation;
+                return;
+            }
+            const parsed = tryParseMarkedGraiResult(entry.graiResult || '');
+            if (parsed) {
+                elEx.value = parsed.expected;
+                elAc.value = parsed.actual;
+                elEv.value = parsed.evaluation;
+                return;
+            }
+            elEx.value = '';
+            elAc.value = String(entry.graiResult || '').trim();
+            elEv.value = '';
+        }
+
+        function readGraiResultSplit() {
+            const elEx = document.getElementById('reviewGraiRExpected');
+            const elAc = document.getElementById('reviewGraiRActual');
+            const elEv = document.getElementById('reviewGraiREval');
+            return {
+                graiResultExpected: elEx ? elEx.value.trim() : '',
+                graiResultActual: elAc ? elAc.value.trim() : '',
+                graiResultEvaluation: elEv ? elEv.value.trim() : ''
+            };
+        }
+
+        function hasGraiResultSplitContent(q) {
+            return !!(q.graiResultExpected || q.graiResultActual || q.graiResultEvaluation);
+        }
+
+        const GRAI_ANALYSIS_A_MARK = {
+            goodSubjective: '【好·主观】',
+            goodObjective: '【好·客观】',
+            badSubjective: '【坏·主观】',
+            badObjective: '【坏·客观】'
+        };
+
+        const GRAI_ANALYSIS_A_ORDER = [
+            ['goodSubjective', GRAI_ANALYSIS_A_MARK.goodSubjective],
+            ['goodObjective', GRAI_ANALYSIS_A_MARK.goodObjective],
+            ['badSubjective', GRAI_ANALYSIS_A_MARK.badSubjective],
+            ['badObjective', GRAI_ANALYSIS_A_MARK.badObjective]
+        ];
+
+        function buildGraiAnalysisCombined(q) {
+            const parts = [];
+            GRAI_ANALYSIS_A_ORDER.forEach(([key, mark]) => {
+                const text = String(q[key] || '').trim();
+                if (text) parts.push(`${mark}\n${text}`);
+            });
+            return parts.join('\n\n');
+        }
+
+        function tryParseMarkedGraiAnalysis(text) {
+            const raw = String(text || '').trim();
+            if (!raw) return null;
+            const hasMark = GRAI_ANALYSIS_A_ORDER.some(([, m]) => raw.includes(m));
+            if (!hasMark) return null;
+            const out = { goodSubjective: '', goodObjective: '', badSubjective: '', badObjective: '' };
+            const hits = [];
+            GRAI_ANALYSIS_A_ORDER.forEach(([key, mark]) => {
+                const idx = raw.indexOf(mark);
+                if (idx !== -1) hits.push({ key, idx, len: mark.length });
+            });
+            hits.sort((a, b) => a.idx - b.idx);
+            hits.forEach((h, i) => {
+                const start = h.idx + h.len;
+                const end = i + 1 < hits.length ? hits[i + 1].idx : raw.length;
+                out[h.key] = raw.slice(start, end).replace(/^\s*\n+/, '').replace(/\n+\s*$/, '').trim();
+            });
+            if (hits.length && hits[0].idx > 0) {
+                const prefix = raw.slice(0, hits[0].idx).trim();
+                if (prefix) {
+                    out.badSubjective = out.badSubjective ? `${prefix}\n${out.badSubjective}` : prefix;
+                }
+            }
+            return out;
+        }
+
+        function fillGraiAnalysisQuadrantInputs(entry) {
+            const elGs = document.getElementById('reviewGraiAGoodSubj');
+            const elGo = document.getElementById('reviewGraiAGoodObj');
+            const elBs = document.getElementById('reviewGraiABadSubj');
+            const elBo = document.getElementById('reviewGraiABadObj');
+            if (!elGs || !elGo || !elBs || !elBo) return;
+            const fromEntry = {
+                goodSubjective: String(entry.graiAnalysisGoodSubjective || '').trim(),
+                goodObjective: String(entry.graiAnalysisGoodObjective || '').trim(),
+                badSubjective: String(entry.graiAnalysisBadSubjective || '').trim(),
+                badObjective: String(entry.graiAnalysisBadObjective || '').trim()
+            };
+            const hasStoredQuads = Object.values(fromEntry).some(Boolean);
+            if (hasStoredQuads) {
+                elGs.value = fromEntry.goodSubjective;
+                elGo.value = fromEntry.goodObjective;
+                elBs.value = fromEntry.badSubjective;
+                elBo.value = fromEntry.badObjective;
+                return;
+            }
+            const parsed = tryParseMarkedGraiAnalysis(entry.graiAnalysis || '');
+            if (parsed) {
+                elGs.value = parsed.goodSubjective;
+                elGo.value = parsed.goodObjective;
+                elBs.value = parsed.badSubjective;
+                elBo.value = parsed.badObjective;
+                return;
+            }
+            elGs.value = '';
+            elGo.value = '';
+            elBs.value = String(entry.graiAnalysis || '').trim();
+            elBo.value = '';
+        }
+
+        function readGraiAnalysisQuadrants() {
+            const elGs = document.getElementById('reviewGraiAGoodSubj');
+            const elGo = document.getElementById('reviewGraiAGoodObj');
+            const elBs = document.getElementById('reviewGraiABadSubj');
+            const elBo = document.getElementById('reviewGraiABadObj');
+            return {
+                graiAnalysisGoodSubjective: elGs ? elGs.value.trim() : '',
+                graiAnalysisGoodObjective: elGo ? elGo.value.trim() : '',
+                graiAnalysisBadSubjective: elBs ? elBs.value.trim() : '',
+                graiAnalysisBadObjective: elBo ? elBo.value.trim() : ''
+            };
+        }
+
+        function hasGraiAnalysisQuadrantContent(q) {
+            return !!(q.graiAnalysisGoodSubjective || q.graiAnalysisGoodObjective
+                || q.graiAnalysisBadSubjective || q.graiAnalysisBadObjective);
         }
 
         function openReviewModal(id = null, preferredKind = 'daily') {
@@ -2276,9 +2630,9 @@
                     document.getElementById('reviewStart').value = '';
                     document.getElementById('reviewEventSubject').value = entry.eventSubject || '';
                     document.getElementById('reviewGraiGoal').value = entry.graiGoal || '';
-                    document.getElementById('reviewGraiResult').value = entry.graiResult || '';
-                    document.getElementById('reviewGraiAnalysis').value = entry.graiAnalysis || '';
-                    document.getElementById('reviewGraiImprovement').value = entry.graiImprovement || '';
+                    fillGraiResultSplitInputs(entry);
+                    fillGraiAnalysisQuadrantInputs(entry);
+                    fillReviewEventKissFromEntry(entry);
                 } else {
                     clearReviewGraiInputs();
                     document.getElementById('reviewTasks').value = entry.tasks || '';
@@ -2329,8 +2683,10 @@
             const monthKey = /^\d{4}-\d{2}$/.test(String(entry?.monthKey || '').trim())
                 ? String(entry.monthKey).trim()
                 : monthKeyToday();
-            const scoreNum = Number.parseInt(entry?.score, 10);
-            const score = Number.isFinite(scoreNum) ? Math.max(1, Math.min(10, scoreNum)) : 7;
+            const scoreNum = Number.parseFloat(entry?.score);
+            const score = Number.isFinite(scoreNum)
+                ? Math.max(1, Math.min(10, Math.round(scoreNum * 10) / 10))
+                : 7;
             const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
             return {
                 id: String(entry?.id || generateId()),
@@ -2361,13 +2717,6 @@
             if (Array.isArray(raw)) return raw.filter(t => String(t || '').trim());
             const s = String(raw || '').trim();
             return s ? s.split(/\r?\n/).map(t => t.trim()).filter(Boolean) : [];
-        }
-
-        function previewWeeklyReviewEvents(entry) {
-            if (entry.highlights) return String(entry.highlights);
-            const ev = entry.events;
-            if (Array.isArray(ev)) return ev.join(' ');
-            return String(ev || '');
         }
 
         function ensureWeeklyReviewAddSlot(list) {
@@ -2794,10 +3143,13 @@
         function updateMonthlyReviewScoreDisplay() {
             const monthInput = document.getElementById('monthlyReviewMonth');
             const displayEl = document.getElementById('monthlyReviewScoreDisplay');
+            const scoreInput = document.getElementById('monthlyReviewScore');
             if (!monthInput || !displayEl) return;
             const monthKey = String(monthInput.value || '').trim() || monthKeyToday();
             const avgScore = getAverageDailyScoreForMonth(/^\d{4}-\d{2}$/.test(monthKey) ? monthKey : monthKeyToday());
-            displayEl.textContent = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
+            const text = (typeof avgScore === 'number' ? avgScore.toFixed(1) : avgScore) + ' 分';
+            displayEl.textContent = text;
+            if (scoreInput) scoreInput.value = String(avgScore);
         }
 
         function saveMonthlyReview() {
@@ -2907,10 +3259,28 @@
             if (isEvent) {
                 const eventSubject = document.getElementById('reviewEventSubject').value.trim();
                 const graiGoal = document.getElementById('reviewGraiGoal').value.trim();
-                const graiResult = document.getElementById('reviewGraiResult').value.trim();
-                const graiAnalysis = document.getElementById('reviewGraiAnalysis').value.trim();
-                const graiImprovement = document.getElementById('reviewGraiImprovement').value.trim();
-                if (!graiGoal && !graiResult && !graiAnalysis && !graiImprovement) {
+                const graiRParts = readGraiResultSplit();
+                const graiResult = hasGraiResultSplitContent(graiRParts)
+                    ? buildGraiResultCombined({
+                        expected: graiRParts.graiResultExpected,
+                        actual: graiRParts.graiResultActual,
+                        evaluation: graiRParts.graiResultEvaluation
+                    })
+                    : '';
+                const graiAQuads = readGraiAnalysisQuadrants();
+                const graiAnalysis = hasGraiAnalysisQuadrantContent(graiAQuads)
+                    ? buildGraiAnalysisCombined({
+                        goodSubjective: graiAQuads.graiAnalysisGoodSubjective,
+                        goodObjective: graiAQuads.graiAnalysisGoodObjective,
+                        badSubjective: graiAQuads.graiAnalysisBadSubjective,
+                        badObjective: graiAQuads.graiAnalysisBadObjective
+                    })
+                    : '';
+                const evKeep = document.getElementById('reviewEventKissKeep')?.value.trim() || '';
+                const evImprove = document.getElementById('reviewEventKissImprove')?.value.trim() || '';
+                const evStop = document.getElementById('reviewEventKissStop')?.value.trim() || '';
+                const evStart = document.getElementById('reviewEventKissStart')?.value.trim() || '';
+                if (!graiGoal && !hasGraiResultSplitContent(graiRParts) && !hasGraiAnalysisQuadrantContent(graiAQuads) && !evKeep && !evImprove && !evStop && !evStart) {
                     alert('请至少填写一项 GRAI 内容');
                     return;
                 }
@@ -2933,16 +3303,18 @@
                         emotionArousal: primaryEmotionTag.arousal,
                         emotionValence: primaryEmotionTag.valence,
                         tasks: '',
-                        keep: '',
-                        improve: '',
-                        stop: '',
-                        start: '',
+                        keep: evKeep,
+                        improve: evImprove,
+                        stop: evStop,
+                        start: evStart,
                         startTodoIds: [],
                         summary: '',
                         graiGoal,
+                        ...graiRParts,
                         graiResult,
+                        ...graiAQuads,
                         graiAnalysis,
-                        graiImprovement,
+                        graiImprovement: '',
                         updatedAt: new Date().toISOString()
                     });
                     syncTodoReviewLinks(reviewEntries[idx].id, previousLinkedIds, []);
@@ -2963,16 +3335,18 @@
                         emotionArousal: primaryEmotionTag.arousal,
                         emotionValence: primaryEmotionTag.valence,
                         tasks: '',
-                        keep: '',
-                        improve: '',
-                        stop: '',
-                        start: '',
+                        keep: evKeep,
+                        improve: evImprove,
+                        stop: evStop,
+                        start: evStart,
                         startTodoIds: [],
                         summary: '',
                         graiGoal,
+                        ...graiRParts,
                         graiResult,
+                        ...graiAQuads,
                         graiAnalysis,
-                        graiImprovement,
+                        graiImprovement: '',
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                     }));
@@ -3025,7 +3399,14 @@
                     startTodoIds: linkedTodoIds,
                     summary,
                     graiGoal: '',
+                    graiResultExpected: '',
+                    graiResultActual: '',
+                    graiResultEvaluation: '',
                     graiResult: '',
+                    graiAnalysisGoodSubjective: '',
+                    graiAnalysisGoodObjective: '',
+                    graiAnalysisBadSubjective: '',
+                    graiAnalysisBadObjective: '',
                     graiAnalysis: '',
                     graiImprovement: '',
                     updatedAt: new Date().toISOString()
@@ -3055,7 +3436,14 @@
                     startTodoIds: linkedTodoIds,
                     summary,
                     graiGoal: '',
+                    graiResultExpected: '',
+                    graiResultActual: '',
+                    graiResultEvaluation: '',
                     graiResult: '',
+                    graiAnalysisGoodSubjective: '',
+                    graiAnalysisGoodObjective: '',
+                    graiAnalysisBadSubjective: '',
+                    graiAnalysisBadObjective: '',
                     graiAnalysis: '',
                     graiImprovement: '',
                     createdAt: new Date().toISOString(),
@@ -3285,10 +3673,26 @@
         function reviewEntryCombinedUserPlainText(entry) {
             if (entry?.reviewKind === 'event') {
                 const subj = normalizeInlineText(entry.eventSubject);
-                const body = ['graiGoal', 'graiResult', 'graiAnalysis', 'graiImprovement']
+                const rBits = [
+                    normalizeInlineText(entry.graiResultExpected),
+                    normalizeInlineText(entry.graiResultActual),
+                    normalizeInlineText(entry.graiResultEvaluation)
+                ].filter(Boolean);
+                const rText = rBits.length ? rBits.join('\n') : normalizeInlineText(entry.graiResult);
+                const aBits = [
+                    normalizeInlineText(entry.graiAnalysisGoodSubjective),
+                    normalizeInlineText(entry.graiAnalysisGoodObjective),
+                    normalizeInlineText(entry.graiAnalysisBadSubjective),
+                    normalizeInlineText(entry.graiAnalysisBadObjective)
+                ].filter(Boolean);
+                const aText = aBits.length ? aBits.join('\n') : normalizeInlineText(entry.graiAnalysis);
+                const grai = [normalizeInlineText(entry.graiGoal), rText, aText].filter(Boolean).join('\n');
+                const kiss = ['keep', 'improve', 'stop', 'start']
                     .map((k) => normalizeInlineText(entry[k]))
                     .filter(Boolean)
                     .join('\n');
+                const legacyI = normalizeInlineText(entry.graiImprovement);
+                const body = [grai, kiss, legacyI].filter(Boolean).join('\n');
                 return [subj, body].filter(Boolean).join('\n');
             }
             return ['summary', 'keep', 'improve', 'stop', 'tasks']
@@ -3330,26 +3734,149 @@
             return '复盘拉满';
         }
 
+        function eventReviewCardFieldHtml(label, value, extraClass = '') {
+            if (!normalizeInlineText(value)) return '';
+            const x = extraClass ? ` ${extraClass}` : '';
+            const lab = label ? `<span class="review-event-card__field-label">${escapeHtml(label)}</span>` : '';
+            return `<div class="review-event-card__field${x}">${lab}<div class="review-event-card__field-value">${multilineHtml(value)}</div></div>`;
+        }
+
+        function eventReviewCardBlockHtml(letter, title, innerHtml) {
+            if (!innerHtml || !String(innerHtml).trim()) return '';
+            return `<section class="review-event-card__block">
+                <div class="review-event-card__block-head">
+                    <span class="review-event-card__letter" aria-hidden="true">${escapeHtml(letter)}</span>
+                    <h4 class="review-event-card__block-title">${escapeHtml(title)}</h4>
+                </div>
+                <div class="review-event-card__block-body">${innerHtml}</div>
+            </section>`;
+        }
+
+        function buildEventReviewResultFieldsHtml(entry) {
+            const ex = String(entry.graiResultExpected || '').trim();
+            const ac = String(entry.graiResultActual || '').trim();
+            const ev = String(entry.graiResultEvaluation || '').trim();
+            if (ex || ac || ev) {
+                let pairInner = '';
+                if (ex && ac) {
+                    pairInner = eventReviewCardFieldHtml('预期结果', ex, 'review-event-card__result-cell')
+                        + eventReviewCardFieldHtml('实际结果', ac, 'review-event-card__result-cell');
+                } else if (ex) {
+                    pairInner = eventReviewCardFieldHtml('预期结果', ex, 'review-event-card__result-cell review-event-card__result-cell--full');
+                } else if (ac) {
+                    pairInner = eventReviewCardFieldHtml('实际结果', ac, 'review-event-card__result-cell review-event-card__result-cell--full');
+                }
+                const pairRow = pairInner ? `<div class="review-event-card__result-pair">${pairInner}</div>` : '';
+                const evalRow = ev
+                    ? `<div class="review-event-card__result-eval">${eventReviewCardFieldHtml('结果评估', ev, 'review-event-card__result-cell')}</div>`
+                    : '';
+                return `<div class="review-event-card__result-layout">${pairRow}${evalRow}</div>`;
+            }
+            const leg = String(entry.graiResult || '').trim();
+            return leg ? `<div class="review-event-card__field-stack">${eventReviewCardFieldHtml('评估结果', leg)}</div>` : '';
+        }
+
+        function buildEventReviewAnalysisFieldsHtml(entry) {
+            const gs = String(entry.graiAnalysisGoodSubjective || '').trim();
+            const go = String(entry.graiAnalysisGoodObjective || '').trim();
+            const bs = String(entry.graiAnalysisBadSubjective || '').trim();
+            const bo = String(entry.graiAnalysisBadObjective || '').trim();
+            if (gs || go || bs || bo) {
+                return `<div class="review-event-card__analysis-quad" aria-label="原因四象限">` + [
+                    eventReviewCardFieldHtml('好 · 主观', gs, 'review-event-card__analysis-cell review-event-card__analysis-cell--good'),
+                    eventReviewCardFieldHtml('好 · 客观', go, 'review-event-card__analysis-cell review-event-card__analysis-cell--good'),
+                    eventReviewCardFieldHtml('坏 · 主观', bs, 'review-event-card__analysis-cell review-event-card__analysis-cell--bad'),
+                    eventReviewCardFieldHtml('坏 · 客观', bo, 'review-event-card__analysis-cell review-event-card__analysis-cell--bad')
+                ].join('') + `</div>`;
+            }
+            const leg = String(entry.graiAnalysis || '').trim();
+            return leg ? `<div class="review-event-card__field-stack">${eventReviewCardFieldHtml('分析原因', leg)}</div>` : '';
+        }
+
+        function buildEventReviewKissGridHtml(entry) {
+            const hasKiss = ['keep', 'improve', 'stop', 'start'].some((k) => String(entry[k] || '').trim());
+            const cells = [];
+            if (hasKiss) {
+                const specs = [
+                    { key: 'keep', abbr: 'K', name: 'Keep', hint: '保持', tone: 'keep' },
+                    { key: 'improve', abbr: 'I', name: 'Improve', hint: '改进', tone: 'improve' },
+                    { key: 'stop', abbr: 'S', name: 'Stop', hint: '停止', tone: 'stop' },
+                    { key: 'start', abbr: 'T', name: 'Start', hint: '行动', tone: 'start' }
+                ];
+                specs.forEach(({ key, abbr, name, hint, tone }) => {
+                    const v = String(entry[key] || '').trim();
+                    if (!v) return;
+                    cells.push(`<div class="review-event-card__kiss-cell review-event-card__kiss-cell--${tone}">
+                        <div class="review-event-card__kiss-head">
+                            <span class="review-event-card__kiss-badge" aria-hidden="true">${abbr}</span>
+                            <span class="review-event-card__kiss-title">${escapeHtml(name)}</span>
+                            <span class="review-event-card__kiss-hint">${escapeHtml(hint)}</span>
+                        </div>
+                        <div class="review-event-card__kiss-body">${multilineHtml(v)}</div>
+                    </div>`);
+                });
+            } else if (normalizeInlineText(entry.graiImprovement)) {
+                const v = String(entry.graiImprovement || '').trim();
+                cells.push(`<div class="review-event-card__kiss-cell review-event-card__kiss-cell--legacy review-event-card__kiss-cell--full">
+                    <div class="review-event-card__kiss-head">
+                        <span class="review-event-card__kiss-badge" aria-hidden="true">I</span>
+                        <span class="review-event-card__kiss-title">总结改进</span>
+                        <span class="review-event-card__kiss-hint">旧版</span>
+                    </div>
+                    <div class="review-event-card__kiss-body">${multilineHtml(v)}</div>
+                </div>`);
+            }
+            if (!cells.length) return '';
+            return `<div class="review-event-card__kiss-grid">${cells.join('')}</div>`;
+        }
+
+        function buildEventReviewStructuredBodyHtml(entry) {
+            const parts = [];
+            const subj = String(entry.eventSubject || '').trim();
+            if (subj) {
+                parts.push(`<header class="review-event-card__hero"><h3 class="review-event-card__subject">${multilineHtml(subj)}</h3></header>`);
+            }
+            const g = normalizeInlineText(entry.graiGoal);
+            if (g) {
+                const gInner = `<div class="review-event-card__prose">${multilineHtml(entry.graiGoal)}</div>`;
+                parts.push(eventReviewCardBlockHtml('G', '回顾目标', gInner));
+            }
+            const rInner = buildEventReviewResultFieldsHtml(entry);
+            if (rInner) {
+                parts.push(eventReviewCardBlockHtml('R', '评估结果', rInner));
+            }
+            const aInner = buildEventReviewAnalysisFieldsHtml(entry);
+            if (aInner) {
+                parts.push(eventReviewCardBlockHtml('A', '分析原因', aInner));
+            }
+            const kissBlock = buildEventReviewKissGridHtml(entry);
+            if (kissBlock) {
+                parts.push(eventReviewCardBlockHtml('I', '总结改进（KISS）', kissBlock));
+            }
+            const inner = parts.length
+                ? `<div class="review-event-card__stack">${parts.join('')}</div>`
+                : '<p class="review-event-card__empty">暂无 GRAI 正文，点击卡片补充</p>';
+            return `<div class="review-event-card__body">${inner}</div>`;
+        }
+
         function buildReviewEntryCardHtml(entry) {
             const safeEntryId = escapeJsString(entry.id);
             const safeEntryIdAttr = escapeHtml(String(entry.id || ''));
             const isEventReview = entry?.reviewKind === 'event';
-            const eventSubjectBlock = isEventReview && normalizeInlineText(entry.eventSubject)
-                ? sectionHtml('主题', entry.eventSubject)
-                : '';
             const summaryHtml = isEventReview
-                ? eventSubjectBlock + [
-                    sectionHtml('G 回顾目标', entry.graiGoal),
-                    sectionHtml('R 评估结果', entry.graiResult),
-                    sectionHtml('A 分析原因', entry.graiAnalysis),
-                    sectionHtml('I 总结改进', entry.graiImprovement)
-                ].join('')
+                ? buildEventReviewStructuredBodyHtml(entry)
                 : sectionHtml('总结', entry.summary);
             const tasksPlain = isEventReview
-                ? (normalizeInlineText(entry.eventSubject) || normalizeInlineText(entry.graiGoal) || '')
+                ? (normalizeInlineText(entry.eventSubject) || normalizeInlineText(entry.graiGoal)
+                    || normalizeInlineText(entry.graiResultExpected) || normalizeInlineText(entry.graiResultActual)
+                    || normalizeInlineText(entry.graiResultEvaluation) || normalizeInlineText(entry.graiResult) || '')
                 : (normalizeInlineText(entry.tasks) || '');
             const contextLead = isEventReview ? '事件' : '今天';
-            const contextMid = escapeHtml(tasksPlain || (isEventReview ? '事件复盘' : '今日事项'));
+            const contextMid = escapeHtml(
+                isEventReview && normalizeInlineText(entry.eventSubject)
+                    ? '事件复盘'
+                    : (tasksPlain || (isEventReview ? '事件复盘' : '今日事项'))
+            );
             const combinedUser = reviewEntryCombinedUserPlainText(entry);
             const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
                 ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
@@ -3375,12 +3902,19 @@
                 const moodText = escapeHtml(`${getEmotionIntensityPrefix(tagIntensity)}${tag.mood}`);
                 return `<span class="review-today-mood-text" style="color:${moodPalette.border};">${moodText}</span>`;
             }).join('、');
+            const dailyHeaderExtras = !isEventReview ? `
+                            <div class="review-meta-row">
+                                <span class="review-score-circle ${scoreToneClass}" title="评分 ${entry.score}/10">${entry.score}</span>
+                                <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
+                            </div>
+                            <span class="review-today-note"><strong>${contextLead}</strong><span class="${todayTaskClass}">${contextMid}</span><strong>时</strong>${moodHtml}</span>
+                        ` : '';
             const kissHtml = isEventReview ? '' : [
                 sectionPreviewHtml('✅ 保持', entry.keep),
                 sectionPreviewHtml('⚠️ 改进', entry.improve),
                 sectionPreviewHtml('🚫 停止', entry.stop)
             ].filter(Boolean).join('');
-            const dividerHtml = !isEventReview && kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
             const compactBodyHtml = reviewBodyFold
                 ? `<div class="review-compact-wrap">
                         <div class="${reviewCompactInnerClass}">
@@ -3400,11 +3934,7 @@
                     <div class="review-header">
                         <div class="review-header-main">
                             <span class="review-period">${entry.date}</span>
-                            <div class="review-meta-row">
-                                <span class="review-score-circle ${scoreToneClass}" title="评分 ${entry.score}/10">${entry.score}</span>
-                                <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
-                            </div>
-                            <span class="review-today-note"><strong>${contextLead}</strong><span class="${todayTaskClass}">${contextMid}</span><strong>时</strong>${moodHtml}</span>
+                            ${dailyHeaderExtras}
                         </div>
                         <div class="review-header-right">
                             <button type="button" class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
@@ -3441,6 +3971,89 @@
             );
         }
 
+        function weeklyReviewPreviewLine(text, maxLen) {
+            const t = String(text || '').replace(/\s+/g, ' ').trim();
+            if (!t) return '';
+            return t.length > maxLen ? t.slice(0, maxLen) + '…' : t;
+        }
+
+        function buildCategorizedSectionHtml(label, text, categories, maxLen) {
+            const cats = Array.isArray(categories) ? categories.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k) && k !== 'none') : [];
+            if (cats.length === 0) {
+                const t = weeklyReviewPreviewLine(text, maxLen);
+                if (!t) return '';
+                return `
+                    <div class="weekly-review-record-card__section">
+                        <span class="weekly-review-record-card__section-label">${escapeHtml(label)}</span>
+                        <p class="weekly-review-record-card__para">${escapeHtml(t)}</p>
+                    </div>`;
+            }
+            const parsed = parseWeeklyCategoryTexts(text || '', cats);
+            const rows = cats.map(key => {
+                const meta = getReviewCategoryMeta(key);
+                const raw = String(parsed[key] || '').trim();
+                if (!raw) return '';
+                const preview = weeklyReviewPreviewLine(raw, maxLen);
+                return `<div class="weekly-review-record-card__cat-row">` +
+                    `<span class="weekly-review-record-card__cat-pill category-${key}">${escapeHtml(meta.label)}</span>` +
+                    `<span class="weekly-review-record-card__cat-text">${escapeHtml(preview)}</span>` +
+                    `</div>`;
+            }).filter(Boolean);
+            if (rows.length === 0) return '';
+            return `
+                    <div class="weekly-review-record-card__section">
+                        <span class="weekly-review-record-card__section-label">${escapeHtml(label)}</span>
+                        <div class="weekly-review-record-card__cat-list">${rows.join('')}</div>
+                    </div>`;
+        }
+
+        function buildWeeklyReviewRecordCardBody(entry) {
+            const events = parseWeeklyReviewEvents(entry.events);
+            const parts = [];
+
+            if (events.length) {
+                const listItems = events.slice(0, 4).map((ev) => {
+                    const line = weeklyReviewPreviewLine(ev, 88);
+                    return `<li class="weekly-review-record-card__event-item">${escapeHtml(line)}</li>`;
+                }).join('');
+                const more = events.length > 4
+                    ? `<li class="weekly-review-record-card__event-more" aria-hidden="true">还有 ${events.length - 4} 条事件…</li>`
+                    : '';
+                parts.push(`
+                    <div class="weekly-review-record-card__section">
+                        <span class="weekly-review-record-card__section-label">主要事件</span>
+                        <ul class="weekly-review-record-card__event-list">${listItems}${more}</ul>
+                    </div>`);
+            }
+
+            parts.push(buildCategorizedSectionHtml('本周亮点', entry.highlights, entry.highlightsCategories, 168));
+            parts.push(buildCategorizedSectionHtml('反思', entry.reflection, entry.reflectionCategories, 168));
+            parts.push(buildCategorizedSectionHtml('下周计划', entry.nextPlan, entry.nextPlanCategories, 140));
+
+            const goodState = String(entry.goodState || '').trim();
+            const badState = String(entry.badState || '').trim();
+            if (goodState || badState) {
+                const chips = [];
+                if (goodState) {
+                    chips.push(`<span class="weekly-review-record-card__state weekly-review-record-card__state--good" title="${escapeHtml(goodState)}"><span class="weekly-review-record-card__state-key">顺</span><span class="weekly-review-record-card__state-text">${escapeHtml(weeklyReviewPreviewLine(goodState, 52))}</span></span>`);
+                }
+                if (badState) {
+                    chips.push(`<span class="weekly-review-record-card__state weekly-review-record-card__state--low" title="${escapeHtml(badState)}"><span class="weekly-review-record-card__state-key">逆</span><span class="weekly-review-record-card__state-text">${escapeHtml(weeklyReviewPreviewLine(badState, 52))}</span></span>`);
+                }
+                parts.push(`
+                    <div class="weekly-review-record-card__section weekly-review-record-card__section--state">
+                        <span class="weekly-review-record-card__section-label">状态复盘</span>
+                        <div class="weekly-review-record-card__state-row">${chips.join('')}</div>
+                    </div>`);
+            }
+
+            const html = parts.filter(Boolean).join('');
+            if (!html) {
+                return '<div class="weekly-review-record-card__empty">暂无摘要，点击卡片编辑本条周复盘</div>';
+            }
+            return html;
+        }
+
         function renderWeeklyReviewList() {
             const container = document.getElementById('weeklyReviewList');
             if (!container) return;
@@ -3454,13 +4067,20 @@
                 const score = Number(entry.score) || 0;
                 const scoreClass = score <= 4 ? 'score-tone-red' : score <= 6 ? 'score-tone-yellow' : 'score-tone-green';
                 const scoreStr = Number.isFinite(score) ? score.toFixed(1) : '0';
+                const adjustPill = entry.needAdjustGoal === 'yes'
+                    ? '<span class="weekly-review-record-card__pill weekly-review-record-card__pill--adjust">目标调整</span>'
+                    : '';
+                const bodyHtml = buildWeeklyReviewRecordCardBody(entry);
                 return `
-                <article class="weekly-review-card" data-weekly-id="${escapeHtml(entry.id)}" onclick="openWeeklyReviewModal('${safeId}')">
-                    <div class="weekly-review-card-header">
-                        <span class="weekly-review-card-week">${escapeHtml(weekLabel)}</span>
-                        <span class="weekly-review-card-score ${scoreClass}">${scoreStr} 分</span>
+                <article class="weekly-review-card weekly-review-record-card" data-weekly-id="${escapeHtml(entry.id)}" onclick="openWeeklyReviewModal('${safeId}')">
+                    <div class="weekly-review-record-card__head">
+                        <span class="weekly-review-record-card__week" title="${escapeHtml(weekLabel)}">${escapeHtml(weekLabel)}</span>
+                        <div class="weekly-review-record-card__head-aside">
+                            ${adjustPill}
+                            <span class="weekly-review-card-score ${scoreClass}">${scoreStr} 分</span>
+                        </div>
                     </div>
-                    <div class="weekly-review-card-preview">${escapeHtml(previewWeeklyReviewEvents(entry).slice(0, 80))}${previewWeeklyReviewEvents(entry).length > 80 ? '…' : ''}</div>
+                    <div class="weekly-review-record-card__body">${bodyHtml}</div>
                 </article>
             `;
             }).join('');
@@ -3476,6 +4096,69 @@
             return parts.join(' ').trim();
         }
 
+        function renderOkrTargetReviewList() {
+            const container = document.getElementById('okrTargetReviewList');
+            if (!container) return;
+            const map = getOkrTargetReviewsMap();
+            const okrs = getStoredOkrs();
+            const items = Object.keys(map).map((okrId) => {
+                const rec = map[okrId] || {};
+                const norm = normalizeOkrTargetReviewRecord(rec);
+                const okr = okrs.find(o => String(o.id) === String(okrId));
+                return {
+                    okrId,
+                    title: okr ? String(okr.title || '').trim() : '',
+                    outlook: norm.outlook,
+                    reflection: norm.reflection,
+                    more: norm.more,
+                    selfScore: norm.selfScore,
+                    updatedAt: rec.updatedAt || ''
+                };
+            });
+            items.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无目标复盘，在主页 OKR 卡片左侧「复盘」记录并保存</div>';
+                return;
+            }
+
+            function sectionBlock(label, text) {
+                const t = String(text || '').trim();
+                if (!t) return '';
+                return `<div class="okr-target-review-block"><div class="okr-target-review-block-label">${escapeHtml(label)}</div><div class="okr-target-review-block-body">${multilineHtml(t)}</div></div>`;
+            }
+
+            container.innerHTML = items.map((item) => {
+                const title = item.title || '（目标已删除或无法匹配）';
+                const dateStr = formatOkrTargetReviewUpdatedAt(item.updatedAt);
+                const emoji = item.selfScore != null ? OKR_TARGET_SELF_SCORE_EMOJI[item.selfScore] || '' : '';
+                const scoreRow = item.selfScore != null
+                    ? `<div class="okr-target-review-self"><span class="okr-target-review-emoji" aria-hidden="true">${emoji}</span><span class="okr-target-review-score-text">状态自评 · ${escapeHtml(String(item.selfScore))} 分</span></div>`
+                    : '';
+                const blocks = [
+                    sectionBlock('展望', item.outlook),
+                    sectionBlock('反思', item.reflection),
+                    sectionBlock('更多', item.more)
+                ].filter(Boolean).join('');
+                const hasAny = scoreRow || blocks;
+                const body = hasAny
+                    ? `${scoreRow}${blocks}`
+                    : '<p class="okr-target-review-empty-note">（无内容）</p>';
+                return `
+                <article class="review-card okr-target-review-card" data-okr-id="${escapeHtml(String(item.okrId))}">
+                    <div class="review-header">
+                        <div class="review-header-main">
+                            <span class="okr-target-review-title">${escapeHtml(title)}</span>
+                            ${dateStr ? `<span class="okr-target-review-updated">${escapeHtml(dateStr)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="review-content review-content-compact">
+                        ${body}
+                    </div>
+                </article>`;
+            }).join('');
+        }
+
         function renderMonthlyReviewList() {
             const container = document.getElementById('monthlyReviewList');
             if (!container) return;
@@ -3489,12 +4172,13 @@
                 const monthLabel = String(entry.monthKey || '').replace(/^(\d{4})-(\d{2})$/, '$1年$2月') || '未设置月份';
                 const score = Number(entry.score) || 0;
                 const scoreClass = score <= 4 ? 'score-tone-red' : score <= 6 ? 'score-tone-yellow' : 'score-tone-green';
+                const scoreStr = Number.isFinite(score) ? score.toFixed(1) : '0';
                 const preview = previewMonthlyReviewText(entry);
                 return `
                 <article class="weekly-review-card" data-monthly-id="${escapeHtml(entry.id)}" onclick="openMonthlyReviewModal('${safeId}')">
                     <div class="weekly-review-card-header">
                         <span class="weekly-review-card-week">${escapeHtml(monthLabel)}</span>
-                        <span class="weekly-review-card-score ${scoreClass}">${escapeHtml(String(score))} 分</span>
+                        <span class="weekly-review-card-score ${scoreClass}">${scoreStr} 分</span>
                     </div>
                     <div class="weekly-review-card-preview">${escapeHtml(preview.slice(0, 80))}${preview.length > 80 ? '…' : ''}</div>
                 </article>
@@ -3507,6 +4191,7 @@
             renderWeeklyReviewList();
             renderMonthlyReviewList();
             renderDailyAndEventReviewLists();
+            renderOkrTargetReviewList();
             scheduleHeatmapScale();
             tryFocusPendingReviewCard();
         }
@@ -3520,6 +4205,7 @@
             } catch (e) { /* ignore */ }
             pendingFocusReviewId = getPendingFocusReviewIdFromUrl();
             updateCurrentDate();
+            if (typeof maybeArchiveExpiredOkrs === 'function') maybeArchiveExpiredOkrs();
             loadEntries();
             loadWeeklyReviews();
             loadMonthlyReviews();

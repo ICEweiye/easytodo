@@ -211,9 +211,6 @@
         const opts = options || {};
         let changed = false;
         let remoteData = remote.data || {};
-        if (window.Utf8Utils && typeof window.Utf8Utils.repairStorageData === 'function') {
-            remoteData = window.Utf8Utils.repairStorageData(remoteData);
-        }
 
         applyingRemoteData = true;
         try {

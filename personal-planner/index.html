@@ -11,6 +11,7 @@
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <script src="theme.js"></script>
+    <script src="input-helpers.js"></script>
     <script src="reward-pool.js"></script>
 </head>
 <body class="home-page">
@@ -222,7 +223,7 @@
                 <div class="form-group">
                     <label class="form-label">开始日期</label>
                     <div class="date-picker-field">
-                        <input type="text" class="form-input form-date-text-input" id="okrStartDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <input type="text" class="form-input form-date-text-input" id="okrStartDate" placeholder="--" inputmode="numeric" autocomplete="off">
                         <button type="button" class="date-picker-trigger" data-input-id="okrStartDate" data-native-id="okrStartDateNative" aria-label="选择开始日期">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="4" width="18" height="18" rx="2"></rect>
@@ -237,7 +238,7 @@
                 <div class="form-group">
                     <label class="form-label">结束日期</label>
                     <div class="date-picker-field">
-                        <input type="text" class="form-input form-date-text-input" id="okrEndDate" placeholder="yyyy-mm-dd" inputmode="numeric" autocomplete="off">
+                        <input type="text" class="form-input form-date-text-input" id="okrEndDate" placeholder="--" inputmode="numeric" autocomplete="off">
                         <button type="button" class="date-picker-trigger" data-input-id="okrEndDate" data-native-id="okrEndDateNative" aria-label="选择结束日期">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="4" width="18" height="18" rx="2"></rect>
@@ -265,21 +266,31 @@
                     <span>+ 添加关键结果</span>
                 </button>
             </div>
-            <div class="form-group">
-                <label class="form-label">备注</label>
-                <textarea class="form-input form-textarea" id="okrMemo" placeholder="记录一些想法、备注..." rows="3"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">颜色</label>
-                <div class="color-selector" id="okrColorSelector">
-                    <button type="button" class="color-btn color-brown selected" data-color="brown" title="棕色" onclick="selectOkrColor('brown')"></button>
-                    <button type="button" class="color-btn color-apricot" data-color="apricot" title="杏色" onclick="selectOkrColor('apricot')"></button>
-                    <button type="button" class="color-btn color-sage" data-color="sage" title="鼠尾草绿" onclick="selectOkrColor('sage')"></button>
-                    <button type="button" class="color-btn color-pink" data-color="pink" title="粉色" onclick="selectOkrColor('pink')"></button>
-                    <button type="button" class="color-btn color-indigo" data-color="indigo" title="靛蓝" onclick="selectOkrColor('indigo')"></button>
-                    <button type="button" class="color-btn color-teal" data-color="teal" title="青色" onclick="selectOkrColor('teal')"></button>
-                    <button type="button" class="color-btn color-coral" data-color="coral" title="珊瑚红" onclick="selectOkrColor('coral')"></button>
-                    <button type="button" class="color-btn color-amber" data-color="amber" title="琥珀色" onclick="selectOkrColor('amber')"></button>
+            <div class="okr-modal-tail-fields">
+                <div class="form-group">
+                    <label class="form-label">动机</label>
+                    <textarea class="form-input form-textarea" id="okrMotivation" placeholder="为何设定此目标、内在驱动力…" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">可行性</label>
+                    <textarea class="form-input form-textarea" id="okrFeasibility" placeholder="资源、条件、路径是否具备…" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">备注</label>
+                    <textarea class="form-input form-textarea" id="okrMemo" placeholder="记录一些想法、备注..." rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">颜色</label>
+                    <div class="color-selector" id="okrColorSelector">
+                        <button type="button" class="color-btn color-brown selected" data-color="brown" title="棕色" onclick="selectOkrColor('brown')"></button>
+                        <button type="button" class="color-btn color-apricot" data-color="apricot" title="杏色" onclick="selectOkrColor('apricot')"></button>
+                        <button type="button" class="color-btn color-sage" data-color="sage" title="鼠尾草绿" onclick="selectOkrColor('sage')"></button>
+                        <button type="button" class="color-btn color-pink" data-color="pink" title="粉色" onclick="selectOkrColor('pink')"></button>
+                        <button type="button" class="color-btn color-indigo" data-color="indigo" title="靛蓝" onclick="selectOkrColor('indigo')"></button>
+                        <button type="button" class="color-btn color-teal" data-color="teal" title="青色" onclick="selectOkrColor('teal')"></button>
+                        <button type="button" class="color-btn color-coral" data-color="coral" title="珊瑚红" onclick="selectOkrColor('coral')"></button>
+                        <button type="button" class="color-btn color-amber" data-color="amber" title="琥珀色" onclick="selectOkrColor('amber')"></button>
+                    </div>
                 </div>
             </div>
             <div class="modal-actions">
@@ -438,7 +449,7 @@
             <p class="todo-delete-confirm-text" id="todoDeleteConfirmMessage"></p>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeTodoDeleteConfirm()">取消</button>
-                <button type="button" class="btn btn-danger" onclick="executeTodoDelete()">删除</button>
+                <button type="button" class="btn btn-danger" id="todoDeleteConfirmBtn" onclick="executeTodoDelete()">删除</button>
             </div>
         </div>
     </div>
@@ -469,6 +480,45 @@
             </div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="okrReviewModal" onclick="if(event.target===this)closeOkrReviewModal()">
+        <div class="modal modal-large okr-review-edit-modal" onclick="event.stopPropagation()">
+            <h3 class="modal-title" id="okrReviewModalHeading">目标复盘</h3>
+            <input type="hidden" id="okrReviewModalSelfScore" value="">
+            <div class="okr-review-modal-hero">
+                <div class="okr-review-modal-hero-main">
+                    <p class="okr-review-modal-target" id="okrReviewModalTargetTitle"></p>
+                    <div class="form-group okr-review-self-score-group">
+                        <div class="form-label">状态自评</div>
+                        <div class="okr-review-score-row" role="radiogroup" aria-label="状态自评">
+                            <button type="button" class="okr-review-score-btn" data-score="1" title="1 分" aria-pressed="false" onclick="setOkrReviewSelfScore(1)"><span class="okr-review-score-emoji" aria-hidden="true">😫</span><span class="okr-review-score-num">1</span></button>
+                            <button type="button" class="okr-review-score-btn" data-score="2" title="2 分" aria-pressed="false" onclick="setOkrReviewSelfScore(2)"><span class="okr-review-score-emoji" aria-hidden="true">😟</span><span class="okr-review-score-num">2</span></button>
+                            <button type="button" class="okr-review-score-btn" data-score="3" title="3 分" aria-pressed="false" onclick="setOkrReviewSelfScore(3)"><span class="okr-review-score-emoji" aria-hidden="true">😐</span><span class="okr-review-score-num">3</span></button>
+                            <button type="button" class="okr-review-score-btn" data-score="4" title="4 分" aria-pressed="false" onclick="setOkrReviewSelfScore(4)"><span class="okr-review-score-emoji" aria-hidden="true">🙂</span><span class="okr-review-score-num">4</span></button>
+                            <button type="button" class="okr-review-score-btn" data-score="5" title="5 分" aria-pressed="false" onclick="setOkrReviewSelfScore(5)"><span class="okr-review-score-emoji" aria-hidden="true">🤩</span><span class="okr-review-score-num">5</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="okr-review-modal-hero-ring" id="okrReviewModalRingHost" aria-hidden="true"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="okrReviewModalOutlook">展望</label>
+                <textarea class="form-input form-textarea" id="okrReviewModalOutlook" rows="4" placeholder="对目标下阶段方向、期待与计划的展望…"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="okrReviewModalReflection">反思</label>
+                <textarea class="form-input form-textarea" id="okrReviewModalReflection" rows="4" placeholder="对执行过程、偏差与原因的反思…"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="okrReviewModalMore">更多</label>
+                <textarea class="form-input form-textarea" id="okrReviewModalMore" rows="3" placeholder="其它想记录的内容…"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" type="button" onclick="closeOkrReviewModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveOkrReview()">保存</button>
+            </div>
+        </div>
+    </div>
 <script src="app.js"></script>
     <script>
         let todos = normalizeTodosForRuntime(Storage.get('planner_todos') || []);
@@ -481,6 +531,8 @@
         const REVIEW_EMOTION_INTENSITY_OPTIONS = ['很高', '高', '中', '低', '很低'];
         let pendingTodoDeleteId = null;
         let pendingTodoDeleteStarKey = null;
+        /** hard：从存储中删除；dismissOverdueBoard：已逾期事项仅从今日/要事列表隐藏，日历仍计入，须在日期格中再删以彻底移除 */
+        let pendingTodoDeleteMode = 'hard';
 
         function findTodoStarAwardKey(todo) {
             if (!window.RewardPool || !todo) return null;
@@ -501,6 +553,11 @@
         function closeTodoDeleteConfirm() {
             pendingTodoDeleteId = null;
             pendingTodoDeleteStarKey = null;
+            pendingTodoDeleteMode = 'hard';
+            const titleEl = document.getElementById('todoDeleteConfirmTitle');
+            const btn = document.getElementById('todoDeleteConfirmBtn');
+            if (titleEl) titleEl.textContent = '删除事项';
+            if (btn) btn.textContent = '删除';
             const el = document.getElementById('todoDeleteConfirmModal');
             if (el) el.classList.remove('active');
         }
@@ -508,16 +565,34 @@
         function executeTodoDelete() {
             const id = pendingTodoDeleteId;
             const starKey = pendingTodoDeleteStarKey;
+            const mode = pendingTodoDeleteMode;
             const el = document.getElementById('todoDeleteConfirmModal');
             if (el) el.classList.remove('active');
             pendingTodoDeleteId = null;
             pendingTodoDeleteStarKey = null;
+            pendingTodoDeleteMode = 'hard';
+            const titleEl = document.getElementById('todoDeleteConfirmTitle');
+            const btn = document.getElementById('todoDeleteConfirmBtn');
+            if (titleEl) titleEl.textContent = '删除事项';
+            if (btn) btn.textContent = '删除';
             if (id == null) return;
+
+            if (mode === 'dismissOverdueBoard') {
+                const todo = todos.find(t => String(t.id) === String(id));
+                if (todo) {
+                    todo.hideFromTodayBoard = true;
+                    Storage.set('planner_todos', todos);
+                    renderTodoList();
+                    refreshTodoDateModalIfOpen();
+                }
+                return;
+            }
+
             if (starKey && window.RewardPool) {
                 window.RewardPool.revokeYellowStar(starKey);
                 if (typeof renderRewardPool === 'function') renderRewardPool();
             }
-            todos = todos.filter(t => t.id != id);
+            todos = todos.filter(t => String(t.id) !== String(id));
             Storage.set('planner_todos', todos);
             renderTodoList();
             refreshTodoDateModalIfOpen();
@@ -572,7 +647,8 @@
                 .filter(item => item && typeof item === 'object')
                 .map(item => ({
                     ...item,
-                    singleDayOnly: !!item.singleDayOnly
+                    singleDayOnly: !!item.singleDayOnly,
+                    hideFromTodayBoard: !!item.hideFromTodayBoard
                 }));
         }
 
@@ -607,8 +683,15 @@
             return dateKey >= startDate && dateKey <= todo.dueDate;
         }
 
+        function isTodoDismissedFromOverdueHomeBoards(todo, todayKey) {
+            return !!(todo && todo.hideFromTodayBoard && !todo.completed
+                && isTodoDateKey(todo.dueDate) && isTodoDateKey(todayKey)
+                && todo.dueDate < todayKey);
+        }
+
         function isTodoVisibleInToday(todo, todayKey) {
             if (!todo || !isTodoDateKey(todayKey)) return false;
+            if (isTodoDismissedFromOverdueHomeBoards(todo, todayKey)) return false;
             if (isTodoActiveOnDate(todo, todayKey)) return true;
             if (todo.singleDayOnly) return false;
             return !todo.completed && isTodoDateKey(todo.dueDate) && todo.dueDate < todayKey;
@@ -720,7 +803,23 @@
         function getReviewEntryPreview(entry, maxLen = 56) {
             const rawText = String(
                 entry?.reviewKind === 'event'
-                    ? (entry?.eventSubject || entry?.graiGoal || entry?.graiResult || entry?.graiAnalysis || entry?.graiImprovement || '')
+                    ? (entry?.eventSubject ||
+                        entry?.graiGoal ||
+                        entry?.graiResultExpected ||
+                        entry?.graiResultActual ||
+                        entry?.graiResultEvaluation ||
+                        entry?.graiResult ||
+                        entry?.graiAnalysisGoodSubjective ||
+                        entry?.graiAnalysisGoodObjective ||
+                        entry?.graiAnalysisBadSubjective ||
+                        entry?.graiAnalysisBadObjective ||
+                        entry?.graiAnalysis ||
+                        entry?.keep ||
+                        entry?.improve ||
+                        entry?.stop ||
+                        entry?.start ||
+                        entry?.graiImprovement ||
+                        '')
                     : (entry?.summary ||
                 entry?.tasks ||
                 entry?.keep ||
@@ -873,10 +972,26 @@
         function reviewEntryCombinedUserPlainText(entry) {
             if (entry?.reviewKind === 'event') {
                 const subj = normalizeInlineText(entry.eventSubject);
-                const body = ['graiGoal', 'graiResult', 'graiAnalysis', 'graiImprovement']
+                const rBits = [
+                    normalizeInlineText(entry.graiResultExpected),
+                    normalizeInlineText(entry.graiResultActual),
+                    normalizeInlineText(entry.graiResultEvaluation)
+                ].filter(Boolean);
+                const rText = rBits.length ? rBits.join('\n') : normalizeInlineText(entry.graiResult);
+                const aBits = [
+                    normalizeInlineText(entry.graiAnalysisGoodSubjective),
+                    normalizeInlineText(entry.graiAnalysisGoodObjective),
+                    normalizeInlineText(entry.graiAnalysisBadSubjective),
+                    normalizeInlineText(entry.graiAnalysisBadObjective)
+                ].filter(Boolean);
+                const aText = aBits.length ? aBits.join('\n') : normalizeInlineText(entry.graiAnalysis);
+                const grai = [normalizeInlineText(entry.graiGoal), rText, aText].filter(Boolean).join('\n');
+                const kiss = ['keep', 'improve', 'stop', 'start']
                     .map((k) => normalizeInlineText(entry[k]))
                     .filter(Boolean)
                     .join('\n');
+                const legacyI = normalizeInlineText(entry.graiImprovement);
+                const body = [grai, kiss, legacyI].filter(Boolean).join('\n');
                 return [subj, body].filter(Boolean).join('\n');
             }
             return ['summary', 'keep', 'improve', 'stop', 'tasks']
@@ -918,6 +1033,130 @@
             return '复盘拉满';
         }
 
+        function homeEventReviewCardFieldHtml(label, value, extraClass = '') {
+            if (!normalizeInlineText(value)) return '';
+            const x = extraClass ? ` ${extraClass}` : '';
+            const lab = label ? `<span class="review-event-card__field-label">${escapeHtml(label)}</span>` : '';
+            return `<div class="review-event-card__field${x}">${lab}<div class="review-event-card__field-value">${multilineHtml(value)}</div></div>`;
+        }
+
+        function homeEventReviewCardBlockHtml(letter, title, innerHtml) {
+            if (!innerHtml || !String(innerHtml).trim()) return '';
+            return `<section class="review-event-card__block">
+                <div class="review-event-card__block-head">
+                    <span class="review-event-card__letter" aria-hidden="true">${escapeHtml(letter)}</span>
+                    <h4 class="review-event-card__block-title">${escapeHtml(title)}</h4>
+                </div>
+                <div class="review-event-card__block-body">${innerHtml}</div>
+            </section>`;
+        }
+
+        function buildHomeEventReviewResultFieldsHtml(entry) {
+            const ex = String(entry.graiResultExpected || '').trim();
+            const ac = String(entry.graiResultActual || '').trim();
+            const ev = String(entry.graiResultEvaluation || '').trim();
+            if (ex || ac || ev) {
+                let pairInner = '';
+                if (ex && ac) {
+                    pairInner = homeEventReviewCardFieldHtml('预期结果', ex, 'review-event-card__result-cell')
+                        + homeEventReviewCardFieldHtml('实际结果', ac, 'review-event-card__result-cell');
+                } else if (ex) {
+                    pairInner = homeEventReviewCardFieldHtml('预期结果', ex, 'review-event-card__result-cell review-event-card__result-cell--full');
+                } else if (ac) {
+                    pairInner = homeEventReviewCardFieldHtml('实际结果', ac, 'review-event-card__result-cell review-event-card__result-cell--full');
+                }
+                const pairRow = pairInner ? `<div class="review-event-card__result-pair">${pairInner}</div>` : '';
+                const evalRow = ev
+                    ? `<div class="review-event-card__result-eval">${homeEventReviewCardFieldHtml('结果评估', ev, 'review-event-card__result-cell')}</div>`
+                    : '';
+                return `<div class="review-event-card__result-layout">${pairRow}${evalRow}</div>`;
+            }
+            const leg = String(entry.graiResult || '').trim();
+            return leg ? `<div class="review-event-card__field-stack">${homeEventReviewCardFieldHtml('评估结果', leg)}</div>` : '';
+        }
+
+        function buildHomeEventReviewAnalysisFieldsHtml(entry) {
+            const gs = String(entry.graiAnalysisGoodSubjective || '').trim();
+            const go = String(entry.graiAnalysisGoodObjective || '').trim();
+            const bs = String(entry.graiAnalysisBadSubjective || '').trim();
+            const bo = String(entry.graiAnalysisBadObjective || '').trim();
+            if (gs || go || bs || bo) {
+                return `<div class="review-event-card__analysis-quad" aria-label="原因四象限">` + [
+                    homeEventReviewCardFieldHtml('好 · 主观', gs, 'review-event-card__analysis-cell review-event-card__analysis-cell--good'),
+                    homeEventReviewCardFieldHtml('好 · 客观', go, 'review-event-card__analysis-cell review-event-card__analysis-cell--good'),
+                    homeEventReviewCardFieldHtml('坏 · 主观', bs, 'review-event-card__analysis-cell review-event-card__analysis-cell--bad'),
+                    homeEventReviewCardFieldHtml('坏 · 客观', bo, 'review-event-card__analysis-cell review-event-card__analysis-cell--bad')
+                ].join('') + `</div>`;
+            }
+            const leg = String(entry.graiAnalysis || '').trim();
+            return leg ? `<div class="review-event-card__field-stack">${homeEventReviewCardFieldHtml('分析原因', leg)}</div>` : '';
+        }
+
+        function buildHomeEventReviewKissGridHtml(entry) {
+            const hasKiss = ['keep', 'improve', 'stop', 'start'].some((k) => String(entry[k] || '').trim());
+            const cells = [];
+            if (hasKiss) {
+                const specs = [
+                    { key: 'keep', abbr: 'K', name: 'Keep', hint: '保持', tone: 'keep' },
+                    { key: 'improve', abbr: 'I', name: 'Improve', hint: '改进', tone: 'improve' },
+                    { key: 'stop', abbr: 'S', name: 'Stop', hint: '停止', tone: 'stop' },
+                    { key: 'start', abbr: 'T', name: 'Start', hint: '行动', tone: 'start' }
+                ];
+                specs.forEach(({ key, abbr, name, hint, tone }) => {
+                    const v = String(entry[key] || '').trim();
+                    if (!v) return;
+                    cells.push(`<div class="review-event-card__kiss-cell review-event-card__kiss-cell--${tone}">
+                        <div class="review-event-card__kiss-head">
+                            <span class="review-event-card__kiss-badge" aria-hidden="true">${abbr}</span>
+                            <span class="review-event-card__kiss-title">${escapeHtml(name)}</span>
+                            <span class="review-event-card__kiss-hint">${escapeHtml(hint)}</span>
+                        </div>
+                        <div class="review-event-card__kiss-body">${multilineHtml(v)}</div>
+                    </div>`);
+                });
+            } else if (normalizeInlineText(entry.graiImprovement)) {
+                const v = String(entry.graiImprovement || '').trim();
+                cells.push(`<div class="review-event-card__kiss-cell review-event-card__kiss-cell--legacy review-event-card__kiss-cell--full">
+                    <div class="review-event-card__kiss-head">
+                        <span class="review-event-card__kiss-badge" aria-hidden="true">I</span>
+                        <span class="review-event-card__kiss-title">总结改进</span>
+                        <span class="review-event-card__kiss-hint">旧版</span>
+                    </div>
+                    <div class="review-event-card__kiss-body">${multilineHtml(v)}</div>
+                </div>`);
+            }
+            if (!cells.length) return '';
+            return `<div class="review-event-card__kiss-grid">${cells.join('')}</div>`;
+        }
+
+        function buildHomeEventReviewStructuredBodyHtml(entry) {
+            const parts = [];
+            const subj = String(entry.eventSubject || '').trim();
+            if (subj) {
+                parts.push(`<header class="review-event-card__hero"><h3 class="review-event-card__subject">${multilineHtml(subj)}</h3></header>`);
+            }
+            if (normalizeInlineText(entry.graiGoal)) {
+                const gInner = `<div class="review-event-card__prose">${multilineHtml(entry.graiGoal)}</div>`;
+                parts.push(homeEventReviewCardBlockHtml('G', '回顾目标', gInner));
+            }
+            const rInner = buildHomeEventReviewResultFieldsHtml(entry);
+            if (rInner) {
+                parts.push(homeEventReviewCardBlockHtml('R', '评估结果', rInner));
+            }
+            const aInner = buildHomeEventReviewAnalysisFieldsHtml(entry);
+            if (aInner) {
+                parts.push(homeEventReviewCardBlockHtml('A', '分析原因', aInner));
+            }
+            const kissBlock = buildHomeEventReviewKissGridHtml(entry);
+            if (kissBlock) {
+                parts.push(homeEventReviewCardBlockHtml('I', '总结改进（KISS）', kissBlock));
+            }
+            const inner = parts.length
+                ? `<div class="review-event-card__stack">${parts.join('')}</div>`
+                : '<p class="review-event-card__empty">暂无 GRAI 正文</p>';
+            return `<div class="review-event-card__body">${inner}</div>`;
+        }
+
         function renderDailyReviewCard() {
             const container = document.getElementById('dailyReviewContent');
             if (!container) return;
@@ -948,21 +1187,19 @@
             const pickedKey = getDailyPickedReviewKey(entries);
             const picked = entries.find(entry => String(entry.poolKey) === pickedKey) || entries[0];
             const isEventReview = picked.reviewKind === 'event';
-            const eventSubjectLine = isEventReview && normalizeInlineText(picked.eventSubject)
-                ? sectionPreviewHtml('主题', picked.eventSubject, 9999)
-                : '';
             const summaryHtml = isEventReview
-                ? eventSubjectLine + [
-                    sectionPreviewHtml('G 目标', picked.graiGoal, 9999),
-                    sectionPreviewHtml('R 结果', picked.graiResult, 9999),
-                    sectionPreviewHtml('A 分析', picked.graiAnalysis, 9999),
-                    sectionPreviewHtml('I 改进', picked.graiImprovement, 9999)
-                ].filter(Boolean).join('')
+                ? buildHomeEventReviewStructuredBodyHtml(picked)
                 : sectionPreviewHtml('总结', picked.summary, 9999);
             const tasksPlain = isEventReview
-                ? (normalizeInlineText(picked.eventSubject) || normalizeInlineText(picked.graiGoal) || '')
+                ? (normalizeInlineText(picked.eventSubject) || normalizeInlineText(picked.graiGoal)
+                    || normalizeInlineText(picked.graiResultExpected) || normalizeInlineText(picked.graiResultActual)
+                    || normalizeInlineText(picked.graiResultEvaluation) || normalizeInlineText(picked.graiResult) || '')
                 : (normalizeInlineText(picked.tasks) || '');
-            const todayTaskText = escapeHtml(tasksPlain || (isEventReview ? '事件复盘' : '今日事项'));
+            const todayTaskText = escapeHtml(
+                isEventReview && normalizeInlineText(picked.eventSubject)
+                    ? '事件复盘'
+                    : (tasksPlain || (isEventReview ? '事件复盘' : '今日事项'))
+            );
             const combinedUser = reviewEntryCombinedUserPlainText(picked);
             const reviewBodyFold = window.PlannerBackup && typeof PlannerBackup.userReviewBodyFoldClass === 'function'
                 ? PlannerBackup.userReviewBodyFoldClass(combinedUser)
@@ -993,7 +1230,7 @@
                 sectionPreviewHtml('⚠️ 改进', picked.improve, 9999),
                 sectionPreviewHtml('🚫 停止', picked.stop, 9999)
             ].filter(Boolean).join('');
-            const dividerHtml = !isEventReview && kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
+            const dividerHtml = kissHtml ? '<div class="review-kiss-divider" aria-hidden="true"></div>' : '';
             const revExpandLabel =
                 window.PlannerBackup && window.PlannerBackup.t ? window.PlannerBackup.t('review.expand') : '展开';
             const revExpandAria =
@@ -1016,17 +1253,20 @@
                             </div>`;
 
             const contextLead = isEventReview ? '事件' : '今天';
+            const homeDailyHeaderExtras = !isEventReview ? `
+                                <div class="review-meta-row">
+                                    <span class="review-score-circle ${scoreToneClass}" title="评分 ${picked.score}/10">${picked.score}</span>
+                                    <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
+                                </div>
+                                <span class="review-today-note"><strong>${contextLead}</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                            ` : '';
             container.innerHTML = `
                 <div class="daily-review-link">
                     <article class="review-card review-record-card${isEventReview ? ' review-record-card--event' : ''}">
                         <div class="review-header">
                             <div class="review-header-main">
                                 <span class="review-period">${escapeHtml(picked.date || '--')}</span>
-                                <div class="review-meta-row">
-                                    <span class="review-score-circle ${scoreToneClass}" title="评分 ${picked.score}/10">${picked.score}</span>
-                                    <span class="review-cheer-badge ${scoreToneClass}">${cheerText}</span>
-                                </div>
-                                <span class="review-today-note"><strong>${contextLead}</strong><span class="${todayTaskClass}">${todayTaskText}</span><strong>时</strong>${moodHtml}</span>
+                                ${homeDailyHeaderExtras}
                             </div>
                         </div>
                         <div class="review-content review-content-compact">
@@ -1397,7 +1637,7 @@
             const dayItems = getTodoItemsByDate(selectedTodoDate);
             titleEl.textContent = `${selectedTodoDate} 事项`;
             listEl.innerHTML = dayItems.length
-                ? dayItems.map(todo => renderTodoItem(todo)).join('')
+                ? dayItems.map(todo => renderTodoItem(todo, { deleteFromDateModal: true })).join('')
                 : '<div class="todo-date-modal-empty">该日期暂无事项</div>';
         }
 
@@ -1466,7 +1706,12 @@
                 });
 
             const monthlyImportant = todos
-                .filter(todo => !todo.completed && todo.important && inCurrentMonth(todo))
+                .filter(todo => {
+                    if (!todo.completed && todo.important && inCurrentMonth(todo)) {
+                        return !isTodoDismissedFromOverdueHomeBoards(todo, todayKey);
+                    }
+                    return false;
+                })
                 .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
 
             return { todayTodos, monthlyImportant };
@@ -1645,6 +1890,7 @@
             const hasLinkedKr = !!(todo.okrId && todo.krId);
             const carryState = showCarryBadge ? getTodoCarryState(todo, referenceDateKey) : '';
             const showOverdueBadge = options.showOverdueBadge === true;
+            const deleteFromDateModal = options.deleteFromDateModal === true;
             const inlineImportant = (isPriorityLayout || !showDueDate) && !!todo.important;
             const dueDateInMeta = showDueDate && todo.dueDate && !isPriorityLayout;
             const hasMeta = !!(dueDateInMeta || (todo.important && !inlineImportant));
@@ -1695,7 +1941,7 @@
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
                         </button>
-                        <button class="todo-action-btn delete" onclick="deleteTodo('${safeTodoId}')" title="删除">
+                        <button class="todo-action-btn delete" onclick="deleteTodo('${safeTodoId}', ${deleteFromDateModal})" title="删除">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"/>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -1820,6 +2066,9 @@
                     if (relationChanged) {
                         todo.krProgressSynced = false;
                     }
+                    if (isTodoDateKey(dueDate) && dueDate >= todayKey) {
+                        todo.hideFromTodayBoard = false;
+                    }
                 }
             } else {
                 const todayKey = getTodoDayKey(new Date());
@@ -1848,17 +2097,48 @@
             closeTodoModal();
         }
 
-        function deleteTodo(id) {
-            const todo = todos.find(t => t.id == id);
+        function deleteTodo(id, fromDateModal) {
+            const todo = todos.find(t => String(t.id) === String(id));
             if (!todo) return;
+            const todayKey = getTodoDayKey(new Date());
+            const isOverdueIncomplete = !todo.completed && isTodoDateKey(todo.dueDate) && todo.dueDate < todayKey;
+            const fromModal = fromDateModal === true || fromDateModal === 'true';
+
+            const msgEl = document.getElementById('todoDeleteConfirmMessage');
+            const titleEl = document.getElementById('todoDeleteConfirmTitle');
+            const modal = document.getElementById('todoDeleteConfirmModal');
+            const confirmBtn = document.getElementById('todoDeleteConfirmBtn');
+
+            if (!fromModal && isOverdueIncomplete) {
+                pendingTodoDeleteId = id;
+                pendingTodoDeleteStarKey = null;
+                pendingTodoDeleteMode = 'dismissOverdueBoard';
+                if (titleEl) titleEl.textContent = '从列表移除';
+                if (msgEl) {
+                    msgEl.textContent = '该事项已逾期，若要彻底删除，请点开该日期格，在弹出列表中删除。';
+                }
+                if (confirmBtn) confirmBtn.textContent = '从列表移除';
+                if (modal) {
+                    modal.classList.add('active');
+                    return;
+                }
+                if (confirm(msgEl ? msgEl.textContent : '')) {
+                    executeTodoDelete();
+                } else {
+                    closeTodoDeleteConfirm();
+                }
+                return;
+            }
+
             const starKey = findTodoStarAwardKey(todo);
             pendingTodoDeleteId = id;
             pendingTodoDeleteStarKey = starKey;
+            pendingTodoDeleteMode = 'hard';
+            if (titleEl) titleEl.textContent = '删除事项';
+            if (confirmBtn) confirmBtn.textContent = '删除';
             const message = starKey
                 ? '该事项已完成并获得过「事项」黄星积分。删除后相应积分会被收回，确定删除吗？'
                 : '确定删除这个事项吗？';
-            const msgEl = document.getElementById('todoDeleteConfirmMessage');
-            const modal = document.getElementById('todoDeleteConfirmModal');
             if (msgEl) msgEl.textContent = message;
             if (modal) {
                 modal.classList.add('active');

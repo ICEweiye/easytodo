@@ -126,7 +126,7 @@ function sanitizeData(rawData) {
         if (!shouldSyncKey(key)) return;
         const value = rawData[key];
         if (typeof value === 'string') {
-            data[key] = Utf8Utils.repairStorageData({ [key]: value })[key];
+            data[key] = value;
         }
     });
 
@@ -143,7 +143,7 @@ function sanitizePatchData(rawData) {
         if (value === null) {
             patch[key] = null;
         } else if (typeof value === 'string') {
-            patch[key] = Utf8Utils.repairStorageData({ [key]: value })[key];
+            patch[key] = value;
         }
     });
 
@@ -820,8 +820,7 @@ function restoreFromBackupFile(backupFullPath) {
         clearStmt.run();
         rows.forEach((row) => {
             if (row && typeof row.key === 'string' && typeof row.value === 'string') {
-                const repaired = Utf8Utils.repairStorageData({ [row.key]: row.value })[row.key];
-                upsertStmt.run(row.key, repaired);
+                upsertStmt.run(row.key, row.value);
             }
         });
         metaStmt.run(updatedAt);

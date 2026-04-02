@@ -11,13 +11,7 @@ const Storage = {
         const data = localStorage.getItem(plannerScopedLogicalKey(logicalKey));
         if (!data) return null;
         try {
-            const parsed = JSON.parse(data);
-            if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' &&
-                (logicalKey === 'reviews' || logicalKey === 'planner_review_entries' ||
-                 logicalKey === 'planner_review_archive_entries' || logicalKey === 'planner_todos')) {
-                return window.Utf8Utils.ensureValidUtf8(parsed);
-            }
-            return parsed;
+            return JSON.parse(data);
         } catch (err) {
             return null;
         }
@@ -109,6 +103,11 @@ function escapePlannerHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+/** OKR 侧栏展开面板：转义后保留换行 */
+function escapePlannerHtmlWithBreaks(value) {
+    return escapePlannerHtml(value).replace(/\r/g, '').replace(/\n/g, '<br>');
+}
+
 function escapePlannerAttribute(value) {
     return escapePlannerHtml(value);
 }
@@ -123,6 +122,59 @@ function escapePlannerJsString(value) {
         .replace(/>/g, '\\u003E');
 }
 
+const OKR_ARCHIVE_STORAGE_KEY = 'planner_okrs_archive';
+
+function getTodayYmdLocal() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getOkrArchiveList() {
+    const raw = Storage.get(OKR_ARCHIVE_STORAGE_KEY);
+    return Array.isArray(raw) ? raw : [];
+}
+
+function setOkrArchiveList(list) {
+    Storage.set(OKR_ARCHIVE_STORAGE_KEY, list);
+}
+
+/** 将「截止日期」早于今日的目标移入 planner_okrs_archive，主页与时间轴不再展示 */
+function maybeArchiveExpiredOkrs() {
+    if (!Array.isArray(data.okrs)) return;
+    const todayYmd = getTodayYmdLocal();
+    const active = [];
+    const toArchive = [];
+    data.okrs.forEach((okr) => {
+        const end = normalizeYmdDate(okr.endDate);
+        if (!end) {
+            active.push(okr);
+            return;
+        }
+        if (end < todayYmd) {
+            toArchive.push({
+                ...okr,
+                archivedAt: new Date().toISOString(),
+                archiveReason: 'expired'
+            });
+        } else {
+            active.push(okr);
+        }
+    });
+    if (toArchive.length === 0) return;
+    const existing = getOkrArchiveList();
+    const seen = new Set(existing.map((o) => String(o.id)));
+    toArchive.forEach((o) => {
+        const id = String(o.id);
+        if (!seen.has(id)) {
+            existing.push(o);
+            seen.add(id);
+        }
+    });
+    setOkrArchiveList(existing);
+    data.okrs = active;
+    Storage.set('planner_okrs', data.okrs);
+}
+
 function reloadPlannerDataFromStorage() {
     const fb = getPlannerInitialFallbacks();
     data = {
@@ -130,6 +182,7 @@ function reloadPlannerDataFromStorage() {
         okrs: getPlannerStoredValue('planner_okrs', fb.okrs),
         books: getPlannerStoredValue('planner_books', fb.books)
     };
+    maybeArchiveExpiredOkrs();
 }
 
 // ===== 工具函数 =====
@@ -689,15 +742,20 @@ ${barHtml}
 // ===== OKR 模块 =====
 function renderOKRs() {
     const grid = document.getElementById('okrGrid');
+    if (!grid) return;
 
     if (data.okrs.length === 0) {
+        grid.classList.add('is-empty');
         grid.innerHTML = '<div class="empty-state">暂无 OKR，点击右上角 + 添加</div>';
         return;
     }
 
+    grid.classList.remove('is-empty');
     grid.innerHTML = data.okrs.map(okr => {
         const okrColor = normalizeOkrColor(okr.color);
         const safeOkrId = escapePlannerJsString(okr.id);
+        const okrIdDomSafe = String(okr.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const okrIdAttr = escapePlannerAttribute(String(okr.id));
         const totalKrs = okr.krs.length || 1;
         const getKrWeightValue = (kr) => {
             const weight = parseInt(kr.weight, 10);
@@ -754,9 +812,33 @@ function renderOKRs() {
             ? `<span class="okr-remaining-text">${escapePlannerHtml(remainingPrefix)}</span><span class="okr-remaining-number">${escapePlannerHtml(remainingNumber)}</span><span class="okr-remaining-text">${escapePlannerHtml(remainingSuffix)}</span>`
             : escapePlannerHtml(remainingText);
         const safeMemo = escapePlannerHtml(okr.memo || '');
+        const motivationPanelHtml = String(okr.motivation || '').trim()
+            ? escapePlannerHtmlWithBreaks(okr.motivation)
+            : '<span class="okr-colorbar-empty">无内容</span>';
+        const feasibilityPanelHtml = String(okr.feasibility || '').trim()
+            ? escapePlannerHtmlWithBreaks(okr.feasibility)
+            : '<span class="okr-colorbar-empty">无内容</span>';
 
         return `
-            <div class="okr-card" style="border-left: 4px solid var(--okr-color-${okrColor})">
+            <div class="okr-card" data-okr-color="${okrColor}" data-okr-id="${okrIdAttr}" style="--okr-card-accent: var(--okr-color-${okrColor})">
+                <div class="okr-card-colorbar" style="--okr-bar: var(--okr-color-${okrColor})" title="动机 · 可行性 · 复盘">
+                    <div class="okr-colorbar-cell" data-field="motivation">
+                        <button type="button" class="okr-colorbar-segment okr-colorbar-segment--btn" aria-expanded="false" aria-controls="okr-bar-mot-${okrIdDomSafe}" id="okr-bar-mot-btn-${okrIdDomSafe}"><span>动机</span></button>
+                        <div class="okr-colorbar-panel" id="okr-bar-mot-${okrIdDomSafe}" role="region" aria-labelledby="okr-bar-mot-btn-${okrIdDomSafe}" aria-hidden="true">
+                            <div class="okr-colorbar-panel-inner">${motivationPanelHtml}</div>
+                        </div>
+                    </div>
+                    <div class="okr-colorbar-cell" data-field="feasibility">
+                        <button type="button" class="okr-colorbar-segment okr-colorbar-segment--btn" aria-expanded="false" aria-controls="okr-bar-fea-${okrIdDomSafe}" id="okr-bar-fea-btn-${okrIdDomSafe}"><span>可行性</span></button>
+                        <div class="okr-colorbar-panel" id="okr-bar-fea-${okrIdDomSafe}" role="region" aria-labelledby="okr-bar-fea-btn-${okrIdDomSafe}" aria-hidden="true">
+                            <div class="okr-colorbar-panel-inner">${feasibilityPanelHtml}</div>
+                        </div>
+                    </div>
+                    <div class="okr-colorbar-cell okr-colorbar-cell--review">
+                        <button type="button" class="okr-colorbar-segment okr-colorbar-segment--review" onclick="openOkrReviewModal('${safeOkrId}')" aria-label="对该目标复盘"><span>复盘</span></button>
+                    </div>
+                </div>
+                <div class="okr-card-body">
                 <button class="okr-delete" onclick="deleteOkr('${safeOkrId}')">×</button>
                 <div class="okr-header">
                     <div class="okr-header-main">
@@ -806,9 +888,79 @@ function renderOKRs() {
                     <button class="add-kr-btn" onclick="addKr('${safeOkrId}')">+ 添加关键结果</button>
                 </div>
                 ${okr.memo ? `<div class="okr-memo">备注：${safeMemo}</div>` : ''}
+                </div>
             </div>
         `;
     }).join('');
+
+    attachOkrColorbarInteractions();
+}
+
+let okrColorbarOutsidePointerBound = false;
+
+function syncOkrColorbarCellAria(cell) {
+    const btn = cell.querySelector('.okr-colorbar-segment--btn');
+    const panel = cell.querySelector('.okr-colorbar-panel');
+    const open = cell.classList.contains('is-open');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (panel) panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
+function attachOkrColorbarInteractions() {
+    const grid = document.getElementById('okrGrid');
+    if (!grid) return;
+
+    grid.querySelectorAll('.okr-colorbar-cell[data-field]').forEach((cell) => {
+        const btn = cell.querySelector('.okr-colorbar-segment--btn');
+        if (!btn || btn.dataset.okrBarBound === '1') return;
+        btn.dataset.okrBarBound = '1';
+
+        const openFromHover = () => {
+            if (!cell.classList.contains('okr-colorbar-cell--pinned')) {
+                cell.classList.add('is-open');
+                syncOkrColorbarCellAria(cell);
+            }
+        };
+        const closeIfHoverOnly = () => {
+            if (!cell.classList.contains('okr-colorbar-cell--pinned')) {
+                cell.classList.remove('is-open');
+                syncOkrColorbarCellAria(cell);
+            }
+        };
+
+        cell.addEventListener('mouseenter', openFromHover);
+        cell.addEventListener('mouseleave', closeIfHoverOnly);
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const pinned = cell.classList.toggle('okr-colorbar-cell--pinned');
+            if (pinned) {
+                cell.classList.add('is-open');
+            } else {
+                if (!cell.matches(':hover')) {
+                    cell.classList.remove('is-open');
+                }
+            }
+            syncOkrColorbarCellAria(cell);
+        });
+    });
+
+    if (!okrColorbarOutsidePointerBound) {
+        okrColorbarOutsidePointerBound = true;
+        document.addEventListener(
+            'pointerdown',
+            (e) => {
+                const t = e.target;
+                document.querySelectorAll('.okr-colorbar-cell--pinned').forEach((cell) => {
+                    if (!cell.contains(t)) {
+                        cell.classList.remove('okr-colorbar-cell--pinned', 'is-open');
+                        syncOkrColorbarCellAria(cell);
+                    }
+                });
+            },
+            true
+        );
+    }
 }
 
 // ===== 阅读清单 =====
@@ -928,6 +1080,167 @@ function openModal(id, preserveEditing = false) {
         editingId = null;
         editingType = null;
     }
+}
+
+const OKR_REVIEWS_STORAGE_KEY = 'planner_okr_reviews';
+
+let okrReviewModalOkrId = null;
+
+/** 与 OKR 卡片一致的 KR 加权进度 0～100 */
+function computeOkrWeightedProgressPercent(okr) {
+    if (!okr || !Array.isArray(okr.krs) || okr.krs.length === 0) return 0;
+    const totalKrs = okr.krs.length || 1;
+    const getKrWeightValue = (kr) => {
+        const weight = parseInt(kr.weight, 10);
+        return Number.isFinite(weight) ? weight : Math.round(100 / totalKrs);
+    };
+    let totalWeight = 0;
+    let completedWeight = 0;
+    okr.krs.forEach((kr) => {
+        normalizeKr(kr);
+        const weight = getKrWeightValue(kr);
+        totalWeight += weight;
+        completedWeight += weight * getKrProgress(kr);
+    });
+    return totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+}
+
+function renderOkrReviewModalProgressRing(okr) {
+    const host = document.getElementById('okrReviewModalRingHost');
+    if (!host) return;
+    const progress = computeOkrWeightedProgressPercent(okr);
+    const okrColor = normalizeOkrColor(okr.color);
+    const circumference = 2 * Math.PI * 35;
+    const offset = circumference - (progress / 100) * circumference;
+    host.innerHTML = `
+        <div class="ring-container okr-review-modal-ring">
+            <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
+                <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-color-${okrColor});"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+            </svg>
+            <div class="ring-text">${progress}%</div>
+        </div>
+    `;
+    host.removeAttribute('aria-hidden');
+}
+
+function getOkrReviewsMap() {
+    const raw = Storage.get(OKR_REVIEWS_STORAGE_KEY);
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+}
+
+/** 兼容旧版仅 notes 字段；新结构以 reflection 为准，旧数据无新字段时回落到 notes */
+function normalizeOkrReviewRecord(rec) {
+    const r = rec || {};
+    const hasNewShape = 'reflection' in r || 'outlook' in r || 'more' in r || 'selfScore' in r;
+    const reflection = hasNewShape ? String(r.reflection || '') : String(r.notes || '');
+    let selfScore = parseInt(r.selfScore, 10);
+    if (!Number.isFinite(selfScore) || selfScore < 1 || selfScore > 5) {
+        selfScore = null;
+    }
+    return {
+        outlook: String(r.outlook || ''),
+        reflection,
+        more: String(r.more || ''),
+        selfScore
+    };
+}
+
+/** n 为 1～5 选中对应表情；0 或非法则清空选择 */
+function setOkrReviewSelfScore(n) {
+    const v = parseInt(n, 10);
+    const hidden = document.getElementById('okrReviewModalSelfScore');
+    const modal = document.getElementById('okrReviewModal');
+    if (!modal) return;
+    if (!Number.isFinite(v) || v < 1 || v > 5) {
+        if (hidden) hidden.value = '';
+        modal.querySelectorAll('.okr-review-score-btn').forEach((btn) => {
+            btn.classList.remove('is-selected');
+            btn.setAttribute('aria-pressed', 'false');
+        });
+        return;
+    }
+    if (hidden) hidden.value = String(v);
+    modal.querySelectorAll('.okr-review-score-btn').forEach((btn) => {
+        const s = parseInt(btn.getAttribute('data-score'), 10);
+        const on = s === v;
+        btn.classList.toggle('is-selected', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+}
+
+function openOkrReviewModal(okrId) {
+    if (!document.getElementById('okrReviewModal')) return;
+    const okr = data.okrs.find(o => String(o.id) === String(okrId));
+    if (!okr) return;
+    okrReviewModalOkrId = String(okr.id);
+    const titleEl = document.getElementById('okrReviewModalTargetTitle');
+    const outlookEl = document.getElementById('okrReviewModalOutlook');
+    const reflectionEl = document.getElementById('okrReviewModalReflection');
+    const moreEl = document.getElementById('okrReviewModalMore');
+    if (titleEl) {
+        titleEl.textContent = okr.title || '（无标题）';
+    }
+    const map = getOkrReviewsMap();
+    const rec = map[okrReviewModalOkrId] || {};
+    const norm = normalizeOkrReviewRecord(rec);
+    if (outlookEl) outlookEl.value = norm.outlook;
+    if (reflectionEl) reflectionEl.value = norm.reflection;
+    if (moreEl) moreEl.value = norm.more;
+    if (norm.selfScore != null) {
+        setOkrReviewSelfScore(norm.selfScore);
+    } else {
+        setOkrReviewSelfScore(0);
+    }
+    renderOkrReviewModalProgressRing(okr);
+    openModal('okrReviewModal');
+}
+
+function closeOkrReviewModal() {
+    const el = document.getElementById('okrReviewModal');
+    if (el) el.classList.remove('active');
+    const outlookEl = document.getElementById('okrReviewModalOutlook');
+    const reflectionEl = document.getElementById('okrReviewModalReflection');
+    const moreEl = document.getElementById('okrReviewModalMore');
+    if (outlookEl) outlookEl.value = '';
+    if (reflectionEl) reflectionEl.value = '';
+    if (moreEl) moreEl.value = '';
+    setOkrReviewSelfScore(0);
+    const ringHost = document.getElementById('okrReviewModalRingHost');
+    if (ringHost) {
+        ringHost.innerHTML = '';
+        ringHost.setAttribute('aria-hidden', 'true');
+    }
+    okrReviewModalOkrId = null;
+}
+
+function saveOkrReview() {
+    if (!okrReviewModalOkrId) return;
+    const outlookEl = document.getElementById('okrReviewModalOutlook');
+    const reflectionEl = document.getElementById('okrReviewModalReflection');
+    const moreEl = document.getElementById('okrReviewModalMore');
+    const hidden = document.getElementById('okrReviewModalSelfScore');
+    const outlook = outlookEl ? String(outlookEl.value || '') : '';
+    const reflection = reflectionEl ? String(reflectionEl.value || '') : '';
+    const more = moreEl ? String(moreEl.value || '') : '';
+    let selfScore = parseInt(hidden && hidden.value, 10);
+    if (!Number.isFinite(selfScore) || selfScore < 1 || selfScore > 5) {
+        selfScore = null;
+    }
+    const map = getOkrReviewsMap();
+    const payload = {
+        outlook: outlook.trim(),
+        reflection: reflection.trim(),
+        more: more.trim(),
+        updatedAt: new Date().toISOString()
+    };
+    if (selfScore !== null) {
+        payload.selfScore = selfScore;
+    }
+    map[okrReviewModalOkrId] = payload;
+    Storage.set(OKR_REVIEWS_STORAGE_KEY, map);
+    closeOkrReviewModal();
 }
 
 function closeModal(id) {
@@ -1053,6 +1366,74 @@ function deleteProject(id) {
 let currentOkrColor = 'brown';
 let krEditors = [];
 
+const OKR_CONTINUE_DRAFT_SESSION_KEY = 'planner_okr_continue_draft';
+
+/** 从归档「继续完成该目标」写入 sessionStorage 后跳转主页，由 init 消费并打开添加目标弹窗 */
+function openOkrModalFromContinueDraft(prefill) {
+    if (!prefill || typeof prefill !== 'object') return false;
+    const title = String(prefill.title || '').trim();
+    const krsIn = Array.isArray(prefill.krs) ? prefill.krs : [];
+    if (!title || krsIn.length === 0) return false;
+
+    editingId = null;
+    krEditors = [];
+
+    document.getElementById('okrTitle').value = title;
+    document.getElementById('okrStartDate').value = '';
+    document.getElementById('okrEndDate').value = '';
+    const startNat = document.getElementById('okrStartDateNative');
+    const endNat = document.getElementById('okrEndDateNative');
+    if (startNat) startNat.value = '';
+    if (endNat) endNat.value = '';
+    document.getElementById('okrDuration').textContent = '-- 天';
+    document.getElementById('okrMotivation').value = String(prefill.motivation || '');
+    document.getElementById('okrFeasibility').value = String(prefill.feasibility || '');
+    document.getElementById('okrMemo').value = String(prefill.memo || '');
+    document.getElementById('okrModalTitle').textContent = '添加目标 (O)';
+    document.getElementById('okrDeleteBtn').style.display = 'none';
+
+    document.getElementById('krEditorContainer').innerHTML = '';
+    selectOkrColor(normalizeOkrColor(prefill.color));
+    krsIn.forEach((kr) => {
+        if (!kr || typeof kr !== 'object') return;
+        const text = String(kr.text || '').trim();
+        if (!text) return;
+        const weight = Number.isFinite(Number(kr.weight)) ? Math.max(1, Math.min(100, Math.round(Number(kr.weight)))) : 50;
+        const target = Math.max(1, parseInt(kr.target, 10) || 1);
+        addKrEditor({ text, weight, target });
+    });
+    if (document.getElementById('krEditorContainer').querySelectorAll('.kr-editor-item').length === 0) {
+        addKrEditor();
+    }
+
+    setupOkrDateListeners();
+    openModal('okrModal');
+    return true;
+}
+
+function tryConsumeOkrContinueDraftFromSession() {
+    let raw = null;
+    try {
+        raw = sessionStorage.getItem(OKR_CONTINUE_DRAFT_SESSION_KEY);
+    } catch (e) {
+        return;
+    }
+    if (!raw || typeof raw !== 'string') return;
+    try {
+        sessionStorage.removeItem(OKR_CONTINUE_DRAFT_SESSION_KEY);
+    } catch (e) {
+        /* ignore */
+    }
+    let data = null;
+    try {
+        data = JSON.parse(raw);
+    } catch (e) {
+        return;
+    }
+    if (!data || typeof data !== 'object') return;
+    openOkrModalFromContinueDraft(data);
+}
+
 function openOkrModal() {
     editingId = null;
     currentOkrColor = 'brown';
@@ -1062,7 +1443,13 @@ function openOkrModal() {
     document.getElementById('okrTitle').value = '';
     document.getElementById('okrStartDate').value = '';
     document.getElementById('okrEndDate').value = '';
+    const startNat = document.getElementById('okrStartDateNative');
+    const endNat = document.getElementById('okrEndDateNative');
+    if (startNat) startNat.value = '';
+    if (endNat) endNat.value = '';
     document.getElementById('okrDuration').textContent = '-- 天';
+    document.getElementById('okrMotivation').value = '';
+    document.getElementById('okrFeasibility').value = '';
     document.getElementById('okrMemo').value = '';
     document.getElementById('okrModalTitle').textContent = '添加目标 (O)';
     document.getElementById('okrDeleteBtn').style.display = 'none';
@@ -1248,6 +1635,8 @@ function saveOkr() {
     const endDateInput = document.getElementById('okrEndDate');
     const startDate = normalizeYmdDate(startDateInput.value);
     const endDate = normalizeYmdDate(endDateInput.value);
+    const motivation = document.getElementById('okrMotivation').value.trim();
+    const feasibility = document.getElementById('okrFeasibility').value.trim();
     const memo = document.getElementById('okrMemo').value.trim();
     const krs = getKrEditorsData();
 
@@ -1282,6 +1671,8 @@ function saveOkr() {
         title,
         startDate,
         endDate,
+        motivation,
+        feasibility,
         memo,
         color: normalizeOkrColor(currentOkrColor),
         krs
@@ -1325,6 +1716,8 @@ function editOkr(id) {
     document.getElementById('okrTitle').value = okr.title;
     document.getElementById('okrStartDate').value = normalizeYmdDate(okr.startDate) || okr.startDate || '';
     document.getElementById('okrEndDate').value = normalizeYmdDate(okr.endDate) || okr.endDate || '';
+    document.getElementById('okrMotivation').value = okr.motivation || '';
+    document.getElementById('okrFeasibility').value = okr.feasibility || '';
     document.getElementById('okrMemo').value = okr.memo || '';
     document.getElementById('okrModalTitle').textContent = '编辑目标 (O)';
     document.getElementById('okrDeleteBtn').style.display = 'block';
@@ -1551,6 +1944,7 @@ function deleteBook(id) {
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
     updateDate();
+    maybeArchiveExpiredOkrs();
     renderTimeline();
     renderOKRs();
     renderBooks();
@@ -1596,6 +1990,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    tryConsumeOkrContinueDraftFromSession();
+
     window.addEventListener('scroll', () => {
         const popover = lightDatePickerState.popover;
         if (popover && popover.classList.contains('active')) {
@@ -1603,10 +1999,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, true);
 
-    // 点击遮罩关闭弹窗
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    // 点击遮罩关闭弹窗（仅当按下、抬起均在遮罩上，避免从输入框拖选时 mouseup 落在遮罩上误关）
+    // 每个 overlay 独立闭包变量，不用共享 dataset，避免多遮罩或快速操作时标志串线、残留
+    document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+        let closeGestureFromBackdrop = false;
+        function noteBackdropDown(e) {
+            closeGestureFromBackdrop = e.target === overlay;
+        }
+        function abandonBackdropGesture() {
+            closeGestureFromBackdrop = false;
+        }
+        overlay.addEventListener('mousedown', noteBackdropDown);
+        overlay.addEventListener('touchstart', noteBackdropDown, { passive: true });
+        overlay.addEventListener('mouseleave', abandonBackdropGesture);
+        overlay.addEventListener('touchcancel', abandonBackdropGesture);
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
+                if (!closeGestureFromBackdrop) return;
+                closeGestureFromBackdrop = false;
                 if (overlay.id === 'okrModal') return;
                 if (['reviewModal','reviewEmotionModal','reviewTodoModal','weeklyReviewModal','monthlyReviewModal'].includes(overlay.id)) return;
                 if (overlay.id === 'krSubTaskModal' && typeof closeKrSubTaskModal === 'function') {
@@ -1624,6 +2034,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 保持“今日线固定 + 时间轴元素随时间滑动”
     setInterval(() => {
         updateDate();
+        maybeArchiveExpiredOkrs();
         renderTimeline();
     }, 60 * 1000);
 });

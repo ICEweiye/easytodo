@@ -11,6 +11,7 @@
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <script src="theme.js"></script>
+    <script src="input-helpers.js"></script>
 </head>
 <body class="home-page">
     <div class="app-layout">
@@ -187,6 +188,9 @@
                 <div class="archive-detail-meta" id="archiveDetailMeta"></div>
                 <div class="archive-detail-list" id="archiveDetailList"></div>
             </div>
+            <div class="archive-detail-footer" id="archiveDetailFooter" hidden>
+                <button type="button" class="btn btn-primary" id="archiveDetailContinueOkrBtn" onclick="continueArchiveOkrGoal()">继续完成该目标</button>
+            </div>
         </div>
     </div>
 
@@ -350,8 +354,101 @@
             return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
         }
 
+        const ARCHIVE_OKR_COLOR_KEYS = ['brown', 'apricot', 'sage', 'pink', 'indigo', 'teal', 'coral', 'amber'];
+
+        function normalizeArchiveOkrColor(color) {
+            const key = String(color || '').trim().toLowerCase();
+            return ARCHIVE_OKR_COLOR_KEYS.includes(key) ? key : 'brown';
+        }
+
+        function archiveGetKrTarget(kr) {
+            const target = parseInt(kr.target, 10);
+            return Number.isFinite(target) && target > 0 ? target : 1;
+        }
+
+        function archiveGetKrCurrent(kr) {
+            const current = parseInt(kr.current, 10);
+            if (Number.isFinite(current)) return current;
+            return kr.completed ? archiveGetKrTarget(kr) : 0;
+        }
+
+        function archiveNormalizeKr(kr) {
+            const target = archiveGetKrTarget(kr);
+            const current = Math.min(Math.max(0, archiveGetKrCurrent(kr)), target);
+            kr.target = target;
+            kr.current = current;
+            kr.completed = current >= target;
+            return kr;
+        }
+
+        function archiveGetKrProgress(kr) {
+            const target = archiveGetKrTarget(kr);
+            const current = Math.min(archiveGetKrCurrent(kr), target);
+            return target > 0 ? current / target : 0;
+        }
+
+        function formatArchiveOkrMonthDay(dateStr) {
+            const ts = parseDateTs(dateStr);
+            if (!Number.isFinite(ts)) return '';
+            const d = new Date(ts);
+            return `${d.getMonth() + 1}月${d.getDate()}日`;
+        }
+
+        /** 供主页「添加目标」预填：不含开始/结束日期，其余与归档快照一致 */
+        function buildOkrContinuePayload(okr) {
+            if (!okr || typeof okr !== 'object') return null;
+            const totalKrs = (okr.krs && okr.krs.length) || 1;
+            const getKrWeightValue = (kr) => {
+                const weight = parseInt(kr.weight, 10);
+                return Number.isFinite(weight) ? weight : Math.round(100 / totalKrs);
+            };
+            const krs = (okr.krs || []).map((kr) => {
+                archiveNormalizeKr(kr);
+                return {
+                    text: String(kr.text || '').trim(),
+                    weight: Math.max(1, Math.min(100, getKrWeightValue(kr))),
+                    target: archiveGetKrTarget(kr)
+                };
+            }).filter((k) => k.text);
+            const title = String(okr.title || '').trim();
+            if (!title || krs.length === 0) return null;
+            return {
+                title,
+                motivation: String(okr.motivation || ''),
+                feasibility: String(okr.feasibility || ''),
+                memo: String(okr.memo || ''),
+                color: normalizeArchiveOkrColor(okr.color),
+                krs
+            };
+        }
+
+        let currentArchiveDetailRecord = null;
+
+        function continueArchiveOkrGoal() {
+            const record = currentArchiveDetailRecord;
+            if (!record || record.type !== 'okr' || !record.detailData || !record.detailData.okr) return;
+            const payload = buildOkrContinuePayload(record.detailData.okr);
+            if (!payload) {
+                alert('无法从该归档生成目标草稿');
+                return;
+            }
+            try {
+                sessionStorage.setItem('planner_okr_continue_draft', JSON.stringify(payload));
+            } catch (e) {
+                alert('无法保存草稿，请稍后重试');
+                return;
+            }
+            window.location.href = 'index.html';
+        }
+
         function normalizeArchiveInlineText(value) {
             return String(value || '').replace(/\s+/g, ' ').trim();
+        }
+
+        /** 是否视为「有真实录入」：空串与展示占位符「--」不算（避免误判为拆分/四象限布局） */
+        function archiveHasStoredGraiText(value) {
+            const s = String(value ?? '').trim();
+            return s.length > 0 && s !== '--';
         }
 
         function archiveMultilineHtml(value) {
@@ -560,7 +657,7 @@
 
         function buildOkrRecords() {
             const okrs = safeJsonArray(localStorage.getItem(plannerArchiveScopedKey('planner_okrs')));
-            return okrs
+            const completedRecords = okrs
                 .filter(okr => Array.isArray(okr.krs) && okr.krs.length > 0 && okr.krs.every(kr => !!kr.completed))
                 .map(okr => {
                     const startTs = parseDateTs(okr.startDate);
@@ -583,9 +680,41 @@
                             { label: '周期', value: periodText },
                             { label: '关键结果数量', value: String(Array.isArray(okr.krs) ? okr.krs.length : 0) },
                             { label: '备注', value: String(okr.memo || '--') }
-                        ]
+                        ],
+                        { okr }
                     );
                 });
+
+            const archivedExpired = safeJsonArray(localStorage.getItem(plannerArchiveScopedKey('planner_okrs_archive')));
+            const expiredRecords = (Array.isArray(archivedExpired) ? archivedExpired : []).map((okr) => {
+                const startTs = parseDateTs(okr.startDate);
+                const endTs = parseDateTs(okr.endDate);
+                const archivedAtTs = parseDateTs(okr.archivedAt);
+                const dateTs = archivedAtTs ?? endTs ?? startTs;
+                const periodText = okr.startDate && okr.endDate
+                    ? `${formatDayLite(okr.startDate)} - ${formatDayLite(okr.endDate)}`
+                    : String(okr.period || '目标周期');
+                const subtitle = periodText;
+                return createArchiveRecord(
+                    'okr',
+                    String(okr.title || '未命名目标'),
+                    subtitle,
+                    dateTs,
+                    '已到期归档',
+                    `${okr.color || ''} ${okr.archiveReason || ''}`,
+                    [
+                        { label: '状态', value: '已到期归档' },
+                        { label: '目标', value: String(okr.title || '--') },
+                        { label: '周期', value: periodText },
+                        { label: '关键结果数量', value: String(Array.isArray(okr.krs) ? okr.krs.length : 0) },
+                        { label: '归档时间', value: okr.archivedAt ? formatDate(parseDateTs(okr.archivedAt)) : '--' },
+                        { label: '备注', value: String(okr.memo || '--') }
+                    ],
+                    { okr }
+                );
+            });
+
+            return [...completedRecords, ...expiredRecords];
         }
 
         function buildBookRecords() {
@@ -714,15 +843,59 @@
                 const eventSubjectText = String(entry.eventSubject || '--');
                 const graiGoalText = String(entry.graiGoal || '--');
                 const graiResultText = String(entry.graiResult || '--');
+                const hasGraiRSplit = [entry.graiResultExpected, entry.graiResultActual, entry.graiResultEvaluation]
+                    .some(archiveHasStoredGraiText);
+                const graiRExText = String(entry.graiResultExpected || '--');
+                const graiRAcText = String(entry.graiResultActual || '--');
+                const graiREvText = String(entry.graiResultEvaluation || '--');
                 const graiAnalysisText = String(entry.graiAnalysis || '--');
+                const graiAGoodSubj = String(entry.graiAnalysisGoodSubjective || '--');
+                const graiAGoodObj = String(entry.graiAnalysisGoodObjective || '--');
+                const graiABadSubj = String(entry.graiAnalysisBadSubjective || '--');
+                const graiABadObj = String(entry.graiAnalysisBadObjective || '--');
+                const hasGraiAQuad = [entry.graiAnalysisGoodSubjective, entry.graiAnalysisGoodObjective,
+                    entry.graiAnalysisBadSubjective, entry.graiAnalysisBadObjective]
+                    .some(archiveHasStoredGraiText);
                 const graiImprovementText = String(entry.graiImprovement || '--');
                 const preview = trimPreview(
                     isEventReview
-                        ? [entry.eventSubject, entry.graiGoal, entry.graiResult, entry.graiAnalysis, entry.graiImprovement].map(t => String(t || '').trim()).filter(Boolean).join(' ')
+                        ? [
+                            entry.eventSubject,
+                            entry.graiGoal,
+                            entry.graiResultExpected,
+                            entry.graiResultActual,
+                            entry.graiResultEvaluation,
+                            entry.graiResult,
+                            entry.graiAnalysisGoodSubjective,
+                            entry.graiAnalysisGoodObjective,
+                            entry.graiAnalysisBadSubjective,
+                            entry.graiAnalysisBadObjective,
+                            entry.graiAnalysis,
+                            entry.keep,
+                            entry.improve,
+                            entry.stop,
+                            entry.start,
+                            entry.graiImprovement
+                        ].map(t => String(t || '').trim()).filter(Boolean).join(' ')
                         : (entry.summary || entry.tasks || entry.keep || entry.improve || entry.stop || entry.start),
                     44
                 ) || '复盘记录';
                 const subtitle = `${category} · 评分 ${score}/10`;
+                const graiResultDetailRows = hasGraiRSplit
+                    ? [
+                        { label: 'R · 预期结果', value: graiRExText },
+                        { label: 'R · 实际结果', value: graiRAcText },
+                        { label: 'R · 结果评估', value: graiREvText }
+                    ]
+                    : [{ label: 'R 评估结果', value: graiResultText }];
+                const graiAnalysisDetailRows = hasGraiAQuad
+                    ? [
+                        { label: 'A · 好·主观', value: graiAGoodSubj },
+                        { label: 'A · 好·客观', value: graiAGoodObj },
+                        { label: 'A · 坏·主观', value: graiABadSubj },
+                        { label: 'A · 坏·客观', value: graiABadObj }
+                    ]
+                    : [{ label: 'A 分析原因', value: graiAnalysisText }];
                 const detailRows = isEventReview
                     ? [
                         { label: '类型', value: '事件复盘（GRAI）' },
@@ -734,9 +907,13 @@
                         { label: '精力', value: String(entry.energy || '--') },
                         { label: '事件主题', value: eventSubjectText },
                         { label: 'G 回顾目标', value: graiGoalText },
-                        { label: 'R 评估结果', value: graiResultText },
-                        { label: 'A 分析原因', value: graiAnalysisText },
-                        { label: 'I 总结改进', value: graiImprovementText }
+                        ...graiResultDetailRows,
+                        ...graiAnalysisDetailRows,
+                        { label: 'I · Keep', value: keepText },
+                        { label: 'I · Improve', value: improveText },
+                        { label: 'I · Stop', value: stopText },
+                        { label: 'I · Start', value: startText },
+                        { label: 'I 总结改进（旧版）', value: graiImprovementText }
                     ]
                     : [
                         { label: '类型', value: '复盘' },
@@ -767,9 +944,20 @@
                                 reviewKind: 'event',
                                 eventSubject: eventSubjectText,
                                 graiGoal: graiGoalText,
+                                graiResultExpected: graiRExText,
+                                graiResultActual: graiRAcText,
+                                graiResultEvaluation: graiREvText,
                                 graiResult: graiResultText,
+                                graiAnalysisGoodSubjective: graiAGoodSubj,
+                                graiAnalysisGoodObjective: graiAGoodObj,
+                                graiAnalysisBadSubjective: graiABadSubj,
+                                graiAnalysisBadObjective: graiABadObj,
                                 graiAnalysis: graiAnalysisText,
                                 graiImprovement: graiImprovementText,
+                                keep: keepText,
+                                improve: improveText,
+                                stop: stopText,
+                                start: startText,
                                 category,
                                 score,
                                 mood: String(entry.mood || '--'),
@@ -1098,6 +1286,31 @@
             renderArchiveList();
         }
 
+        function renderArchiveGenericListItem(item) {
+            const typeMeta = ARCHIVE_TYPE_META[item.type] || ARCHIVE_TYPE_META.all;
+            const isReviewSectionCard = item.type === 'review';
+            const cardTitle = isReviewSectionCard ? formatDate(item.dateTs) : item.title;
+            const subtitleHtml = isReviewSectionCard
+                ? ''
+                : `<p class="archive-item-subtitle">${escapeHtml(item.subtitle || '--')}</p>`;
+            const badgeLabel = item.badge || typeMeta.label;
+            return `
+                    <article class="archive-item archive-item-clickable" data-archive-id="${escapeHtml(item.id || '')}" role="button" tabindex="0" aria-label="查看归档详情" title="点击查看详情">
+                        <div class="archive-item-icon ${typeMeta.iconClass}">${typeMeta.icon}</div>
+                        <div class="archive-item-main">
+                            <div class="archive-item-head">
+                                <h3 class="archive-item-title">${escapeHtml(cardTitle)}</h3>
+                            </div>
+                            ${subtitleHtml}
+                        </div>
+                        <div class="archive-item-meta">
+                            <time class="archive-item-date">${formatDate(item.dateTs)}</time>
+                            <span class="archive-item-badge">${escapeHtml(badgeLabel)}</span>
+                        </div>
+                    </article>
+                `;
+        }
+
         function getFilteredArchiveRecords() {
             const keyword = archiveSearchKeyword.trim().toLowerCase();
             const startTs = parseYmdToTs(archiveDateStart);
@@ -1132,29 +1345,7 @@
                 return;
             }
 
-            listEl.innerHTML = filtered.map(item => {
-                const typeMeta = ARCHIVE_TYPE_META[item.type] || ARCHIVE_TYPE_META.all;
-                const isReviewSectionCard = item.type === 'review';
-                const cardTitle = isReviewSectionCard ? formatDate(item.dateTs) : item.title;
-                const subtitleHtml = isReviewSectionCard
-                    ? ''
-                    : `<p class="archive-item-subtitle">${escapeHtml(item.subtitle || '--')}</p>`;
-                return `
-                    <article class="archive-item archive-item-clickable" data-archive-id="${escapeHtml(item.id || '')}" role="button" tabindex="0" aria-label="查看归档详情" title="点击查看详情">
-                        <div class="archive-item-icon ${typeMeta.iconClass}">${typeMeta.icon}</div>
-                        <div class="archive-item-main">
-                            <div class="archive-item-head">
-                                <h3 class="archive-item-title">${escapeHtml(cardTitle)}</h3>
-                            </div>
-                            ${subtitleHtml}
-                        </div>
-                        <div class="archive-item-meta">
-                            <time class="archive-item-date">${formatDate(item.dateTs)}</time>
-                            <span class="archive-item-badge">${escapeHtml(item.badge || ARCHIVE_TYPE_META[item.type].label)}</span>
-                        </div>
-                    </article>
-                `;
-            }).join('');
+            listEl.innerHTML = filtered.map((item) => renderArchiveGenericListItem(item)).join('');
         }
 
         function getArchiveRecordById(recordId) {
@@ -1394,6 +1585,105 @@
         }
 
         function renderArchiveOkrDetail(record, detailMap) {
+            const okr = record.detailData && record.detailData.okr;
+            if (okr) {
+                const okrColor = normalizeArchiveOkrColor(okr.color);
+                const totalKrs = (okr.krs && okr.krs.length) || 1;
+                const getKrWeightValue = (kr) => {
+                    const weight = parseInt(kr.weight, 10);
+                    return Number.isFinite(weight) ? weight : Math.round(100 / totalKrs);
+                };
+                let totalWeight = 0;
+                let completedWeight = 0;
+                (okr.krs || []).forEach((kr) => {
+                    archiveNormalizeKr(kr);
+                    const w = getKrWeightValue(kr);
+                    totalWeight += w;
+                    completedWeight += w * archiveGetKrProgress(kr);
+                });
+                const progress = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (progress / 100) * circumference;
+
+                const dateRange = okr.startDate && okr.endDate
+                    ? `${formatArchiveOkrMonthDay(okr.startDate)} - ${formatArchiveOkrMonthDay(okr.endDate)}`
+                    : String(okr.period || '');
+                const motivationBlock = String(okr.motivation || '').trim()
+                    ? `<div class="okr-archive-detail-block"><span class="okr-archive-detail-block-label">动机</span><div class="okr-archive-detail-block-body">${archiveMultilineHtml(okr.motivation)}</div></div>`
+                    : '';
+                const feasibilityBlock = String(okr.feasibility || '').trim()
+                    ? `<div class="okr-archive-detail-block"><span class="okr-archive-detail-block-label">可行性</span><div class="okr-archive-detail-block-body">${archiveMultilineHtml(okr.feasibility)}</div></div>`
+                    : '';
+
+                const krsHtml = [...(okr.krs || [])].sort((a, b) => getKrWeightValue(b) - getKrWeightValue(a)).map((kr) => {
+                    archiveNormalizeKr(kr);
+                    const krProgress = archiveGetKrProgress(kr);
+                    const isCompleted = krProgress >= 1;
+                    const safeKrText = escapeHtml(kr.text);
+                    return `
+                        <div class="kr-item ${isCompleted ? 'kr-completed' : ''}">
+                            <div class="kr-main">
+                                <span class="kr-text${isCompleted ? ' completed' : ''}">${safeKrText}</span>
+                                <div class="kr-meta">
+                                    <span class="kr-weight-badge">权重 ${getKrWeightValue(kr)}%</span>
+                                </div>
+                            </div>
+                            <div class="kr-quantified">
+                                <div class="kr-progress-bar">
+                                    <div class="kr-progress-fill" style="width: ${krProgress * 100}%"></div>
+                                </div>
+                                <div class="kr-counter">
+                                    <span class="kr-count-display">${kr.current}</span>
+                                    <span class="kr-count-separator">/</span>
+                                    <span class="kr-count-target">${kr.target}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+
+                const memo = okr.memo ? `<div class="okr-memo">备注：${escapeHtml(okr.memo)}</div>` : '';
+                const badge = escapeHtml(record.badge || '');
+
+                return `
+                <div class="archive-detail-preview">
+                    <div class="okr-card archive-detail-okr-card okr-card--archive-readonly" data-okr-color="${okrColor}" style="--okr-card-accent: var(--okr-color-${okrColor})">
+                        <div class="okr-card-colorbar" style="--okr-bar: var(--okr-color-${okrColor})" aria-hidden="true">
+                            <div class="okr-colorbar-cell" data-field="motivation">
+                                <div class="okr-colorbar-segment"><span>动机</span></div>
+                            </div>
+                            <div class="okr-colorbar-cell" data-field="feasibility">
+                                <div class="okr-colorbar-segment"><span>可行性</span></div>
+                            </div>
+                            <div class="okr-colorbar-cell okr-colorbar-cell--review">
+                                <div class="okr-colorbar-segment"><span>复盘</span></div>
+                            </div>
+                        </div>
+                        <div class="okr-card-body">
+                            <div class="okr-header">
+                                <div class="okr-header-main">
+                                    <div class="okr-title">${escapeHtml(okr.title || '')}</div>
+                                    <div class="okr-period">${escapeHtml(dateRange)}</div>
+                                    <div class="okr-archive-badge">${badge}</div>
+                                </div>
+                                <div class="ring-container">
+                                    <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+                                        <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                                        <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-color-${okrColor});"
+                                            stroke-dasharray="${circumference}"
+                                            stroke-dashoffset="${offset}"></circle>
+                                    </svg>
+                                    <div class="ring-text">${progress}%</div>
+                                </div>
+                            </div>
+                            ${motivationBlock}${feasibilityBlock}
+                            <div class="kr-list">${krsHtml}</div>
+                            ${memo}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }
+
             const title = getArchiveDetailValue(detailMap, '目标', record.title || '--');
             const period = getArchiveDetailValue(detailMap, '周期', '--');
             const krCountText = getArchiveDetailValue(detailMap, '关键结果数量', '0');
@@ -1403,6 +1693,18 @@
             return `
                 <div class="archive-detail-preview">
                     <div class="okr-card archive-detail-okr-card">
+                        <div class="okr-card-colorbar" style="--okr-bar: var(--primary-sage)" aria-hidden="true">
+                            <div class="okr-colorbar-cell" data-field="motivation">
+                                <div class="okr-colorbar-segment"><span>动机</span></div>
+                            </div>
+                            <div class="okr-colorbar-cell" data-field="feasibility">
+                                <div class="okr-colorbar-segment"><span>可行性</span></div>
+                            </div>
+                            <div class="okr-colorbar-cell okr-colorbar-cell--review">
+                                <div class="okr-colorbar-segment"><span>复盘</span></div>
+                            </div>
+                        </div>
+                        <div class="okr-card-body">
                         <div class="okr-header">
                             <div class="okr-header-main">
                                 <div class="okr-title">${escapeHtml(title)}</div>
@@ -1427,6 +1729,7 @@
                             </div>
                         </div>
                         ${memo !== '--' ? `<div class="okr-memo">备注：${escapeHtml(memo)}</div>` : ''}
+                        </div>
                     </div>
                 </div>
             `;
@@ -1668,7 +1971,10 @@
             const subtitleEl = document.getElementById('archiveDetailSubtitle');
             const metaEl = document.getElementById('archiveDetailMeta');
             const listEl = document.getElementById('archiveDetailList');
+            const footerEl = document.getElementById('archiveDetailFooter');
             if (!modalEl || !titleEl || !subtitleEl || !metaEl || !listEl) return;
+
+            currentArchiveDetailRecord = record;
 
             const typeMeta = ARCHIVE_TYPE_META[record.type] || ARCHIVE_TYPE_META.all;
             titleEl.textContent = record.type === 'review'
@@ -1678,13 +1984,24 @@
             metaEl.textContent = `归档日期：${formatDate(record.dateTs)}`;
             listEl.innerHTML = renderArchiveDetailContent(record);
 
+            if (footerEl) {
+                const canContinue = record.type === 'okr'
+                    && record.detailData
+                    && record.detailData.okr
+                    && buildOkrContinuePayload(record.detailData.okr);
+                footerEl.hidden = !canContinue;
+            }
+
             modalEl.hidden = false;
             modalEl.classList.add('is-open');
         }
 
         function closeArchiveDetailModal() {
             const modalEl = document.getElementById('archiveDetailModal');
+            const footerEl = document.getElementById('archiveDetailFooter');
             if (!modalEl) return;
+            currentArchiveDetailRecord = null;
+            if (footerEl) footerEl.hidden = true;
             modalEl.classList.remove('is-open');
             modalEl.hidden = true;
         }
@@ -2230,6 +2547,41 @@
             gap: 10px;
         }
 
+        /* 详情弹窗内目标卡片徽标（与主页 OKR 一致） */
+        .okr-archive-badge {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--warm-gray-600);
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--warm-gray-100);
+            border: 1px solid var(--warm-gray-200);
+        }
+
+        .okr-archive-detail-block {
+            margin: 0 0 10px 0;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            background: color-mix(in srgb, var(--okr-card-accent, var(--okr-color-brown)) 8%, #ffffff);
+            border: 1px solid var(--warm-gray-200);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .okr-archive-detail-block-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--warm-gray-600);
+            margin-bottom: 4px;
+        }
+
+        .okr-archive-detail-block-body {
+            color: var(--warm-gray-800);
+        }
+
         .archive-item {
             display: flex;
             align-items: center;
@@ -2475,6 +2827,12 @@
             padding: 14px 18px 6px;
         }
 
+        .archive-detail-footer {
+            padding: 12px 18px 16px;
+            border-top: 1px solid var(--warm-gray-100);
+            background: #fff;
+        }
+
         .archive-finance-form-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2546,7 +2904,6 @@
         }
 
         .archive-detail-okr-card {
-            border-left: 4px solid var(--primary-sage);
             box-shadow: 0 1px 3px rgba(45, 41, 38, 0.04);
         }
 

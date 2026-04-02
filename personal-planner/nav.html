@@ -11,6 +11,7 @@
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
     <script src="theme.js"></script>
+    <script src="input-helpers.js"></script>
 </head>
 <body class="home-page">
     <div class="app-layout">
@@ -1555,10 +1556,27 @@
         });
 
         // 点击遮罩关闭弹窗（分类弹窗除外）
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        // 必须在「按下」和「抬起」都在遮罩上时才关闭，避免从输入框内拖选文字时 mouseup 落在遮罩上误关
+        document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+            let closeGestureFromBackdrop = false;
+            function noteBackdropDown(e) {
+                closeGestureFromBackdrop = e.target === overlay;
+            }
+            function abandonBackdropGesture() {
+                closeGestureFromBackdrop = false;
+            }
+            overlay.addEventListener('mousedown', noteBackdropDown);
+            overlay.addEventListener('touchstart', noteBackdropDown, { passive: true });
+            overlay.addEventListener('mouseleave', abandonBackdropGesture);
+            overlay.addEventListener('touchcancel', abandonBackdropGesture);
             overlay.addEventListener('click', (e) => {
                 if (e.target !== overlay) return;
-                if (overlay.id === 'categoryModal') return;
+                if (overlay.id === 'categoryModal') {
+                    abandonBackdropGesture();
+                    return;
+                }
+                if (!closeGestureFromBackdrop) return;
+                closeGestureFromBackdrop = false;
                 closeModal(overlay.id);
             });
         });

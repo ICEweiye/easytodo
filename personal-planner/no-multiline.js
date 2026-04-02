@@ -8,7 +8,20 @@
     }
 
     function allowsMultiline(target) {
-        return isTextarea(target) && target.id === 'reviewSummary';
+        if (!isTextarea(target)) return false;
+        if (target.id === 'reviewSummary') return true;
+        /* OKR 弹窗：动机 / 可行性 / 备注允许多行 */
+        if (
+            target.id === 'okrMotivation' ||
+            target.id === 'okrFeasibility' ||
+            target.id === 'okrMemo' ||
+            target.id === 'okrReviewModalOutlook' ||
+            target.id === 'okrReviewModalReflection' ||
+            target.id === 'okrReviewModalMore'
+        ) {
+            return true;
+        }
+        return false;
     }
 
     function isComposing(event) {
