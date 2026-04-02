@@ -351,6 +351,9 @@
         function trimPreview(value, maxLen = 40) {
             const text = String(value || '').replace(/\s+/g, ' ').trim();
             if (!text) return '';
+            if (window.Utf8Utils && typeof window.Utf8Utils.truncateByCodePoints === 'function') {
+                return window.Utf8Utils.truncateByCodePoints(text, maxLen, '...');
+            }
             return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
         }
 
@@ -768,13 +771,21 @@
                     || (nextDate === existingDate && nextCreatedAt > existingCreatedAt);
                 if (shouldReplace) reviewById.set(id, entry);
             });
-            const sourceEntries = [...reviewById.values()];
+            const sourceEntries = [...reviewById.values()].map(function (entry) {
+                if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' && entry && typeof entry === 'object') {
+                    return window.Utf8Utils.ensureValidUtf8(entry);
+                }
+                return entry;
+            });
 
             if (sourceEntries.length === 0) {
                 const legacyObject = safeJsonObject(localStorage.getItem(plannerArchiveScopedKey('reviews')));
                 const legacy = ['week', 'month', 'quarter']
                     .flatMap(key => Array.isArray(legacyObject[key]) ? legacyObject[key] : []);
                 return legacy.map(item => {
+                    if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' && item && typeof item === 'object') {
+                        item = window.Utf8Utils.ensureValidUtf8(item);
+                    }
                     const dateTs = parseDateTs(item.date) ?? parseDateTs(item.createdAt);
                     const title = trimPreview(item.summary || item.done || item.tasks || item.period, 44) || '复盘记录';
                     const summaryText = String(item.summary || title || '--');

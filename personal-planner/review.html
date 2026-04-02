@@ -1704,6 +1704,9 @@
         function previewText(value, maxLen = 52) {
             const text = String(value || '').replace(/\s+/g, ' ').trim();
             if (!text) return '';
+            if (window.Utf8Utils && typeof window.Utf8Utils.truncateByCodePoints === 'function') {
+                return window.Utf8Utils.truncateByCodePoints(text, maxLen, '...');
+            }
             return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
         }
 
@@ -2122,6 +2125,9 @@
         }
 
         function normalizeEntry(entry) {
+            if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' && entry && typeof entry === 'object') {
+                entry = window.Utf8Utils.ensureValidUtf8(entry);
+            }
             const scoreNum = parseInt(entry.score, 10);
             const score = Number.isFinite(scoreNum) ? Math.max(1, Math.min(10, scoreNum)) : 7;
             const startTodoIds = normalizeIdList(entry.startTodoIds || entry.linkedTodoIds || []);
@@ -3645,9 +3651,10 @@
             const metaEl = document.getElementById('reviewHeatMeta');
             if (!container) return;
 
-            const allDaily = dedupeEntriesById([...reviewEntries, ...reviewArchiveEntries]);
+            const heatmapEntries = dedupeEntriesById([...reviewEntries, ...reviewArchiveEntries])
+                .filter(entry => entry.reviewKind !== 'event');
             const dayMap = {};
-            allDaily.forEach(entry => {
+            heatmapEntries.forEach(entry => {
                 const key = toDateKey(entry.date);
                 if (!dayMap[key]) {
                     dayMap[key] = { count: 0, scoreTotal: 0 };
@@ -3660,10 +3667,9 @@
             const year = now.getFullYear();
             const month = now.getMonth();
             const monthStart = new Date(year, month, 1);
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
             const firstWeekday = (monthStart.getDay() + 6) % 7;
             const monthPrefix = `${year}-${`${month + 1}`.padStart(2, '0')}`;
-            const monthCount = allDaily.reduce((count, entry) => (
+            const monthCount = heatmapEntries.reduce((count, entry) => (
                 String(entry.date || '').startsWith(monthPrefix) ? count + 1 : count
             ), 0);
 
@@ -3673,22 +3679,19 @@
 
             const cells = [];
             for (let i = 0; i < 42; i += 1) {
-                const day = i - firstWeekday + 1;
-                const inMonth = day >= 1 && day <= daysInMonth;
+                const cellDate = new Date(year, month, i - firstWeekday + 1);
+                const inMonth = cellDate.getFullYear() === year && cellDate.getMonth() === month;
+                const key = toDateKey(cellDate);
                 let toneKey = 'none';
                 let title = '';
-
-                if (inMonth) {
-                    const key = toDateKey(new Date(year, month, day));
-                    const stats = dayMap[key] || { count: 0, scoreTotal: 0 };
-                    const count = stats.count || 0;
-                    if (count > 0) {
-                        const avgScore = stats.scoreTotal / count;
-                        toneKey = getScoreToneKey(avgScore);
-                        title = `${key} | ${count} 条复盘 | 均分 ${avgScore.toFixed(1)}`;
-                    } else {
-                        title = `${key} | 0 条复盘`;
-                    }
+                const stats = dayMap[key] || { count: 0, scoreTotal: 0 };
+                const count = stats.count || 0;
+                if (count > 0) {
+                    const avgScore = stats.scoreTotal / count;
+                    toneKey = getScoreToneKey(avgScore);
+                    title = `${key} | ${count} 条复盘 | 均分 ${avgScore.toFixed(1)}`;
+                } else {
+                    title = `${key} | 0 条复盘`;
                 }
 
                 const outside = inMonth ? '' : ' heat-outside';
@@ -4020,6 +4023,9 @@
         function weeklyReviewPreviewLine(text, maxLen) {
             const t = String(text || '').replace(/\s+/g, ' ').trim();
             if (!t) return '';
+            if (window.Utf8Utils && typeof window.Utf8Utils.truncateByCodePoints === 'function') {
+                return window.Utf8Utils.truncateByCodePoints(t, maxLen, '…');
+            }
             return t.length > maxLen ? t.slice(0, maxLen) + '…' : t;
         }
 
@@ -4220,13 +4226,16 @@
                 const scoreClass = score <= 4 ? 'score-tone-red' : score <= 6 ? 'score-tone-yellow' : 'score-tone-green';
                 const scoreStr = Number.isFinite(score) ? score.toFixed(1) : '0';
                 const preview = previewMonthlyReviewText(entry);
+                const previewShown = window.Utf8Utils && typeof window.Utf8Utils.truncateByCodePoints === 'function'
+                    ? window.Utf8Utils.truncateByCodePoints(preview, 80, '…')
+                    : (preview.length > 80 ? preview.slice(0, 80) + '…' : preview);
                 return `
                 <article class="weekly-review-card" data-monthly-id="${escapeHtml(entry.id)}" onclick="openMonthlyReviewModal('${safeId}')">
                     <div class="weekly-review-card-header">
                         <span class="weekly-review-card-week">${escapeHtml(monthLabel)}</span>
                         <span class="weekly-review-card-score ${scoreClass}">${scoreStr} 分</span>
                     </div>
-                    <div class="weekly-review-card-preview">${escapeHtml(preview.slice(0, 80))}${preview.length > 80 ? '…' : ''}</div>
+                    <div class="weekly-review-card-preview">${escapeHtml(previewShown)}</div>
                 </article>
             `;
             }).join('');

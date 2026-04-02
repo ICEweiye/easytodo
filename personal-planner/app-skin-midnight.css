@@ -276,6 +276,14 @@ html[data-app-skin="midnight"] .todo-calendar-today-badge {
     font-weight: 700;
 }
 
+html[data-app-skin="midnight"] .todo-calendar-lunar {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+html[data-app-skin="midnight"] .todo-calendar-cell.today .todo-calendar-lunar {
+    color: rgba(130, 233, 222, 0.72);
+}
+
 html[data-app-skin="midnight"] .todo-board-card-header {
     background: rgba(255, 255, 255, 0.04);
     border-bottom-color: var(--midnight-border);
@@ -1381,6 +1389,20 @@ html[data-app-skin="midnight"] .heat-score-green {
 html[data-app-skin="midnight"] .heat-score-red,
 html[data-app-skin="midnight"] .heat-score-deep-red {
     background: rgba(180, 60, 60, 0.65) !important;
+}
+
+/* 非本月：与默认皮一致，约为原半透明强度的 10% */
+html[data-app-skin="midnight"] .heat-cell.heat-outside.heat-score-yellow {
+    background: rgba(212, 160, 23, 0.055) !important;
+}
+
+html[data-app-skin="midnight"] .heat-cell.heat-outside.heat-score-green {
+    background: rgba(47, 158, 68, 0.055) !important;
+}
+
+html[data-app-skin="midnight"] .heat-cell.heat-outside.heat-score-red,
+html[data-app-skin="midnight"] .heat-cell.heat-outside.heat-score-deep-red {
+    background: rgba(180, 60, 60, 0.065) !important;
 }
 
 html[data-app-skin="midnight"] #reviewModal .review-start-add-box {

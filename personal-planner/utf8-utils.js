@@ -3,7 +3,8 @@
  *
  * 设计原则：绝不删除或替换用户内容中的任何字符。
  * 修复仅限于：整段完全匹配已知乱码映射表的短字符串（如站点分类名）。
- * 对用户撰写的长文本（复盘、待办等），一律原样保留，杜绝数据丢失。
+ * 对用户撰写的长文本（复盘、待办等），原样保留语义内容。
+ * 例外：移除不成对的 UTF-16 代理项（会导致界面显示为「�」），属于修复损坏数据而非删改正文。
  */
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) {
@@ -24,24 +25,32 @@
         '寮€鍙戞枃妗': 'Web 开发文档'
     };
 
-    function tryRepairLatin1Mojibake(str) {
-        if (typeof str !== 'string' || str.length === 0) return null;
-        var bytes = new Uint8Array(str.length);
-        for (var i = 0; i < str.length; i += 1) {
-            var c = str.charCodeAt(i);
-            if (c > 0xFF) return null;
-            bytes[i] = c;
+    /**
+     * 将「UTF-8 字节被误当成 Latin-1 字符」的长文本还原为 Unicode。
+     * 仅当每个 code unit ≤0xFF 时才尝试（已是正常 UTF-16 中文的字符串不会误伤）。
+     * 使用 fatal UTF-8 解码：非法序列则保持原串，避免破坏合法西欧字符等。
+     */
+    function repairMojibakeUtf8(str) {
+        if (typeof str !== 'string' || str.length === 0) return str;
+        if (str.length > 500000) return str;
+        var i;
+        for (i = 0; i < str.length; i += 1) {
+            if (str.charCodeAt(i) > 0xFF) return str;
         }
+        var bytes = new Uint8Array(str.length);
+        for (i = 0; i < str.length; i += 1) {
+            bytes[i] = str.charCodeAt(i);
+        }
+        if (typeof TextDecoder === 'undefined') return str;
         try {
-            return new TextDecoder('utf-8').decode(bytes);
+            return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
         } catch (e) {
-            return null;
+            return str;
         }
     }
 
     /**
-     * 仅对完全由 Latin-1 范围字符（≤0xFF）组成的短字符串判定为乱码候选。
-     * 不再检测 \uFFFD、连续问号或单个中文字符——这些误判会导致丢字。
+     * 仅对完全由 Latin-1 范围字符（≤0xFF）组成的短字符串判定为乱码候选（用于 storage 批量修复等）。
      */
     function looksCorrupted(str) {
         if (typeof str !== 'string') return false;
@@ -53,37 +62,87 @@
     }
 
     /**
-     * 非破坏性修复：仅当整段精确匹配已知乱码映射时才替换，
-     * 否则尝试 Latin-1→UTF-8 重解码，若失败则原样返回。
-     * 绝不删除 \uFFFD 或任何字符。
+     * 去掉不成对的 UTF-16 代理项（例如在 emoji 处被错误按「长度」截断后会产生），避免界面出现「�」。
+     */
+    function stripUnpairedSurrogates(str) {
+        if (typeof str !== 'string' || str.length === 0) return str;
+        var i = 0;
+        var needStrip = false;
+        while (i < str.length) {
+            var c = str.charCodeAt(i);
+            if (c >= 0xD800 && c <= 0xDBFF) {
+                var n = i + 1 < str.length ? str.charCodeAt(i + 1) : 0;
+                if (n >= 0xDC00 && n <= 0xDFFF) {
+                    i += 2;
+                    continue;
+                }
+                needStrip = true;
+                break;
+            }
+            if (c >= 0xDC00 && c <= 0xDFFF) {
+                needStrip = true;
+                break;
+            }
+            i += 1;
+        }
+        if (!needStrip) return str;
+        var out = '';
+        i = 0;
+        while (i < str.length) {
+            var c2 = str.charCodeAt(i);
+            if (c2 >= 0xD800 && c2 <= 0xDBFF && i + 1 < str.length) {
+                var d = str.charCodeAt(i + 1);
+                if (d >= 0xDC00 && d <= 0xDFFF) {
+                    out += str.slice(i, i + 2);
+                    i += 2;
+                    continue;
+                }
+            }
+            if (c2 >= 0xD800 && c2 <= 0xDFFF) {
+                i += 1;
+                continue;
+            }
+            out += str.charAt(i);
+            i += 1;
+        }
+        return out;
+    }
+
+    /**
+     * 按 Unicode 码点截断（避免 String.slice 在 emoji 等处截断代理对导致「�」）。
+     * suffix 在发生截断时追加，未截断时不加。
+     */
+    function truncateByCodePoints(str, maxLen, suffix) {
+        if (typeof str !== 'string' || maxLen <= 0) return '';
+        suffix = suffix === undefined ? '...' : suffix;
+        var chars = Array.from(str);
+        if (chars.length <= maxLen) return str;
+        return chars.slice(0, maxLen).join('') + suffix;
+    }
+
+    /**
+     * 非破坏性修复：已知短映射 → Latin-1 字节按 UTF-8 解码（任意长度）→ 去掉坏代理项。
      */
     function repairString(str) {
         if (typeof str !== 'string') return str;
 
         var trimmed = str.trim();
-        if (!trimmed) return str;
+        if (!trimmed) return stripUnpairedSurrogates(str);
 
         var mapped = KNOWN_MOJIBAKE_MAP[trimmed];
-        if (mapped) return mapped;
+        if (mapped) return stripUnpairedSurrogates(mapped);
 
-        var repaired = tryRepairLatin1Mojibake(str);
-        if (repaired !== null && repaired !== str) return repaired;
-
-        return str;
+        var repaired = repairMojibakeUtf8(str);
+        var out = repaired !== str ? repaired : str;
+        return stripUnpairedSurrogates(out);
     }
 
     /**
-     * 递归处理 JSON 结构中的字符串。
-     * 仅对满足 looksCorrupted 的短 Latin-1 字符串尝试修复，
-     * 用户填写的中文长文本不会被触碰。
+     * 递归处理 JSON 结构中的字符串（含乱码修复与坏代理项清理）。
      */
     function ensureValidUtf8(value) {
         if (typeof value === 'string') {
-            if (looksCorrupted(value)) {
-                var fixed = repairString(value);
-                return fixed !== value ? fixed : value;
-            }
-            return value;
+            return repairString(value);
         }
         if (Array.isArray(value)) {
             return value.map(ensureValidUtf8);
@@ -132,8 +191,10 @@
     }
 
     return {
-        tryRepairLatin1Mojibake: tryRepairLatin1Mojibake,
+        repairMojibakeUtf8: repairMojibakeUtf8,
         looksCorrupted: looksCorrupted,
+        stripUnpairedSurrogates: stripUnpairedSurrogates,
+        truncateByCodePoints: truncateByCodePoints,
         repairString: repairString,
         ensureValidUtf8: ensureValidUtf8,
         repairStorageData: repairStorageData

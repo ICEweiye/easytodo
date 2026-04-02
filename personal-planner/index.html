@@ -521,6 +521,8 @@
         </div>
     </div>
 <script src="app.js"></script>
+    <script src="solarlunar.min.js"></script>
+    <script src="china-legal-holidays.js"></script>
     <script>
         let todos = normalizeTodosForRuntime(Storage.get('planner_todos') || []);
         let todoViewMonth = new Date();
@@ -755,6 +757,14 @@
             return sortReviewEntries([...byId.values()]);
         }
 
+        function utf8RepairReviewEntry(entry) {
+            if (!entry || typeof entry !== 'object') return entry;
+            if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function') {
+                return window.Utf8Utils.ensureValidUtf8(entry);
+            }
+            return entry;
+        }
+
         function splitReviewEntriesByActiveLimits(sortedCurrent) {
             const daily = [];
             const event = [];
@@ -786,8 +796,8 @@
                 Storage.set('planner_review_entries', applied.reviewEntries);
                 Storage.set(REVIEW_ARCHIVE_STORAGE_KEY, applied.reviewArchiveEntries);
                 return {
-                    recentEntries: applied.reviewEntries,
-                    archivedEntries: applied.reviewArchiveEntries
+                    recentEntries: applied.reviewEntries.map(utf8RepairReviewEntry),
+                    archivedEntries: applied.reviewArchiveEntries.map(utf8RepairReviewEntry)
                 };
             }
 
@@ -796,7 +806,10 @@
                 [...archivedBase, ...overflowEntries].filter(entry => entry && entry.id)
             ).filter(entry => !recentEntries.some(active => String(active.id) === String(entry.id)));
 
-            return { recentEntries, archivedEntries };
+            return {
+                recentEntries: recentEntries.map(utf8RepairReviewEntry),
+                archivedEntries: archivedEntries.map(utf8RepairReviewEntry)
+            };
         }
 
         function getDailyPickedReviewKey(entries) {
@@ -861,6 +874,9 @@
         function previewText(value, maxLen = 52) {
             const text = String(value || '').replace(/\s+/g, ' ').trim();
             if (!text) return '';
+            if (window.Utf8Utils && typeof window.Utf8Utils.truncateByCodePoints === 'function') {
+                return window.Utf8Utils.truncateByCodePoints(text, maxLen, '...');
+            }
             return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
         }
 
@@ -1307,6 +1323,10 @@
         function renderRewardPool() {
             if (!window.RewardPool) return;
             const pool = window.RewardPool.getPool();
+            const rewardModule = document.querySelector('.home-reward-pool-module');
+            if (rewardModule) {
+                rewardModule.classList.toggle('is-reward-pool-disabled', !pool.enabled);
+            }
             const todoEl = document.getElementById('rewardYellowTodo');
             const prizesEl = document.getElementById('rewardPoolPrizes');
             const krEl = document.getElementById('rewardYellowKr');
@@ -1570,6 +1590,93 @@
             );
         }
 
+        /**
+         * 公历月-日 → 日历格小字简称（国家纪念日与国内主题日）。
+         * 与农历/节气冲突时本表优先于节气；母亲节/父亲节见 getParentDaySubdateLabel。
+         */
+        const TODO_CALENDAR_SUBDATE_FIXED = Object.freeze({
+            '01-01': '元旦',
+            '03-12': '植树节',
+            '04-15': '安全日',
+            '05-01': '五一',
+            '05-04': '青年节',
+            '07-01': '建党节',
+            '07-07': '七七',
+            '08-01': '建军节',
+            '08-19': '医师节',
+            '09-03': '胜利日',
+            '09-10': '教师节',
+            '09-18': '九一八',
+            '09-30': '烈士日',
+            '10-01': '国庆',
+            '11-08': '记者节',
+            '12-04': '宪法日',
+            '12-13': '国家公祭'
+        });
+
+        /** 某月第 n 个星期日（0=日）的日号，无效则 null */
+        function nthSundayOfMonth(year, month, n) {
+            const firstDow = new Date(year, month - 1, 1).getDay();
+            const delta = (0 - firstDow + 7) % 7;
+            const dayNum = 1 + delta + (n - 1) * 7;
+            const dim = new Date(year, month, 0).getDate();
+            return dayNum <= dim ? dayNum : null;
+        }
+
+        /** 母亲节（5 月第二个星期日）、父亲节（6 月第三个星期日），与国内固定日同日时固定日优先 */
+        function getParentDaySubdateLabel(year, month, day) {
+            const mothers = nthSundayOfMonth(year, 5, 2);
+            if (mothers && month === 5 && day === mothers) return '母亲节';
+
+            const fathers = nthSundayOfMonth(year, 6, 3);
+            if (fathers && month === 6 && day === fathers) return '父亲节';
+
+            return '';
+        }
+
+        /** 日历格下方小字：默认农历日序；固定公历日、父母节、农历节、二十四节气均用简称替换（节气来自 solar2lunar） */
+        function getTodoCalendarSubdateLabel(y, m, d, dateKey) {
+            try {
+                const sl = window.solarlunar;
+                if (!sl || typeof sl.solar2lunar !== 'function') return '';
+                const r = sl.solar2lunar(y, m, d);
+                if (!r || r === -1) return '';
+
+                const md = typeof dateKey === 'string' && dateKey.length >= 10 ? dateKey.slice(5, 10) : '';
+                const fixedLabel = TODO_CALENDAR_SUBDATE_FIXED[md];
+                if (fixedLabel) return fixedLabel;
+
+                const parentDayLabel = getParentDaySubdateLabel(y, m, d);
+                if (parentDayLabel) return parentDayLabel;
+
+                if (!r.isLeap) {
+                    if (r.lMonth === 1 && r.lDay === 1) return '春节';
+                    if (r.lMonth === 1 && r.lDay === 15) return '元宵';
+                    if (r.lMonth === 5 && r.lDay === 5) return '端午';
+                    if (r.lMonth === 8 && r.lDay === 15) return '中秋';
+                    if (r.lMonth === 9 && r.lDay === 9) return '重阳';
+                }
+
+                if (r.isTerm && r.term) {
+                    return String(r.term).trim();
+                }
+
+                return String(r.dayCn || '').trim();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function isTodoLegalRestDay(dateKey) {
+            const api = window.PlannerChinaLegalRest;
+            return !!(api && typeof api.isRestDateKey === 'function' && api.isRestDateKey(dateKey));
+        }
+
+        function isTodoLegalWorkDay(dateKey) {
+            const api = window.PlannerChinaLegalWork;
+            return !!(api && typeof api.isWorkDateKey === 'function' && api.isWorkDateKey(dateKey));
+        }
+
         function renderTodoCalendar() {
             const monthStart = new Date(todoViewMonth.getFullYear(), todoViewMonth.getMonth(), 1);
             const monthEnd = new Date(todoViewMonth.getFullYear(), todoViewMonth.getMonth() + 1, 0);
@@ -1586,6 +1693,9 @@
                 cells.push('<div class="todo-calendar-cell empty" onclick="clearTodoDateSelection()"></div>');
             }
 
+            const calYear = todoViewMonth.getFullYear();
+            const calMonth = todoViewMonth.getMonth() + 1;
+
             for (let day = 1; day <= totalDays; day += 1) {
                 const dateKey = `${monthKey}-${`${day}`.padStart(2, '0')}`;
                 const countInfo = getTodoCountInfoByDate(dateKey);
@@ -1595,11 +1705,26 @@
                 if (dateKey === todayKey) classes.push('today');
                 if (dateKey === selectedTodoDate) classes.push('selected');
 
+                const lunarLabel = getTodoCalendarSubdateLabel(calYear, calMonth, day, dateKey);
+                const showRest = isTodoLegalRestDay(dateKey);
+                const showWork = isTodoLegalWorkDay(dateKey);
+                const isTodayCell = dateKey === todayKey;
+                const badgesHtml =
+                    isTodayCell || showRest || showWork
+                        ? `<div class="todo-calendar-badges">${isTodayCell ? '<span class="todo-calendar-today-badge todo-calendar-badge-today" aria-hidden="true">今</span>' : ''}${showRest ? '<span class="todo-calendar-today-badge todo-calendar-badge-rest" aria-hidden="true">休</span>' : ''}${showWork ? '<span class="todo-calendar-today-badge todo-calendar-badge-work" aria-hidden="true">班</span>' : ''}</div>`
+                        : '';
+                const lunarHtml = lunarLabel
+                    ? `<div class="todo-calendar-lunar">${escapeHtml(lunarLabel)}</div>`
+                    : '';
+
                 cells.push(`
                     <button class="${classes.join(' ')}" type="button" onclick="selectTodoDate('${dateKey}')">
                         <div class="todo-calendar-head">
-                            <span class="todo-calendar-date">${day}</span>
-                            ${dateKey === todayKey ? '<span class="todo-calendar-today-badge">今</span>' : ''}
+                            <div class="todo-calendar-daycol">
+                                <span class="todo-calendar-date">${day}</span>
+                                ${lunarHtml}
+                            </div>
+                            ${badgesHtml}
                         </div>
                         <div class="todo-calendar-meta">
                             <span class="todo-calendar-count ${countInfo.total ? '' : 'muted'}">

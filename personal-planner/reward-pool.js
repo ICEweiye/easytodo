@@ -84,12 +84,20 @@
             });
         }
 
+        function readEnabledFlag(raw) {
+            if (!raw || typeof raw !== 'object' || !('enabled' in raw)) return true;
+            var v = raw.enabled;
+            if (v === false || v === 0 || v === '0' || v === 'false') return false;
+            if (v === true || v === 1 || v === '1' || v === 'true') return true;
+            return !!v;
+        }
+
         return {
             yellowStarsTodo: todo,
             yellowStarsKr: kr,
             yellowStarsReview: review,
             colorfulStars: Number(p && p.colorfulStars) || 0,
-            enabled: p && typeof p.enabled === 'boolean' ? p.enabled : true,
+            enabled: readEnabledFlag(p),
             ratioTodo: Math.max(1, Number(p && p.ratioTodo) || DEFAULT_RATIO),
             ratioKr: Math.max(1, Number(p && p.ratioKr) || DEFAULT_RATIO),
             ratioReview: Math.max(1, Number(p && p.ratioReview) || DEFAULT_RATIO),
@@ -225,6 +233,7 @@
     }
 
     function exchangeYellowToColorful() {
+        if (!isEnabled()) return { ok: false, message: '积分系统已关闭' };
         const pool = getPool();
         const rTodo = pool.ratioTodo || DEFAULT_RATIO;
         const rKr = pool.ratioKr || DEFAULT_RATIO;
@@ -260,6 +269,7 @@
     }
 
     function redeemPrize(prizeId) {
+        if (!isEnabled()) return { ok: false, message: '积分系统已关闭' };
         const pool = getPool();
         const prize = (pool.prizes || []).find(p => String(p.id) === String(prizeId));
         if (!prize) return { ok: false, message: '奖品不存在' };

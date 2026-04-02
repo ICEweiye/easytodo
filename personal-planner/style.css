@@ -1031,6 +1031,11 @@ body:has(.todo-date-modal-overlay.active) {
     color: var(--warm-gray-900);
 }
 
+/* 关闭积分系统时隐藏侧栏奖池（由 JS 切换 .is-reward-pool-disabled） */
+.home-reward-pool-module.is-reward-pool-disabled {
+    display: none;
+}
+
 /* 积分奖池（无标题栏时与侧栏其它模块顶对齐略作内边距） */
 .home-reward-pool-module .reward-pool-content {
     display: flex;
@@ -3730,9 +3735,10 @@ select.form-input option:hover {
 }
 
 .todo-calendar-cell {
-    min-height: 64px;
+    min-height: 72px;
     position: relative;
-    border: 1px solid transparent;
+    /* 与 .selected 同为 2px，避免选中/取消时边框厚度变化引起整格与日历抖动 */
+    border: 2px solid transparent;
     background: white;
     color: var(--warm-gray-900);
     display: flex;
@@ -3741,7 +3747,7 @@ select.form-input option:hover {
     align-items: flex-start;
     padding: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .todo-calendar-cell.empty {
@@ -3760,7 +3766,6 @@ select.form-input option:hover {
 .todo-calendar-cell.selected {
     background: white;
     border-color: rgba(160, 128, 112, 0.5);
-    border-width: 2px;
     box-shadow: none;
 }
 
@@ -3830,15 +3835,44 @@ select.form-input option:hover {
 .todo-calendar-head {
     width: 100%;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 6px;
+}
+
+.todo-calendar-daycol {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+}
+
+.todo-calendar-badges {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .todo-calendar-date {
     font-size: 13px;
     font-weight: 500;
     line-height: 1;
+}
+
+.todo-calendar-lunar {
+    width: auto;
+    max-width: 100%;
+    text-align: left;
+    font-size: 8px;
+    line-height: 1.15;
+    font-weight: 400;
+    color: var(--warm-gray-500);
+    letter-spacing: 0;
 }
 
 .todo-calendar-today-badge {
@@ -3854,6 +3888,66 @@ select.form-input option:hover {
     color: #fff;
     background: var(--primary-brown);
     flex-shrink: 0;
+}
+
+/* 非 Midnight：「休」「班」圆标用主题色铺底（今仍走 .todo-calendar-today-badge；Midnight 不覆盖） */
+html:not([data-app-skin="midnight"]) .todo-calendar-badge-rest,
+html:not([data-app-skin="midnight"]) .todo-calendar-badge-work {
+    background: var(--primary-brown);
+    color: #fff;
+}
+
+html[data-app-skin="serene"] .todo-calendar-badge-rest,
+html[data-app-skin="serene"] .todo-calendar-badge-work {
+    background: var(--serene-primary);
+    color: #fff;
+}
+
+html[data-app-skin="crystal-flow"] .todo-calendar-badge-rest,
+html[data-app-skin="crystal-flow"] .todo-calendar-badge-work {
+    background: var(--cf-primary);
+    color: #fff;
+}
+
+/* 非 Midnight：今日不用「今」圆标，用主题色 10% 铺底（Midnight 见 app-skin-midnight.css） */
+html:not([data-app-skin="midnight"]) .todo-calendar-badge-today {
+    display: none;
+}
+
+html:not([data-app-skin="midnight"]) .todo-calendar-cell.today:not(.empty) {
+    background: color-mix(in srgb, var(--primary-brown) 10%, #ffffff);
+}
+
+html:not([data-app-skin="midnight"]) .todo-calendar-cell.today:not(.empty):hover {
+    background: color-mix(in srgb, var(--primary-brown) 14%, #fcfbf9);
+}
+
+html:not([data-app-skin="midnight"]) .todo-calendar-cell.today.selected:not(.empty) {
+    background: color-mix(in srgb, var(--primary-brown) 10%, #ffffff);
+}
+
+html[data-app-skin="serene"] .todo-calendar-cell.today:not(.empty) {
+    background: color-mix(in srgb, var(--serene-primary) 10%, #ffffff);
+}
+
+html[data-app-skin="serene"] .todo-calendar-cell.today:not(.empty):hover {
+    background: color-mix(in srgb, var(--serene-primary) 14%, var(--serene-page));
+}
+
+html[data-app-skin="serene"] .todo-calendar-cell.today.selected:not(.empty) {
+    background: color-mix(in srgb, var(--serene-primary) 10%, #ffffff);
+}
+
+html[data-app-skin="crystal-flow"] .todo-calendar-cell.today:not(.empty) {
+    background: color-mix(in srgb, var(--cf-primary) 10%, #ffffff);
+}
+
+html[data-app-skin="crystal-flow"] .todo-calendar-cell.today:not(.empty):hover {
+    background: color-mix(in srgb, var(--cf-primary) 14%, var(--cf-page));
+}
+
+html[data-app-skin="crystal-flow"] .todo-calendar-cell.today.selected:not(.empty) {
+    background: color-mix(in srgb, var(--cf-primary) 10%, #ffffff);
 }
 
 .todo-calendar-meta {
@@ -4642,7 +4736,7 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     }
 
     .todo-calendar-cell {
-        min-height: 52px;
+        min-height: 60px;
         padding: 6px;
     }
 
@@ -5066,8 +5160,25 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     background: var(--warm-gray-100);
 }
 
-.heat-cell.heat-outside {
+/* 非本月：无数据格略淡；深红/红/黄/绿见下方为原色约 10% 透明度 */
+.heat-cell.heat-outside.heat-score-none {
     opacity: 0.35;
+}
+
+.heat-cell.heat-outside.heat-score-deep-red {
+    background: rgba(143, 31, 31, 0.1);
+}
+
+.heat-cell.heat-outside.heat-score-red {
+    background: rgba(204, 75, 75, 0.1);
+}
+
+.heat-cell.heat-outside.heat-score-yellow {
+    background: rgba(242, 216, 95, 0.1);
+}
+
+.heat-cell.heat-outside.heat-score-green {
+    background: rgba(76, 156, 93, 0.1);
 }
 
 .heat-level-0 {

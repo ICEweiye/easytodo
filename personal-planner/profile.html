@@ -1726,7 +1726,7 @@
                 function loadRewardRatioPrefs() {
                     if (!window.RewardPool) return;
                     var pool = window.RewardPool.getPool();
-                    var enabled = pool && typeof pool.enabled === 'boolean' ? pool.enabled : true;
+                    var enabled = pool ? !!pool.enabled : true;
                     if (appearanceRewardEnabledEl) appearanceRewardEnabledEl.checked = enabled;
                     if (appearanceRewardRatioTodoEl) appearanceRewardRatioTodoEl.value = String(pool.ratioTodo || 5);
                     if (appearanceRewardRatioKrEl) appearanceRewardRatioKrEl.value = String(pool.ratioKr || 5);
