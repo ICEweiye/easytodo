@@ -615,15 +615,18 @@ function writeStorage(payload, options = {}) {
 
 function parseBody(req) {
     return new Promise((resolve, reject) => {
-        let body = '';
+        const chunks = [];
+        let totalLen = 0;
         req.on('data', (chunk) => {
-            body += chunk.toString('utf8');
-            if (body.length > 5 * 1024 * 1024) {
+            chunks.push(chunk);
+            totalLen += chunk.length;
+            if (totalLen > 5 * 1024 * 1024) {
                 reject(new Error('Payload too large'));
                 req.destroy();
             }
         });
         req.on('end', () => {
+            const body = Buffer.concat(chunks).toString('utf8');
             if (!body) {
                 resolve({});
                 return;

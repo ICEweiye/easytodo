@@ -13,6 +13,7 @@
     <script src="theme.js"></script>
     <script src="input-helpers.js"></script>
     <script src="reward-pool.js"></script>
+    <script src="review-entries-limits.js"></script>
 </head>
 <body class="home-page">
     <div class="app-layout">
@@ -527,7 +528,8 @@
         let selectedTodoDate = '';
         const DAILY_REVIEW_PICK_KEY = 'planner_home_daily_review_pick';
         const REVIEW_ARCHIVE_STORAGE_KEY = 'planner_review_archive_entries';
-        const REVIEW_RECENT_LIMIT = 8;
+        const REVIEW_DAILY_ACTIVE_LIMIT = 8;
+        const REVIEW_EVENT_ACTIVE_LIMIT = 2;
         const REVIEW_EMOTION_INTENSITY_OPTIONS = ['很高', '高', '中', '低', '很低'];
         let pendingTodoDeleteId = null;
         let pendingTodoDeleteStarKey = null;
@@ -753,6 +755,22 @@
             return sortReviewEntries([...byId.values()]);
         }
 
+        function splitReviewEntriesByActiveLimits(sortedCurrent) {
+            const daily = [];
+            const event = [];
+            sortedCurrent.forEach((entry) => {
+                if (entry && entry.reviewKind === 'event') event.push(entry);
+                else daily.push(entry);
+            });
+            const dailyKept = daily.slice(0, REVIEW_DAILY_ACTIVE_LIMIT);
+            const dailyOverflow = daily.slice(REVIEW_DAILY_ACTIVE_LIMIT);
+            const eventKept = event.slice(0, REVIEW_EVENT_ACTIVE_LIMIT);
+            const eventOverflow = event.slice(REVIEW_EVENT_ACTIVE_LIMIT);
+            const recentEntries = sortReviewEntries([...dailyKept, ...eventKept]);
+            const overflowEntries = [...dailyOverflow, ...eventOverflow];
+            return { recentEntries, overflowEntries };
+        }
+
         function getRecentAndArchivedReviewEntries() {
             const currentEntries = Storage.get('planner_review_entries');
             const legacyEntries = Storage.get('reviews');
@@ -760,11 +778,20 @@
                 ? currentEntries
                 : (Array.isArray(legacyEntries) ? legacyEntries : []);
             const sortedCurrent = dedupeReviewEntriesById(baseEntries.filter(entry => entry && entry.id));
-            const recentEntries = sortedCurrent.slice(0, REVIEW_RECENT_LIMIT);
-            const overflowEntries = sortedCurrent.slice(REVIEW_RECENT_LIMIT);
-
             const archivedStored = Storage.get(REVIEW_ARCHIVE_STORAGE_KEY);
             const archivedBase = Array.isArray(archivedStored) ? archivedStored : [];
+
+            if (typeof plannerApplyReviewEntryLimitsWithDailyBackfillFromArrays === 'function') {
+                const applied = plannerApplyReviewEntryLimitsWithDailyBackfillFromArrays(sortedCurrent, archivedBase);
+                Storage.set('planner_review_entries', applied.reviewEntries);
+                Storage.set(REVIEW_ARCHIVE_STORAGE_KEY, applied.reviewArchiveEntries);
+                return {
+                    recentEntries: applied.reviewEntries,
+                    archivedEntries: applied.reviewArchiveEntries
+                };
+            }
+
+            const { recentEntries, overflowEntries } = splitReviewEntriesByActiveLimits(sortedCurrent);
             const archivedEntries = dedupeReviewEntriesById(
                 [...archivedBase, ...overflowEntries].filter(entry => entry && entry.id)
             ).filter(entry => !recentEntries.some(active => String(active.id) === String(entry.id)));

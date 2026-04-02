@@ -2035,10 +2035,6 @@ button.okr-colorbar-segment--btn:focus-visible {
     opacity: 1;
 }
 
-.review-card:hover .okr-delete {
-    opacity: 1;
-}
-
 .okr-delete:hover {
     color: #c98b8b;
 }
@@ -5214,9 +5210,7 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     min-width: 0;
 }
 
-.review-header .okr-delete {
-    flex-shrink: 0;
-}
+
 
 .review-period {
     font-size: 14px;

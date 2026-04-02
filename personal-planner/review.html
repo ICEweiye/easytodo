@@ -14,6 +14,7 @@
     <script src="input-helpers.js"></script>
     <script src="reward-pool.js"></script>
     <script src="app.js"></script>
+    <script src="review-entries-limits.js"></script>
 </head>
 <body class="home-page">
     <div class="app-layout">
@@ -799,7 +800,11 @@
         const LEGACY_REVIEW_KEY = 'reviews';
         const TODO_STORAGE_KEY = 'planner_todos';
         const OKR_STORAGE_KEY = 'planner_okrs';
-        const REVIEW_RECENT_LIMIT = 8;
+        /** 当前列表保留条数：每日与事件分开计数，归档写入 planner_review_archive_entries */
+        const REVIEW_DAILY_ACTIVE_LIMIT = 8;
+        const REVIEW_EVENT_ACTIVE_LIMIT = 2;
+        const WEEKLY_REVIEW_ACTIVE_LIMIT = 3;
+        const WEEKLY_REVIEW_ARCHIVE_STORAGE_KEY = 'planner_weekly_review_archive_entries';
         const REVIEW_OKR_COLOR_CLASSES = ['brown', 'apricot', 'sage', 'pink', 'indigo', 'teal', 'coral', 'amber'];
         const KISS_FIELDS = [
             { key: 'keep', label: '保持', className: 'keep', icon: '✅' },
@@ -847,6 +852,7 @@
         let reviewEntries = [];
         let reviewArchiveEntries = [];
         let weeklyReviewEntries = [];
+        let weeklyReviewArchiveEntries = [];
         let monthlyReviewEntries = [];
         let editingReviewId = null;
         let editingWeeklyReviewId = null;
@@ -2236,17 +2242,52 @@
         function enforceReviewRecentLimit() {
             reviewEntries = dedupeEntriesById(reviewEntries);
             reviewArchiveEntries = dedupeEntriesById(reviewArchiveEntries);
+            if (typeof plannerApplyReviewEntryLimitsWithDailyBackfillFromArrays === 'function') {
+                const out = plannerApplyReviewEntryLimitsWithDailyBackfillFromArrays(
+                    reviewEntries,
+                    reviewArchiveEntries
+                );
+                reviewEntries = dedupeEntriesById(out.reviewEntries);
+                reviewArchiveEntries = dedupeEntriesById(out.reviewArchiveEntries);
+            }
+        }
 
-            const overflow = reviewEntries.slice(REVIEW_RECENT_LIMIT);
-            reviewEntries = reviewEntries.slice(0, REVIEW_RECENT_LIMIT);
+        function dedupeWeeklyReviewEntries(entries) {
+            const byId = new Map();
+            (Array.isArray(entries) ? entries : []).forEach((e) => {
+                if (!e || e.id === undefined || e.id === null) return;
+                const id = String(e.id);
+                const prev = byId.get(id);
+                if (!prev) {
+                    byId.set(id, e);
+                    return;
+                }
+                const wk = String(e.weekKey || '');
+                const pwk = String(prev.weekKey || '');
+                const prevCa = String(prev.createdAt || '');
+                const nextCa = String(e.createdAt || '');
+                const shouldReplace = wk > pwk || (wk === pwk && nextCa > prevCa);
+                if (shouldReplace) byId.set(id, e);
+            });
+            const list = [...byId.values()];
+            list.sort((a, b) => (b.weekKey || '').localeCompare(a.weekKey || '')
+                || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+            return list;
+        }
+
+        function enforceWeeklyReviewRecentLimit() {
+            weeklyReviewEntries = dedupeWeeklyReviewEntries(weeklyReviewEntries);
+            weeklyReviewArchiveEntries = dedupeWeeklyReviewEntries(weeklyReviewArchiveEntries);
+
+            const overflow = weeklyReviewEntries.slice(WEEKLY_REVIEW_ACTIVE_LIMIT);
+            weeklyReviewEntries = weeklyReviewEntries.slice(0, WEEKLY_REVIEW_ACTIVE_LIMIT);
 
             if (overflow.length) {
-                reviewArchiveEntries = dedupeEntriesById([...reviewArchiveEntries, ...overflow]);
+                weeklyReviewArchiveEntries = dedupeWeeklyReviewEntries([...weeklyReviewArchiveEntries, ...overflow]);
             }
 
-            const activeIds = new Set(reviewEntries.map(entry => String(entry.id)));
-            reviewArchiveEntries = reviewArchiveEntries.filter(entry => !activeIds.has(String(entry.id)));
-            sortEntries(reviewArchiveEntries);
+            const activeIds = new Set(weeklyReviewEntries.map((e) => String(e.id)));
+            weeklyReviewArchiveEntries = weeklyReviewArchiveEntries.filter((e) => !activeIds.has(String(e.id)));
         }
 
         function migrateLegacyReviews() {
@@ -2666,10 +2707,17 @@
         function loadWeeklyReviews() {
             const stored = StorageUtil.get(WEEKLY_REVIEW_STORAGE_KEY);
             weeklyReviewEntries = Array.isArray(stored) ? stored : [];
+            const archStored = StorageUtil.get(WEEKLY_REVIEW_ARCHIVE_STORAGE_KEY);
+            weeklyReviewArchiveEntries = Array.isArray(archStored) ? archStored : [];
+            enforceWeeklyReviewRecentLimit();
+            StorageUtil.set(WEEKLY_REVIEW_STORAGE_KEY, weeklyReviewEntries);
+            StorageUtil.set(WEEKLY_REVIEW_ARCHIVE_STORAGE_KEY, weeklyReviewArchiveEntries);
         }
 
         function persistWeeklyReviews() {
+            enforceWeeklyReviewRecentLimit();
             StorageUtil.set(WEEKLY_REVIEW_STORAGE_KEY, weeklyReviewEntries);
+            StorageUtil.set(WEEKLY_REVIEW_ARCHIVE_STORAGE_KEY, weeklyReviewArchiveEntries);
         }
 
         function monthKeyToday() {
@@ -3074,6 +3122,7 @@
             if (!id) return;
             if (!confirm('确定删除这条周复盘吗？')) return;
             weeklyReviewEntries = weeklyReviewEntries.filter(e => e.id !== id);
+            weeklyReviewArchiveEntries = weeklyReviewArchiveEntries.filter(e => e.id !== id);
             persistWeeklyReviews();
             closeWeeklyReviewModal();
             renderAll();
@@ -3935,9 +3984,6 @@
                         <div class="review-header-main">
                             <span class="review-period">${entry.date}</span>
                             ${dailyHeaderExtras}
-                        </div>
-                        <div class="review-header-right">
-                            <button type="button" class="okr-delete" onclick="event.stopPropagation(); deleteReview('${safeEntryId}')" title="删除">&times;</button>
                         </div>
                     </div>
                     <div class="review-content review-content-compact">

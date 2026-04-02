@@ -100,7 +100,7 @@
         return value;
     }
 
-    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|planner_monthly_reviews|life_categories|life_sites|planner_todos|planner_okrs_archive|planner_okrs|planner_acc_|planner_reward_pool)/;
+    var STRUCTURED_JSON_KEYS = /^(reviews|planner_review_entries|planner_review_archive|planner_weekly_reviews|planner_weekly_review_archive|planner_monthly_reviews|life_categories|life_sites|planner_todos|planner_okrs_archive|planner_okrs|planner_acc_|planner_reward_pool)/;
 
     /**
      * 对存储对象的字符串值做安全处理。
