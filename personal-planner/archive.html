@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='serene-white')document.documentElement.setAttribute('data-app-skin','serene-white');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <title>归档 - 个人规划管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script src="utf8-utils.js"></script>
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
+    <script src="review-settings.js"></script>
     <script src="theme.js"></script>
     <script src="input-helpers.js"></script>
 </head>
@@ -204,12 +205,27 @@
             finance: { label: '财务', icon: '¥', iconClass: 'is-finance' }
         };
         const REVIEW_CATEGORY_META = {
+            none: '无',
             life: '生活',
             work: '工作',
             study: '学习',
             important: '重要',
             goal: '目标'
         };
+
+        function resolveArchiveReviewCategoryLabel(catKey) {
+            var raw = String(catKey || '').trim();
+            if (!raw || raw === 'none') {
+                if (window.ReviewSettings && typeof window.ReviewSettings.getCategoryLabel === 'function') {
+                    return window.ReviewSettings.getCategoryLabel('none');
+                }
+                return REVIEW_CATEGORY_META.none || '无';
+            }
+            if (window.ReviewSettings && typeof window.ReviewSettings.getCategoryLabel === 'function') {
+                return window.ReviewSettings.getCategoryLabel(raw);
+            }
+            return REVIEW_CATEGORY_META[raw] || raw || '工作';
+        }
         const ARCHIVE_REVIEW_EMOTION_GROUPS = [
             {
                 valence: '消极',
@@ -795,7 +811,7 @@
                     const stopText = String(item.stop || '--');
                     const startText = String(item.plan || '--');
                     const score = toFiniteNumber(item.score, 7);
-                    const category = REVIEW_CATEGORY_META[String(item.category || '')] || '工作';
+                    const category = resolveArchiveReviewCategoryLabel(item.category);
                     return createArchiveRecord(
                         'review',
                         title,
@@ -843,7 +859,7 @@
             return sourceEntries.map(entry => {
                 const dateTs = parseDateTs(entry.date) ?? parseDateTs(entry.createdAt);
                 const score = toFiniteNumber(entry.score, 7);
-                const category = REVIEW_CATEGORY_META[String(entry.category || '')] || '工作';
+                const category = resolveArchiveReviewCategoryLabel(entry.category);
                 const isEventReview = entry.reviewKind === 'event';
                 const summaryText = String(entry.summary || '--');
                 const tasksText = String(entry.tasks || '--');

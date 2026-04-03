@@ -1,10 +1,12 @@
 /**
- * 总资产（流动 + 实物）读写与编辑，供财务统计展示与安全隐私页编辑共用。
+ * 总资产（流动 + 实物）与总负债（短期 + 长期）读写与编辑，
+ * 供财务统计展示与安全隐私「财务信息」编辑共用。
  */
 (function (global) {
     'use strict';
 
     var ASSET_CATEGORY_KEYS = ['cash_deposit', 'physical_asset'];
+    var LIABILITY_CATEGORY_KEYS = ['short_term_liability', 'long_term_liability'];
     /** 财务无数据场景下，流动资产已做过首次保存后，后续修改才走校对差额 */
     var LIQUID_FIRST_SAVE_DONE_KEY = 'planner_liquid_first_save_done';
 
@@ -538,8 +540,151 @@
         renderAssetCard(ids);
     }
 
+    function getTotalLiabilitiesCategories() {
+        var raw = safeJsonValue(localStorage.getItem(plannerScopedKey('planner_total_liabilities_categories')), null);
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+            return sanitizeCategoryValues(raw, LIABILITY_CATEGORY_KEYS);
+        }
+
+        var legacy = parseStoredNumber(localStorage.getItem(plannerScopedKey('planner_total_liabilities')));
+        return sanitizeCategoryValues({
+            short_term_liability: legacy,
+            long_term_liability: 0
+        }, LIABILITY_CATEGORY_KEYS);
+    }
+
+    function setTotalLiabilitiesCategories(values) {
+        localStorage.setItem(
+            plannerScopedKey('planner_total_liabilities_categories'),
+            JSON.stringify(sanitizeCategoryValues(values, LIABILITY_CATEGORY_KEYS))
+        );
+    }
+
+    function getTotalLiabilities() {
+        return roundFinanceAmount(sumCategoryValues(getTotalLiabilitiesCategories(), LIABILITY_CATEGORY_KEYS));
+    }
+
+    function notifyLiabilitiesChanged() {
+        try {
+            if (global.dispatchEvent) {
+                global.dispatchEvent(new CustomEvent('planner-liabilities-updated'));
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    /**
+     * @param {Object} ids - shortDisplay?, longDisplay?, totalDisplay?, shortInput?, longInput?
+     */
+    function renderLiabilityCard(ids) {
+        var shortEl = ids.shortDisplay ? document.getElementById(ids.shortDisplay) : null;
+        var longEl = ids.longDisplay ? document.getElementById(ids.longDisplay) : null;
+        var totalEl = ids.totalDisplay ? document.getElementById(ids.totalDisplay) : null;
+        var shortInput = ids.shortInput ? document.getElementById(ids.shortInput) : null;
+        var longInput = ids.longInput ? document.getElementById(ids.longInput) : null;
+
+        if (!shortEl && !longEl && !totalEl && !shortInput && !longInput) return;
+
+        var masked = !getFinanceDataVisible();
+        var categories = getTotalLiabilitiesCategories();
+
+        if (shortEl) {
+            shortEl.textContent = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.short_term_liability);
+        }
+        if (longEl) {
+            longEl.textContent = masked ? FINANCE_DATA_MASK : formatAmountNumberPart(categories.long_term_liability);
+        }
+
+        function syncInput(el, amount, placeholderVisible, placeholderMasked) {
+            if (!el || document.activeElement === el) return;
+            if (masked) {
+                el.value = '';
+                el.readOnly = true;
+                el.placeholder = placeholderMasked || '数据已隐藏';
+            } else {
+                el.readOnly = false;
+                el.placeholder = placeholderVisible || '';
+                var amt = Number(amount) || 0;
+                if (Math.abs(roundFinanceAmount(amt)) < 0.000001) {
+                    el.value = '';
+                } else {
+                    el.value = normalizeAmountForInput(amt);
+                }
+            }
+        }
+
+        syncInput(shortInput, categories.short_term_liability, '短期负债金额', '数据已隐藏');
+        syncInput(longInput, categories.long_term_liability, '长期负债金额', '数据已隐藏');
+
+        if (totalEl) totalEl.textContent = formatFinanceDisplay(getTotalLiabilities());
+    }
+
+    function saveLiabilityCategoryFromInput(inputEl, onAfterSave) {
+        if (!inputEl) return;
+        var cardType = inputEl.dataset.card;
+        var category = inputEl.dataset.category;
+        if (cardType !== 'liabilities' || !category) return;
+
+        var raw = inputEl.value.trim();
+        var parsed = parseFinancialAmount(raw, { allowNegative: false, allowBlank: true });
+        var value = parsed.ok && !parsed.empty ? roundFinanceAmount(parsed.value) : 0;
+
+        var categories = getTotalLiabilitiesCategories();
+        categories[category] = value;
+        setTotalLiabilitiesCategories(categories);
+
+        renderLiabilityCard(inputEl._financeLiabilityIds || {});
+        notifyLiabilitiesChanged();
+        if (typeof onAfterSave === 'function') onAfterSave();
+    }
+
+    function bindLiabilityInputIds(inputEl, ids) {
+        if (inputEl) inputEl._financeLiabilityIds = ids;
+    }
+
+    /**
+     * @param {Object} ids - totalDisplay, shortInput, longInput（统计页可仅传展示 id，无 input）
+     * @param {Function} [onAfterSave]
+     */
+    function initLiabilityEditors(ids, onAfterSave) {
+        ['shortInput', 'longInput'].forEach(function (key) {
+            var id = ids[key];
+            if (!id) return;
+            var inputEl = document.getElementById(id);
+            if (!inputEl) return;
+            bindLiabilityInputIds(inputEl, ids);
+            inputEl.addEventListener('click', function (e) { e.stopPropagation(); });
+            inputEl.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyArithmeticToInputValue(inputEl, {
+                        allowNegative: false,
+                        syncWidth: inputEl.classList.contains('finance-balance-category-input')
+                    });
+                    inputEl.blur();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    renderLiabilityCard(ids);
+                    inputEl.blur();
+                }
+            });
+            inputEl.addEventListener('blur', function () {
+                saveLiabilityCategoryFromInput(inputEl, onAfterSave);
+            });
+            inputEl.addEventListener('input', function () {
+                if (inputEl.classList.contains('finance-balance-category-input')) {
+                    syncAmountInputWidth(inputEl);
+                }
+            });
+        });
+
+        renderLiabilityCard(ids);
+    }
+
     global.FinanceAssets = {
         ASSET_CATEGORY_KEYS: ASSET_CATEGORY_KEYS,
+        LIABILITY_CATEGORY_KEYS: LIABILITY_CATEGORY_KEYS,
         plannerScopedKey: plannerScopedKey,
         roundFinanceAmount: roundFinanceAmount,
         sanitizeCategoryValues: sanitizeCategoryValues,
@@ -565,6 +710,13 @@
         initAssetEditors: initAssetEditors,
         startAssetEdit: startAssetEdit,
         saveAssetCategoryFromInput: saveAssetCategoryFromInput,
-        applyArithmeticToInputValue: applyArithmeticToInputValue
+        applyArithmeticToInputValue: applyArithmeticToInputValue,
+        getTotalLiabilitiesCategories: getTotalLiabilitiesCategories,
+        setTotalLiabilitiesCategories: setTotalLiabilitiesCategories,
+        getTotalLiabilities: getTotalLiabilities,
+        renderLiabilityCard: renderLiabilityCard,
+        initLiabilityEditors: initLiabilityEditors,
+        saveLiabilityCategoryFromInput: saveLiabilityCategoryFromInput,
+        notifyLiabilitiesChanged: notifyLiabilitiesChanged
     };
 })(typeof window !== 'undefined' ? window : globalThis);

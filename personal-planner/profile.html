@@ -16,7 +16,7 @@
             }
         })();
     </script>
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='serene-white')document.documentElement.setAttribute('data-app-skin','serene-white');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script src="utf8-utils.js"></script>
@@ -25,6 +25,7 @@
     <script src="theme.js"></script>
     <script src="input-helpers.js"></script>
     <script src="reward-pool.js"></script>
+    <script src="review-settings.js"></script>
     <script src="finance-assets.js"></script>
     <style>
         .profile-shell {
@@ -311,6 +312,216 @@
             background: var(--warm-gray-50);
         }
 
+        #profileAppearanceSection .profile-hint-text {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: var(--warm-gray-500);
+            line-height: 1.5;
+        }
+
+        #profileAppearanceSection .profile-hint-text--tight {
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        #profileAppearanceSection .profile-review-tag-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            margin: 6px 0 6px;
+        }
+
+        #profileAppearanceSection .profile-review-tag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+            align-items: center;
+            min-width: 0;
+            flex: 1;
+        }
+
+        #profileAppearanceSection .profile-review-tag-chip {
+            display: inline-block;
+            margin: 0;
+            font-family: inherit;
+            list-style: none;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--warm-gray-800);
+            background: var(--warm-gray-100);
+            border: 1px solid var(--warm-gray-200);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        #profileAppearanceSection .profile-review-tag-chip:hover {
+            background: var(--warm-gray-50);
+            border-color: var(--warm-gray-300);
+        }
+
+        #profileAppearanceSection .profile-review-tag-chip:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(160, 128, 112, 0.35);
+        }
+
+        #profileAppearanceSection .profile-review-tag-chip:focus:not(:focus-visible) {
+            box-shadow: none;
+        }
+
+        #profileAppearanceSection .profile-review-tag-add-btn {
+            flex-shrink: 0;
+            margin: 0;
+            padding: 3px 2px;
+            border: none;
+            background: transparent;
+            color: var(--primary-brown);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        #profileAppearanceSection .profile-review-tag-add-btn:hover {
+            color: var(--warm-gray-900);
+        }
+
+        #profileAppearanceSection .profile-review-labels-hint {
+            margin-bottom: 6px;
+        }
+
+        #reviewTagSettingsModal .modal--review-tag-settings,
+        #reviewBuiltinTagModal .modal--review-tag-settings {
+            max-width: 420px;
+            width: calc(100vw - 32px);
+        }
+
+        .review-tag-settings-desc {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: var(--warm-gray-600);
+            line-height: 1.45;
+        }
+
+        .review-tag-settings-body {
+            margin-bottom: 4px;
+        }
+
+        .review-tag-settings-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+            margin-bottom: 14px;
+        }
+
+        .review-tag-settings-tab {
+            margin: 0;
+            padding: 5px 11px;
+            border-radius: 999px;
+            border: 1px solid var(--warm-gray-200);
+            background: #fff;
+            font-family: inherit;
+            font-size: 12px;
+            color: var(--warm-gray-700);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .review-tag-settings-tab:hover {
+            border-color: var(--warm-gray-300);
+        }
+
+        .review-tag-settings-tab.is-active {
+            border-color: #ad8a67;
+            background: rgba(173, 138, 103, 0.12);
+            color: var(--warm-gray-900);
+            font-weight: 600;
+        }
+
+        .review-tag-settings-single {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .review-tag-settings-field .form-label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: var(--warm-gray-700);
+        }
+
+        .review-tag-settings-field .form-input {
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 13px;
+            padding: 8px 10px;
+        }
+
+        .review-tag-color-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+            max-width: 100%;
+        }
+
+        .review-tag-color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            padding: 0;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .review-tag-color-swatch:hover {
+            transform: scale(1.08);
+        }
+
+        .review-tag-color-swatch.is-selected {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--primary-brown, #a08070);
+        }
+
+        .review-tag-color-swatch:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(160, 128, 112, 0.45);
+        }
+
+        .review-tag-color-swatch:focus:not(:focus-visible) {
+            box-shadow: none;
+        }
+
+        .review-tag-color-swatch.is-selected:focus:not(:focus-visible) {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--primary-brown, #a08070);
+        }
+
+        .modal-actions--review-tag-settings {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .modal-actions-inline-end {
+            display: inline-flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+
         #profileAppearanceSection .profile-reward-ratios-title {
             margin: 12px 0 8px;
             font-size: 14px;
@@ -387,8 +598,20 @@
             color: #b8922e;
         }
 
+        #privacyFinanceAssetsWrap .finance-balance-main-value.liabilities {
+            color: var(--warm-gray-700);
+        }
+
         #privacyFinanceAssetsWrap .expense-entry {
             margin-bottom: 0;
+        }
+
+        #privacyFinanceAssetsWrap .privacy-finance-liability-block {
+            margin-top: var(--spacing-md);
+        }
+
+        #privacyFinanceAssetsWrap .privacy-finance-liability-summary {
+            margin-bottom: var(--spacing-sm);
         }
 
         #privacyFinanceAssetsWrap .expense-entry-row {
@@ -446,6 +669,18 @@
             color: #7f6414;
         }
 
+        #privacyFinanceAssetsWrap .finance-category-icon-btn[data-category="short_term_liability"] {
+            background: rgba(201, 42, 42, 0.1);
+            border-color: rgba(201, 42, 42, 0.28);
+            color: #a61e4d;
+        }
+
+        #privacyFinanceAssetsWrap .finance-category-icon-btn[data-category="long_term_liability"] {
+            background: rgba(112, 84, 160, 0.12);
+            border-color: rgba(112, 84, 160, 0.28);
+            color: #7048a8;
+        }
+
         #privacyFinanceAssetsWrap .finance-category-icon-text {
             font-size: 12px;
             font-weight: 700;
@@ -453,7 +688,9 @@
         }
 
         #privacyCashDepositInput,
-        #privacyPhysicalAssetInput {
+        #privacyPhysicalAssetInput,
+        #privacyShortTermLiabilityInput,
+        #privacyLongTermLiabilityInput {
             appearance: textfield;
             -moz-appearance: textfield;
         }
@@ -461,7 +698,11 @@
         #privacyCashDepositInput::-webkit-outer-spin-button,
         #privacyCashDepositInput::-webkit-inner-spin-button,
         #privacyPhysicalAssetInput::-webkit-outer-spin-button,
-        #privacyPhysicalAssetInput::-webkit-inner-spin-button {
+        #privacyPhysicalAssetInput::-webkit-inner-spin-button,
+        #privacyShortTermLiabilityInput::-webkit-outer-spin-button,
+        #privacyShortTermLiabilityInput::-webkit-inner-spin-button,
+        #privacyLongTermLiabilityInput::-webkit-outer-spin-button,
+        #privacyLongTermLiabilityInput::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
@@ -764,11 +1005,12 @@
                                     <strong>主题</strong>
                                 </div>
                                 <select class="form-input profile-appearance-select" id="appearanceAppSkin" aria-label="界面主题">
-                                    <option value="classic">默认（暖灰）</option>
-                                    <option value="serene">Serene Canvas</option>
+                                    <option value="classic">暖灰</option>
+                                    <option value="serene">静谧</option>
+                                    <option value="serene-white">净白</option>
                                     <option value="crystal-flow">冰雪蓝</option>
-                                    <option value="easyos-crystal">Crystal Flow（晶面）</option>
-                                    <option value="midnight">Midnight Focus</option>
+                                    <option value="easyos-crystal">晶面</option>
+                                    <option value="midnight">午夜</option>
                                 </select>
                             </div>
                             <div class="privacy-status profile-appearance-status-sink" id="appearanceAppSkinStatus" aria-live="polite" aria-hidden="true"></div>
@@ -796,6 +1038,19 @@
                                 </select>
                             </div>
                             <div class="privacy-status profile-appearance-status-sink" id="appearanceStatus" aria-live="polite" aria-hidden="true"></div>
+                        </article>
+                        <article class="privacy-card" id="profileReviewSettingsCard">
+                            <h3>复盘设置</h3>
+                            <p class="profile-hint-text">自定义复盘标签名称与颜色；仅影响当前账号。</p>
+
+                            <p class="profile-reward-ratios-title">标签设置</p>
+                            <div class="profile-review-tag-line">
+                                <div class="profile-review-tag-chips" id="profileReviewTagChips" role="group" aria-label="标签列表"></div>
+                                <button type="button" class="profile-review-tag-add-btn" id="profileReviewTagAddBtn" aria-haspopup="dialog" aria-controls="reviewTagSettingsModal">添加标签</button>
+                            </div>
+                            <p class="profile-hint-text profile-hint-text--tight profile-review-labels-hint">点击标签即可编辑名称与颜色；「添加标签」可新增自定义标签。</p>
+
+                            <div class="privacy-status" id="profileReviewSettingsStatus" aria-live="polite"></div>
                         </article>
                         <article class="privacy-card">
                             <h3>积分设置</h3>
@@ -870,6 +1125,28 @@
                                             </button>
                                         </div>
                                     </div>
+                                    <div class="privacy-finance-liability-block" id="privacyTotalLiabilitiesCard">
+                                        <div class="privacy-finance-liability-summary">
+                                            <div class="finance-summary-main">
+                                                <div class="finance-summary-label">总负债</div>
+                                                <div class="finance-balance-main-value liabilities" id="privacyTotalLiabilitiesDisplay">¥0</div>
+                                            </div>
+                                        </div>
+                                        <div class="expense-entry-row privacy-finance-expense-row privacy-finance-liability-row">
+                                            <div class="finance-input-group finance-input-group-with-icon">
+                                                <input type="text" inputmode="decimal" class="form-input" id="privacyShortTermLiabilityInput" data-card="liabilities" data-category="short_term_liability" min="0" step="0.01" placeholder="短期负债金额" autocomplete="off">
+                                                <button type="button" class="finance-category-icon-btn" data-category="short_term_liability" tabindex="-1" aria-hidden="true" title="短期负债">
+                                                    <span class="finance-category-icon-text">短</span>
+                                                </button>
+                                            </div>
+                                            <div class="finance-input-group finance-input-group-with-icon">
+                                                <input type="text" inputmode="decimal" class="form-input" id="privacyLongTermLiabilityInput" data-card="liabilities" data-category="long_term_liability" min="0" step="0.01" placeholder="长期负债金额" autocomplete="off">
+                                                <button type="button" class="finance-category-icon-btn" data-category="long_term_liability" tabindex="-1" aria-hidden="true" title="长期负债">
+                                                    <span class="finance-category-icon-text">长</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="privacy-status" id="privacyFinanceAssetsStatus" aria-live="polite"></div>
@@ -932,6 +1209,45 @@
                 </section>
             </div>
         </main>
+    </div>
+
+    <div class="modal-overlay" id="reviewTagSettingsModal" aria-hidden="true">
+        <div class="modal modal--review-tag-settings" role="dialog" aria-modal="true" aria-labelledby="reviewTagSettingsModalTitle">
+            <h3 class="modal-title" id="reviewTagSettingsModalTitle">添加标签</h3>
+            <p class="review-tag-settings-desc">新增与系统标签同级的自定义标签，名称与颜色各一项即可。</p>
+            <div class="review-tag-settings-body">
+                <div class="review-tag-settings-single">
+                    <div class="review-tag-settings-field">
+                        <label class="form-label" for="profileCustomTagName">标签名称</label>
+                        <input type="text" class="form-input" id="profileCustomTagName" maxlength="32" autocomplete="off" placeholder="例如：健康、副业">
+                    </div>
+                    <div class="review-tag-settings-field">
+                        <span class="form-label" id="profileCustomTagColorLabel">标签颜色</span>
+                        <div class="review-tag-color-presets" id="profileCustomTagColorPresets" role="radiogroup" aria-labelledby="profileCustomTagColorLabel"></div>
+                        <input type="hidden" id="profileCustomTagColor" value="#6b7280">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions modal-actions-inline-end modal-actions--review-tag-add">
+                <button type="button" class="btn btn-secondary" id="reviewTagSettingsModalCancel">取消</button>
+                <button type="button" class="btn btn-primary" id="reviewTagSettingsModalSave">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="reviewBuiltinTagModal" aria-hidden="true">
+        <div class="modal modal--review-tag-settings" role="dialog" aria-modal="true" aria-labelledby="reviewBuiltinTagModalTitle">
+            <h3 class="modal-title" id="reviewBuiltinTagModalTitle">编辑系统标签</h3>
+            <p class="review-tag-settings-desc">切换上方类别，分别设置显示名称与颜色。</p>
+            <div class="review-tag-settings-body" id="reviewBuiltinTagModalBody"></div>
+            <div class="modal-actions modal-actions--review-tag-settings">
+                <button type="button" class="btn btn-secondary" id="reviewBuiltinTagModalReset">恢复默认</button>
+                <div class="modal-actions-inline-end">
+                    <button type="button" class="btn btn-secondary" id="reviewBuiltinTagModalCancel">取消</button>
+                    <button type="button" class="btn btn-primary" id="reviewBuiltinTagModalSave">保存</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="deregisterModal" aria-hidden="true">
@@ -1082,13 +1398,8 @@
                 }
 
                 if (window.FinanceAssets && document.getElementById('privacyFinanceAssetsWrap')) {
-                    var privacyFinanceIds = {
-                        totalDisplay: 'privacyTotalAssetsDisplay',
-                        cashInput: 'privacyCashDepositInput',
-                        physicalInput: 'privacyPhysicalAssetInput'
-                    };
-                    FinanceAssets.initAssetEditors(privacyFinanceIds, function () {
-                        setPrivacyStatus('privacyFinanceAssetsStatus', '资产数据已保存', 'is-success');
+                    var privacyFinanceStatusFn = function () {
+                        setPrivacyStatus('privacyFinanceAssetsStatus', '财务数据已保存', 'is-success');
                         setTimeout(function () {
                             var el = document.getElementById('privacyFinanceAssetsStatus');
                             if (el) {
@@ -1096,7 +1407,17 @@
                                 el.classList.remove('is-error', 'is-success');
                             }
                         }, 2800);
-                    });
+                    };
+                    FinanceAssets.initAssetEditors({
+                        totalDisplay: 'privacyTotalAssetsDisplay',
+                        cashInput: 'privacyCashDepositInput',
+                        physicalInput: 'privacyPhysicalAssetInput'
+                    }, privacyFinanceStatusFn);
+                    FinanceAssets.initLiabilityEditors({
+                        totalDisplay: 'privacyTotalLiabilitiesDisplay',
+                        shortInput: 'privacyShortTermLiabilityInput',
+                        longInput: 'privacyLongTermLiabilityInput'
+                    }, privacyFinanceStatusFn);
                 }
 
                 var store = readProfileStore();
@@ -1629,7 +1950,8 @@
                 if (hash === '#privacySecuritySection' || hash === '#privacy') {
                     showPanel('privacy');
                     if (window.location.hash !== hash) history.replaceState(null, '', window.location.pathname + (window.location.search || '') + hash);
-                    var skipPrivacyTopScroll = financeFocusCategory === 'cash_deposit' || financeFocusCategory === 'physical_asset';
+                    var skipPrivacyTopScroll = financeFocusCategory === 'cash_deposit' || financeFocusCategory === 'physical_asset'
+                        || financeFocusCategory === 'short_term_liability' || financeFocusCategory === 'long_term_liability';
                     if (!skipPrivacyTopScroll) {
                         requestAnimationFrame(function () {
                             scrollPanelToTop();
@@ -1637,11 +1959,15 @@
                             setTimeout(scrollPanelToTop, 150);
                         });
                     }
-                    if (financeFocusCategory === 'cash_deposit' || financeFocusCategory === 'physical_asset') {
+                    if (financeFocusCategory === 'cash_deposit' || financeFocusCategory === 'physical_asset'
+                        || financeFocusCategory === 'short_term_liability' || financeFocusCategory === 'long_term_liability') {
                         try {
                             sessionStorage.removeItem('profileFinanceFocusCategory');
                         } catch (e) {}
-                        var focusInputId = financeFocusCategory === 'physical_asset' ? 'privacyPhysicalAssetInput' : 'privacyCashDepositInput';
+                        var focusInputId = 'privacyCashDepositInput';
+                        if (financeFocusCategory === 'physical_asset') focusInputId = 'privacyPhysicalAssetInput';
+                        else if (financeFocusCategory === 'short_term_liability') focusInputId = 'privacyShortTermLiabilityInput';
+                        else if (financeFocusCategory === 'long_term_liability') focusInputId = 'privacyLongTermLiabilityInput';
                         setTimeout(function () {
                             var el = document.getElementById(focusInputId);
                             if (el) {
@@ -1765,6 +2091,313 @@
                     setRewardRatiosStatus(appearanceRewardEnabledEl.checked ? '已开启积分系统。' : '已关闭积分系统，积分获取已暂停。', 'is-success');
                 }
 
+                var profileReviewSettingsStatusEl = document.getElementById('profileReviewSettingsStatus');
+
+                function setReviewSettingsStatus(msg, kind) {
+                    if (!profileReviewSettingsStatusEl) return;
+                    profileReviewSettingsStatusEl.textContent = msg || '';
+                    profileReviewSettingsStatusEl.classList.remove('is-error', 'is-success');
+                    if (kind) profileReviewSettingsStatusEl.classList.add(kind);
+                }
+
+                /** 与「#生活 #学习 #工作」展示顺序一致 */
+                var PROFILE_REVIEW_TAG_DISPLAY_ORDER = ['life', 'study', 'work', 'important', 'goal', 'none'];
+
+                var profileCustomTagEditingId = null;
+
+                /** 与内置六类色系接近，并补充几种常用色，供点选（不再使用取色器） */
+                var REVIEW_TAG_COLOR_PRESETS = [
+                    '#8b847d', '#8a6a00', '#2f6a3a', '#2e5f8d', '#8a2f2f', '#a65a00',
+                    '#6b7280', '#7c3aed', '#db2777', '#0d9488', '#ca8a04', '#1d4ed8'
+                ];
+
+                function parseHexColorForPresets(hex) {
+                    var m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || '').trim());
+                    if (!m) return null;
+                    var n = parseInt(m[1], 16);
+                    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+                }
+
+                function nearestPresetHex(hex) {
+                    var rgb = parseHexColorForPresets(hex);
+                    if (!rgb) return REVIEW_TAG_COLOR_PRESETS[6];
+                    var best = REVIEW_TAG_COLOR_PRESETS[0];
+                    var bestD = 1e12;
+                    for (var i = 0; i < REVIEW_TAG_COLOR_PRESETS.length; i++) {
+                        var p = REVIEW_TAG_COLOR_PRESETS[i];
+                        var pr = parseHexColorForPresets(p);
+                        if (!pr) continue;
+                        var d = (pr.r - rgb.r) * (pr.r - rgb.r) + (pr.g - rgb.g) * (pr.g - rgb.g) + (pr.b - rgb.b) * (pr.b - rgb.b);
+                        if (d < bestD) {
+                            bestD = d;
+                            best = p;
+                        }
+                    }
+                    return best;
+                }
+
+                function renderReviewTagColorPresets(containerId, hiddenInputId, activeHex) {
+                    var wrap = document.getElementById(containerId);
+                    var hidden = document.getElementById(hiddenInputId);
+                    if (!wrap || !hidden) return;
+                    var selected = nearestPresetHex(activeHex || hidden.value);
+                    hidden.value = selected;
+                    wrap.textContent = '';
+                    REVIEW_TAG_COLOR_PRESETS.forEach(function (hex) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'review-tag-color-swatch';
+                        btn.setAttribute('data-hex', hex);
+                        btn.style.backgroundColor = hex;
+                        btn.setAttribute('aria-label', '选用颜色 ' + hex);
+                        btn.setAttribute('aria-pressed', hex === selected ? 'true' : 'false');
+                        if (hex === selected) btn.classList.add('is-selected');
+                        btn.addEventListener('click', function () {
+                            hidden.value = hex;
+                            wrap.querySelectorAll('.review-tag-color-swatch').forEach(function (b) {
+                                var h = b.getAttribute('data-hex');
+                                var on = h === hex;
+                                b.classList.toggle('is-selected', on);
+                                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                            });
+                        });
+                        wrap.appendChild(btn);
+                    });
+                }
+
+                function refreshProfileReviewTagChips() {
+                    var wrap = document.getElementById('profileReviewTagChips');
+                    if (!wrap || !window.ReviewSettings) return;
+                    wrap.textContent = '';
+                    PROFILE_REVIEW_TAG_DISPLAY_ORDER.forEach(function (k) {
+                        if (window.ReviewSettings.CATEGORY_KEYS.indexOf(k) === -1) return;
+                        var label = window.ReviewSettings.getCategoryLabel(k);
+                        var hex = window.ReviewSettings.getCategoryColor(k);
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'profile-review-tag-chip';
+                        btn.setAttribute('data-review-cat', k);
+                        btn.setAttribute('aria-label', '编辑标签「' + label + '」');
+                        btn.textContent = '#' + label;
+                        if (typeof window.ReviewSettings.categoryColorAlpha === 'function') {
+                            btn.style.borderColor = window.ReviewSettings.categoryColorAlpha(hex, 0.42);
+                            btn.style.background = window.ReviewSettings.categoryColorAlpha(hex, 0.14);
+                            btn.style.color = hex;
+                        }
+                        wrap.appendChild(btn);
+                    });
+                    window.ReviewSettings.getCustomTags().forEach(function (t) {
+                        var hex = t.color;
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'profile-review-tag-chip profile-review-tag-chip--custom';
+                        btn.setAttribute('data-custom-tag-id', t.id);
+                        btn.setAttribute('aria-label', '编辑自定义标签「' + t.label + '」');
+                        btn.textContent = '#' + t.label;
+                        if (typeof window.ReviewSettings.categoryColorAlpha === 'function') {
+                            btn.style.borderColor = window.ReviewSettings.categoryColorAlpha(hex, 0.42);
+                            btn.style.background = window.ReviewSettings.categoryColorAlpha(hex, 0.14);
+                            btn.style.color = hex;
+                        }
+                        wrap.appendChild(btn);
+                    });
+                }
+
+                function syncCustomTagModalModeUi() {
+                    var titleEl = document.getElementById('reviewTagSettingsModalTitle');
+                    var saveBtn = document.getElementById('reviewTagSettingsModalSave');
+                    var descEl = document.querySelector('#reviewTagSettingsModal .review-tag-settings-desc');
+                    if (profileCustomTagEditingId) {
+                        if (titleEl) titleEl.textContent = '编辑标签';
+                        if (saveBtn) saveBtn.textContent = '保存';
+                        if (descEl) descEl.textContent = '修改该自定义标签的名称与颜色。';
+                    } else {
+                        if (titleEl) titleEl.textContent = '添加标签';
+                        if (saveBtn) saveBtn.textContent = '添加';
+                        if (descEl) descEl.textContent = '新增与系统标签同级的自定义标签，名称与颜色各一项即可。';
+                    }
+                }
+
+                var reviewTagModalCurrentKey = 'life';
+                var reviewTagModalDraft = { labels: {}, colors: {} };
+
+                function initReviewTagModalDraft() {
+                    if (!window.ReviewSettings) return;
+                    reviewTagModalDraft = { labels: {}, colors: {} };
+                    window.ReviewSettings.CATEGORY_KEYS.forEach(function (k) {
+                        reviewTagModalDraft.labels[k] = window.ReviewSettings.getCategoryLabel(k);
+                        reviewTagModalDraft.colors[k] = window.ReviewSettings.getCategoryColor(k);
+                    });
+                }
+
+                function syncReviewTagModalDraftFromInputs() {
+                    var k = reviewTagModalCurrentKey;
+                    var ne = document.getElementById('profileReviewTagModalName');
+                    var hidden = document.getElementById('profileReviewTagModalColor');
+                    if (ne && reviewTagModalDraft.labels) reviewTagModalDraft.labels[k] = ne.value;
+                    if (hidden && reviewTagModalDraft.colors) reviewTagModalDraft.colors[k] = hidden.value;
+                }
+
+                function applyReviewTagModalInputsForKey(k) {
+                    if (!window.ReviewSettings || !reviewTagModalDraft.labels) return;
+                    if (window.ReviewSettings.CATEGORY_KEYS.indexOf(k) === -1) k = 'life';
+                    reviewTagModalCurrentKey = k;
+                    var ne = document.getElementById('profileReviewTagModalName');
+                    if (ne) ne.value = reviewTagModalDraft.labels[k] != null ? reviewTagModalDraft.labels[k] : '';
+                    var col = reviewTagModalDraft.colors[k] || window.ReviewSettings.getCategoryColor(k);
+                    renderReviewTagColorPresets('profileBuiltinTagColorPresets', 'profileReviewTagModalColor', col);
+                    document.querySelectorAll('#reviewBuiltinTagModalBody .review-tag-settings-tab').forEach(function (btn) {
+                        btn.classList.toggle('is-active', btn.getAttribute('data-review-cat') === k);
+                    });
+                }
+
+                function buildReviewBuiltinTagModalBody() {
+                    var body = document.getElementById('reviewBuiltinTagModalBody');
+                    if (!body || !window.ReviewSettings) return;
+                    if (body.querySelector('.review-tag-settings-single')) return;
+                    var tabs = window.ReviewSettings.CATEGORY_KEYS.map(function (k) {
+                        var ref = window.ReviewSettings.getBuiltinLabel(k);
+                        return '<button type="button" class="review-tag-settings-tab" role="tab" data-review-cat="' + k + '">' + ref + '</button>';
+                    }).join('');
+                    body.innerHTML = '<div class="review-tag-settings-tabs" role="tablist" aria-label="系统标签类别">' + tabs + '</div>' +
+                        '<div class="review-tag-settings-single">' +
+                        '<div class="review-tag-settings-field">' +
+                        '<label class="form-label" for="profileReviewTagModalName">标签名称</label>' +
+                        '<input type="text" class="form-input" id="profileReviewTagModalName" maxlength="32" autocomplete="off">' +
+                        '</div>' +
+                        '<div class="review-tag-settings-field">' +
+                        '<span class="form-label" id="profileBuiltinTagColorLabel">标签颜色</span>' +
+                        '<div class="review-tag-color-presets" id="profileBuiltinTagColorPresets" role="radiogroup" aria-labelledby="profileBuiltinTagColorLabel"></div>' +
+                        '<input type="hidden" id="profileReviewTagModalColor" value="#6b7280">' +
+                        '</div></div>';
+                    body.querySelectorAll('.review-tag-settings-tab').forEach(function (btn) {
+                        btn.addEventListener('click', function () {
+                            var nk = btn.getAttribute('data-review-cat');
+                            if (!nk) return;
+                            syncReviewTagModalDraftFromInputs();
+                            applyReviewTagModalInputsForKey(nk);
+                        });
+                    });
+                }
+
+                function openReviewBuiltinTagModal(prefKey) {
+                    if (!window.ReviewSettings) return;
+                    buildReviewBuiltinTagModalBody();
+                    initReviewTagModalDraft();
+                    var k = prefKey && window.ReviewSettings.CATEGORY_KEYS.indexOf(prefKey) !== -1
+                        ? prefKey
+                        : 'life';
+                    applyReviewTagModalInputsForKey(k);
+                    var m = document.getElementById('reviewBuiltinTagModal');
+                    if (m) {
+                        m.classList.add('active');
+                        m.setAttribute('aria-hidden', 'false');
+                    }
+                }
+
+                function closeReviewBuiltinTagModal() {
+                    var m = document.getElementById('reviewBuiltinTagModal');
+                    if (m) {
+                        m.classList.remove('active');
+                        m.setAttribute('aria-hidden', 'true');
+                    }
+                }
+
+                function saveBuiltinTagSettingsFromModal() {
+                    if (!window.ReviewSettings) return;
+                    syncReviewTagModalDraftFromInputs();
+                    var labels = {};
+                    var colors = {};
+                    window.ReviewSettings.CATEGORY_KEYS.forEach(function (k) {
+                        labels[k] = reviewTagModalDraft.labels[k];
+                        colors[k] = reviewTagModalDraft.colors[k];
+                    });
+                    window.ReviewSettings.setCategoryAppearanceFromModal(labels, colors);
+                    refreshProfileReviewTagChips();
+                    if (typeof window.ReviewSettings.applyReviewCategoryStylesInjection === 'function') {
+                        window.ReviewSettings.applyReviewCategoryStylesInjection();
+                    }
+                    closeReviewBuiltinTagModal();
+                    setReviewSettingsStatus('系统标签已保存。', 'is-success');
+                }
+
+                function openReviewTagSettingsModal() {
+                    profileCustomTagEditingId = null;
+                    var nameEl = document.getElementById('profileCustomTagName');
+                    if (nameEl) nameEl.value = '';
+                    renderReviewTagColorPresets('profileCustomTagColorPresets', 'profileCustomTagColor', '#6b7280');
+                    syncCustomTagModalModeUi();
+                    var m = document.getElementById('reviewTagSettingsModal');
+                    if (m) {
+                        m.classList.add('active');
+                        m.setAttribute('aria-hidden', 'false');
+                    }
+                }
+
+                function openReviewTagSettingsModalForEdit(tagId) {
+                    if (!window.ReviewSettings || !tagId) return;
+                    var t = window.ReviewSettings.getCustomTagById(tagId);
+                    if (!t) return;
+                    profileCustomTagEditingId = tagId;
+                    var nameEl = document.getElementById('profileCustomTagName');
+                    if (nameEl) nameEl.value = t.label;
+                    renderReviewTagColorPresets('profileCustomTagColorPresets', 'profileCustomTagColor', t.color);
+                    syncCustomTagModalModeUi();
+                    var m = document.getElementById('reviewTagSettingsModal');
+                    if (m) {
+                        m.classList.add('active');
+                        m.setAttribute('aria-hidden', 'false');
+                    }
+                }
+
+                function closeReviewTagSettingsModal() {
+                    profileCustomTagEditingId = null;
+                    var m = document.getElementById('reviewTagSettingsModal');
+                    if (m) {
+                        m.classList.remove('active');
+                        m.setAttribute('aria-hidden', 'true');
+                    }
+                    syncCustomTagModalModeUi();
+                }
+
+                function saveReviewTagSettingsFromModal() {
+                    if (!window.ReviewSettings) return;
+                    var wasEdit = !!profileCustomTagEditingId;
+                    var nameEl = document.getElementById('profileCustomTagName');
+                    var hiddenCol = document.getElementById('profileCustomTagColor');
+                    var label = nameEl ? nameEl.value : '';
+                    var color = hiddenCol ? hiddenCol.value : '#6b7280';
+                    var r = wasEdit
+                        ? window.ReviewSettings.updateCustomTag(profileCustomTagEditingId, label, color)
+                        : window.ReviewSettings.addCustomTag(label, color);
+                    if (!r.ok) {
+                        if (r.error === 'empty') {
+                            setReviewSettingsStatus('请输入标签名称。', 'is-error');
+                        } else if (r.error === 'limit') {
+                            setReviewSettingsStatus('自定义标签已达上限（' + window.ReviewSettings.MAX_CUSTOM_TAGS + ' 个）。', 'is-error');
+                        } else if (r.error === 'missing') {
+                            setReviewSettingsStatus('找不到该标签。', 'is-error');
+                        } else {
+                            setReviewSettingsStatus(wasEdit ? '无法保存标签。' : '无法添加标签。', 'is-error');
+                        }
+                        return;
+                    }
+                    refreshProfileReviewTagChips();
+                    if (typeof window.ReviewSettings.applyReviewCategoryStylesInjection === 'function') {
+                        window.ReviewSettings.applyReviewCategoryStylesInjection();
+                    }
+                    closeReviewTagSettingsModal();
+                    setReviewSettingsStatus(wasEdit ? '自定义标签已保存。' : '已添加自定义标签。', 'is-success');
+                }
+
+                function loadReviewSettingsPrefs() {
+                    if (!window.ReviewSettings) return;
+                    refreshProfileReviewTagChips();
+                    if (typeof window.ReviewSettings.applyReviewCategoryStylesInjection === 'function') {
+                        window.ReviewSettings.applyReviewCategoryStylesInjection();
+                    }
+                }
+
                 function loadAppearancePrefs() {
                     if (window.PlannerBackup) {
                         if (appearanceStartPageEl) appearanceStartPageEl.value = window.PlannerBackup.getStartPage();
@@ -1772,6 +2405,7 @@
                     }
                     loadRewardRatioPrefs();
                     loadAppSkinPref();
+                    loadReviewSettingsPrefs();
                 }
 
                 loadAppearancePrefs();
@@ -1793,6 +2427,98 @@
                 });
                 appearanceRewardEnabledEl && appearanceRewardEnabledEl.addEventListener('change', saveRewardEnabledPref);
                 appearanceAppSkinEl && appearanceAppSkinEl.addEventListener('change', saveAppSkinPref);
+
+                var profileReviewTagAddBtn = document.getElementById('profileReviewTagAddBtn');
+                var profileReviewTagChipsEl = document.getElementById('profileReviewTagChips');
+                var reviewTagSettingsModal = document.getElementById('reviewTagSettingsModal');
+                var reviewTagSettingsModalCancel = document.getElementById('reviewTagSettingsModalCancel');
+                var reviewTagSettingsModalSave = document.getElementById('reviewTagSettingsModalSave');
+                var reviewBuiltinTagModal = document.getElementById('reviewBuiltinTagModal');
+                var reviewBuiltinTagModalCancel = document.getElementById('reviewBuiltinTagModalCancel');
+                var reviewBuiltinTagModalSave = document.getElementById('reviewBuiltinTagModalSave');
+                var reviewBuiltinTagModalReset = document.getElementById('reviewBuiltinTagModalReset');
+
+                profileReviewTagAddBtn && profileReviewTagAddBtn.addEventListener('click', function () {
+                    openReviewTagSettingsModal();
+                    setTimeout(function () {
+                        var ne = document.getElementById('profileCustomTagName');
+                        if (ne) {
+                            ne.focus();
+                            try {
+                                ne.select();
+                            } catch (e2) { /* ignore */ }
+                        }
+                    }, 50);
+                });
+
+                profileReviewTagChipsEl && profileReviewTagChipsEl.addEventListener('click', function (e) {
+                    var customChip = e.target.closest('.profile-review-tag-chip--custom');
+                    if (customChip && window.ReviewSettings) {
+                        var cid = customChip.getAttribute('data-custom-tag-id');
+                        if (!cid) return;
+                        openReviewTagSettingsModalForEdit(cid);
+                        setTimeout(function () {
+                            var ne = document.getElementById('profileCustomTagName');
+                            if (ne) {
+                                ne.focus();
+                                try {
+                                    ne.select();
+                                } catch (e2) { /* ignore */ }
+                            }
+                        }, 50);
+                        return;
+                    }
+                    var chip = e.target.closest('.profile-review-tag-chip');
+                    if (!chip) return;
+                    var k = chip.getAttribute('data-review-cat');
+                    openReviewBuiltinTagModal(k || 'life');
+                    setTimeout(function () {
+                        var nameEl = document.getElementById('profileReviewTagModalName');
+                        if (nameEl) {
+                            nameEl.focus();
+                            try {
+                                nameEl.select();
+                            } catch (e2) { /* ignore */ }
+                        }
+                    }, 50);
+                });
+
+                reviewTagSettingsModalCancel && reviewTagSettingsModalCancel.addEventListener('click', closeReviewTagSettingsModal);
+                reviewTagSettingsModalSave && reviewTagSettingsModalSave.addEventListener('click', saveReviewTagSettingsFromModal);
+                reviewBuiltinTagModalCancel && reviewBuiltinTagModalCancel.addEventListener('click', closeReviewBuiltinTagModal);
+                reviewBuiltinTagModalSave && reviewBuiltinTagModalSave.addEventListener('click', saveBuiltinTagSettingsFromModal);
+                reviewBuiltinTagModalReset && reviewBuiltinTagModalReset.addEventListener('click', function () {
+                    if (!window.ReviewSettings) return;
+                    window.ReviewSettings.resetCategoryAppearance();
+                    initReviewTagModalDraft();
+                    applyReviewTagModalInputsForKey(reviewTagModalCurrentKey);
+                    refreshProfileReviewTagChips();
+                    if (typeof window.ReviewSettings.applyReviewCategoryStylesInjection === 'function') {
+                        window.ReviewSettings.applyReviewCategoryStylesInjection();
+                    }
+                    setReviewSettingsStatus('已恢复系统标签默认名称与颜色。', 'is-success');
+                });
+
+                if (reviewTagSettingsModal) {
+                    reviewTagSettingsModal.addEventListener('click', function (e) {
+                        if (e.target === reviewTagSettingsModal) closeReviewTagSettingsModal();
+                    });
+                }
+                if (reviewBuiltinTagModal) {
+                    reviewBuiltinTagModal.addEventListener('click', function (e) {
+                        if (e.target === reviewBuiltinTagModal) closeReviewBuiltinTagModal();
+                    });
+                }
+                document.addEventListener('keydown', function (e) {
+                    if (e.key !== 'Escape') return;
+                    if (reviewTagSettingsModal && reviewTagSettingsModal.classList.contains('active')) {
+                        closeReviewTagSettingsModal();
+                    }
+                    if (reviewBuiltinTagModal && reviewBuiltinTagModal.classList.contains('active')) {
+                        closeReviewBuiltinTagModal();
+                    }
+                });
+
             });
         })();
     </script>

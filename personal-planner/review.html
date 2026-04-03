@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
+    <script>try{var _sk=localStorage.getItem('planner_app_skin');if(_sk==='serene')document.documentElement.setAttribute('data-app-skin','serene');else if(_sk==='serene-white')document.documentElement.setAttribute('data-app-skin','serene-white');else if(_sk==='midnight')document.documentElement.setAttribute('data-app-skin','midnight');else if(_sk==='crystal-flow')document.documentElement.setAttribute('data-app-skin','crystal-flow');else if(_sk==='easyos-crystal')document.documentElement.setAttribute('data-app-skin','easyos-crystal');}catch(e){}</script>
     <title>复盘 - 个人规划管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script src="utf8-utils.js"></script>
     <script src="storage-sync.js"></script>
     <script src="backup-client.js"></script>
+    <script src="review-settings.js"></script>
     <script src="theme.js"></script>
     <script src="input-helpers.js"></script>
     <script src="reward-pool.js"></script>
@@ -824,6 +825,33 @@
             important: { key: 'important', label: '重要', className: 'category-important' },
             goal: { key: 'goal', label: '目标', className: 'category-goal' }
         };
+        const WEEKLY_CATEGORY_OPTIONS_CONTAINER_MAP = {
+            weeklyReviewHighlightsCategories: 'weeklyReviewHighlightsCategoryOptions',
+            weeklyReviewReflectionCategories: 'weeklyReviewReflectionCategoryOptions',
+            weeklyReviewNextPlanCategories: 'weeklyReviewNextPlanCategoryOptions',
+            monthlyReviewProgressCategories: 'monthlyReviewProgressCategoryOptions',
+            monthlyReviewGrowthCategories: 'monthlyReviewGrowthCategoryOptions',
+            monthlyReviewNextPlanCategories: 'monthlyReviewNextPlanCategoryOptions'
+        };
+
+        function getAllReviewCategoryKeys() {
+            const keys = REVIEW_CATEGORY_OPTIONS.slice();
+            if (window.ReviewSettings && typeof window.ReviewSettings.getCustomTags === 'function') {
+                window.ReviewSettings.getCustomTags().forEach((t) => {
+                    if (t && t.id) keys.push(t.id);
+                });
+            }
+            return keys;
+        }
+
+        function isValidReviewCategoryKey(key) {
+            const k = String(key || '').trim();
+            if (REVIEW_CATEGORY_OPTIONS.includes(k)) return true;
+            if (window.ReviewSettings && typeof window.ReviewSettings.isCustomTagId === 'function' && window.ReviewSettings.isCustomTagId(k)) {
+                return true;
+            }
+            return false;
+        }
         const REVIEW_EMOTION_GROUPS = [
             {
                 valence: '消极',
@@ -985,12 +1013,81 @@
 
         function normalizeReviewCategory(value) {
             const key = String(value || '').trim();
-            return REVIEW_CATEGORY_OPTIONS.includes(key) ? key : 'none';
+            if (REVIEW_CATEGORY_OPTIONS.includes(key)) return key;
+            if (window.ReviewSettings && typeof window.ReviewSettings.isCustomTagId === 'function' && window.ReviewSettings.isCustomTagId(key)) {
+                return key;
+            }
+            return 'none';
+        }
+
+        function normalizeReviewCategoryArray(v) {
+            if (Array.isArray(v)) return v.filter(k => isValidReviewCategoryKey(k));
+            if (v) {
+                const one = normalizeReviewCategory(v);
+                return isValidReviewCategoryKey(one) ? [one] : [];
+            }
+            return [];
         }
 
         function getReviewCategoryMeta(value) {
             const key = normalizeReviewCategory(value);
-            return REVIEW_CATEGORY_META[key] || REVIEW_CATEGORY_META.none;
+            if (window.ReviewSettings && typeof window.ReviewSettings.isCustomTagId === 'function' && window.ReviewSettings.isCustomTagId(key)) {
+                const label = typeof window.ReviewSettings.getCategoryLabel === 'function'
+                    ? window.ReviewSettings.getCategoryLabel(key)
+                    : '标签';
+                return { key, label, className: 'category-custom' };
+            }
+            const base = REVIEW_CATEGORY_META[key] || REVIEW_CATEGORY_META.none;
+            let label = base.label;
+            if (window.ReviewSettings && typeof window.ReviewSettings.getCategoryLabel === 'function') {
+                label = window.ReviewSettings.getCategoryLabel(key);
+            }
+            return { ...base, label };
+        }
+
+        function syncWeeklyReviewCustomCategoryOptions() {
+            if (!window.ReviewSettings || typeof window.ReviewSettings.getCustomTags !== 'function') return;
+            const tags = window.ReviewSettings.getCustomTags();
+            Object.keys(WEEKLY_CATEGORY_OPTIONS_CONTAINER_MAP).forEach((hiddenId) => {
+                const optId = WEEKLY_CATEGORY_OPTIONS_CONTAINER_MAP[hiddenId];
+                const container = document.getElementById(optId);
+                if (!container) return;
+                container.querySelectorAll('.weekly-review-category-option[data-custom-tag="1"]').forEach((el) => el.remove());
+                tags.forEach((t) => {
+                    if (!t || !t.id) return;
+                    const div = document.createElement('div');
+                    div.className = 'weekly-review-category-option category-custom';
+                    div.setAttribute('data-value', t.id);
+                    div.setAttribute('data-custom-tag', '1');
+                    div.textContent = window.ReviewSettings.getCategoryLabel(t.id);
+                    const hid = hiddenId;
+                    const tid = t.id;
+                    div.addEventListener('click', function () {
+                        addWeeklyCategory(hid, tid);
+                    });
+                    container.appendChild(div);
+                });
+            });
+        }
+
+        function refreshReviewCategoryLabelsUI() {
+            if (!window.ReviewSettings || typeof window.ReviewSettings.getCategoryLabel !== 'function') return;
+            const sel = document.getElementById('reviewCategory');
+            if (sel) {
+                const prev = sel.value;
+                const keys = getAllReviewCategoryKeys();
+                sel.innerHTML = keys.map((k) => `<option value="${escapeHtml(k)}">${escapeHtml(window.ReviewSettings.getCategoryLabel(k))}</option>`).join('');
+                const nextVal = normalizeReviewCategory(prev);
+                sel.value = keys.includes(nextVal) ? nextVal : 'none';
+            }
+            document.querySelectorAll('.weekly-review-category-option[data-value]').forEach((opt) => {
+                const key = opt.getAttribute('data-value');
+                if (!key || key === 'none' || opt.getAttribute('data-custom-tag') === '1') return;
+                if (!REVIEW_CATEGORY_OPTIONS.includes(key)) return;
+                opt.textContent = window.ReviewSettings.getCategoryLabel(key);
+            });
+            syncWeeklyReviewCustomCategoryOptions();
+            syncReviewCategorySelectStyle();
         }
 
         function syncReviewCategorySelectStyle() {
@@ -999,8 +1096,21 @@
 
             const key = normalizeReviewCategory(select.value);
             select.value = key;
-            select.classList.remove('category-none', 'category-life', 'category-work', 'category-study', 'category-important', 'category-goal');
-            select.classList.add(`category-${key}`);
+            select.classList.remove('category-none', 'category-life', 'category-work', 'category-study', 'category-important', 'category-goal', 'category-custom');
+            select.style.borderColor = '';
+            select.style.background = '';
+            select.style.color = '';
+            if (window.ReviewSettings && typeof window.ReviewSettings.isCustomTagId === 'function' && window.ReviewSettings.isCustomTagId(key)) {
+                select.classList.add('category-custom');
+                const hex = window.ReviewSettings.getCategoryColor(key);
+                if (typeof window.ReviewSettings.categoryColorAlpha === 'function') {
+                    select.style.borderColor = window.ReviewSettings.categoryColorAlpha(hex, 0.5);
+                    select.style.background = window.ReviewSettings.categoryColorAlpha(hex, 0.16);
+                    select.style.color = hex;
+                }
+            } else {
+                select.classList.add(`category-${key}`);
+            }
         }
 
         function toggleWeeklyCategoryDropdown(hiddenId) {
@@ -1039,7 +1149,7 @@
             if (!hidden) return [];
             try {
                 const arr = JSON.parse(hidden.value || '[]');
-                return Array.isArray(arr) ? arr.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : [];
+                return Array.isArray(arr) ? arr.filter(k => isValidReviewCategoryKey(k)) : [];
             } catch (_) { return []; }
         }
 
@@ -1145,7 +1255,10 @@
                 const safeKey = escapeJsString(key);
                 const inputVal = prevTexts[key] !== undefined ? prevTexts[key] : '';
                 const safeVal = escapeHtml(inputVal);
-                return `<div class="weekly-review-category-row" data-category="${key}"><span class="weekly-review-pill category-${key}">${escapeHtml(meta.label)}<button type="button" class="weekly-review-pill-remove" onclick="event.stopPropagation();removeWeeklyCategoryPill('${hiddenId}','${safeKey}')" aria-label="移除">×</button></span><input type="text" class="weekly-review-category-input" value="${safeVal}" placeholder="${escapeHtml(meta.label)}类别内容"></div>`;
+                const isCustom = meta.className === 'category-custom';
+                const pillClass = isCustom ? 'weekly-review-pill category-custom' : `weekly-review-pill category-${key}`;
+                const pillAttr = isCustom ? ` data-cat-key="${escapeHtml(key)}"` : '';
+                return `<div class="weekly-review-category-row" data-category="${escapeHtml(key)}"><span class="${pillClass}"${pillAttr}>${escapeHtml(meta.label)}<button type="button" class="weekly-review-pill-remove" onclick="event.stopPropagation();removeWeeklyCategoryPill('${hiddenId}','${safeKey}')" aria-label="移除">×</button></span><input type="text" class="weekly-review-category-input" value="${safeVal}" placeholder="${escapeHtml(meta.label)}类别内容"></div>`;
             }).join('');
             const textareaId = WEEKLY_CATEGORY_TEXTAREA_MAP[hiddenId];
             const textarea = document.getElementById(textareaId);
@@ -2626,8 +2739,17 @@
                 titleEl.textContent = mode === 'event' ? '新增事件复盘' : '新增复盘记录';
                 deleteBtn.style.display = 'none';
                 document.getElementById('reviewDate').value = todayKey();
-                document.getElementById('reviewScore').value = '7';
-                document.getElementById('reviewCategory').value = 'none';
+                const rsNew = window.ReviewSettings && typeof window.ReviewSettings.getSettings === 'function'
+                    ? window.ReviewSettings.getSettings() : null;
+                if (mode === 'daily' && rsNew) {
+                    document.getElementById('reviewScore').value = String(
+                        rsNew.defaultDailyScore != null ? rsNew.defaultDailyScore : 7
+                    );
+                    document.getElementById('reviewCategory').value = normalizeReviewCategory(rsNew.defaultDailyCategory);
+                } else {
+                    document.getElementById('reviewScore').value = '7';
+                    document.getElementById('reviewCategory').value = 'none';
+                }
                 setReviewEmotionIntensity('中');
                 setReviewEmotionTags([]);
                 if (mode === 'event') {
@@ -2698,6 +2820,23 @@
             if (window.PlannerBackup && typeof window.PlannerBackup.scheduleOverlayTextareaAutosize === 'function') {
                 window.PlannerBackup.scheduleOverlayTextareaAutosize(reviewModalEl);
             }
+
+            if (!id && reviewModalMode === 'daily') {
+                const rsFocus = window.ReviewSettings && typeof window.ReviewSettings.getSettings === 'function'
+                    ? window.ReviewSettings.getSettings()
+                    : null;
+                const wantScore = rsFocus && rsFocus.openDailyFocus === 'score';
+                const focusEl = wantScore
+                    ? document.getElementById('reviewScore')
+                    : document.getElementById('reviewSummary');
+                if (focusEl) {
+                    setTimeout(function () {
+                        try {
+                            focusEl.focus();
+                        } catch (e) { /* ignore */ }
+                    }, 50);
+                }
+            }
         }
 
         function closeReviewModal() {
@@ -2741,7 +2880,7 @@
             const score = Number.isFinite(scoreNum)
                 ? Math.max(1, Math.min(10, Math.round(scoreNum * 10) / 10))
                 : 7;
-            const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
+            const toArr = (v) => normalizeReviewCategoryArray(v);
             return {
                 id: String(entry?.id || generateId()),
                 monthKey,
@@ -3054,7 +3193,7 @@
                 const hCat = entry.highlightsCategories;
                 const rCat = entry.reflectionCategories;
                 const nCat = entry.nextPlanCategories;
-                const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
+                const toArr = (v) => normalizeReviewCategoryArray(v);
                 const hArr = toArr(hCat || entry.highlightsCategory);
                 const rArr = toArr(rCat || entry.reflectionCategory);
                 const nArr = toArr(nCat || entry.nextPlanCategory);
@@ -3166,7 +3305,7 @@
                 document.getElementById('monthlyReviewGrowth').value = entry.growth || '';
                 document.getElementById('monthlyReviewLife').value = entry.life || '';
                 document.getElementById('monthlyReviewNextPlan').value = entry.nextPlan || '';
-                const toArr = (v) => Array.isArray(v) ? v.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k)) : (v ? [normalizeReviewCategory(v)] : []);
+                const toArr = (v) => normalizeReviewCategoryArray(v);
                 const pArr = toArr(entry.progressCategories || entry.progressCategory);
                 const gArr = toArr(entry.growthCategories || entry.growthCategory);
                 const nArr = toArr(entry.nextPlanCategories || entry.nextPlanCategory);
@@ -3677,6 +3816,7 @@
                 metaEl.textContent = `${year}年${month + 1}月复盘 ${monthCount} 次`;
             }
 
+            const todayKeyStr = todayKey();
             const cells = [];
             for (let i = 0; i < 42; i += 1) {
                 const cellDate = new Date(year, month, i - firstWeekday + 1);
@@ -3695,7 +3835,8 @@
                 }
 
                 const outside = inMonth ? '' : ' heat-outside';
-                cells.push(`<span class="heat-cell heat-score-${toneKey}${outside}" title="${title}"></span>`);
+                const todayClass = key === todayKeyStr ? ' heat-cell-today' : '';
+                cells.push(`<span class="heat-cell heat-score-${toneKey}${outside}${todayClass}" title="${title}"></span>`);
             }
 
             container.innerHTML = cells.join('');
@@ -4030,7 +4171,7 @@
         }
 
         function buildCategorizedSectionHtml(label, text, categories, maxLen) {
-            const cats = Array.isArray(categories) ? categories.filter(k => REVIEW_CATEGORY_OPTIONS.includes(k) && k !== 'none') : [];
+            const cats = Array.isArray(categories) ? categories.filter(k => isValidReviewCategoryKey(k) && k !== 'none') : [];
             if (cats.length === 0) {
                 const t = weeklyReviewPreviewLine(text, maxLen);
                 if (!t) return '';
@@ -4046,8 +4187,11 @@
                 const raw = String(parsed[key] || '').trim();
                 if (!raw) return '';
                 const preview = weeklyReviewPreviewLine(raw, maxLen);
+                const isCustom = meta.className === 'category-custom';
+                const pillClass = isCustom ? 'weekly-review-record-card__cat-pill category-custom' : `weekly-review-record-card__cat-pill category-${key}`;
+                const pillAttr = isCustom ? ` data-cat-key="${escapeHtml(key)}"` : '';
                 return `<div class="weekly-review-record-card__cat-row">` +
-                    `<span class="weekly-review-record-card__cat-pill category-${key}">${escapeHtml(meta.label)}</span>` +
+                    `<span class="${pillClass}"${pillAttr}>${escapeHtml(meta.label)}</span>` +
                     `<span class="weekly-review-record-card__cat-text">${escapeHtml(preview)}</span>` +
                     `</div>`;
             }).filter(Boolean);
@@ -4242,6 +4386,13 @@
         }
 
         function renderAll() {
+            if (window.ReviewSettings && typeof window.ReviewSettings.applyHeatmapVisibility === 'function') {
+                window.ReviewSettings.applyHeatmapVisibility();
+            }
+            if (window.ReviewSettings && typeof window.ReviewSettings.applyReviewCategoryStylesInjection === 'function') {
+                window.ReviewSettings.applyReviewCategoryStylesInjection();
+            }
+            refreshReviewCategoryLabelsUI();
             renderHeatmap();
             renderWeeklyReviewList();
             renderMonthlyReviewList();

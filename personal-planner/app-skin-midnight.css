@@ -1,5 +1,5 @@
 /**
- * Midnight Focus — easyOS 深色生产力主题
+ * 午夜（midnight）— easyOS 深色生产力主题
  * 页底 #000000、卡片 #0E0E0E、强调色 #82E9DE、Manrope、白/10 描边替代阴影、顶栏毛玻璃
  */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
@@ -1355,6 +1355,10 @@ html[data-app-skin="midnight"] .finance-history-close:hover {
 html[data-app-skin="midnight"] .heat-cell {
     border-color: var(--midnight-border) !important;
     background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-app-skin="midnight"] .heat-cell.heat-cell-today {
+    border-color: rgba(255, 255, 255, 0.24) !important;
 }
 
 html[data-app-skin="midnight"] .heat-level-0,

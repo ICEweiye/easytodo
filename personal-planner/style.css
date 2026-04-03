@@ -1,6 +1,7 @@
 @import url('app-skin.css');
 @import url('app-skin-crystal-flow.css');
 @import url('app-skin-easyos-crystal.css');
+@import url('app-skin-serene-white.css');
 @import url('app-skin-midnight.css');
 
 :root {
@@ -3909,6 +3910,12 @@ html[data-app-skin="crystal-flow"] .todo-calendar-badge-work {
     color: #fff;
 }
 
+html[data-app-skin="serene-white"] .todo-calendar-badge-rest,
+html[data-app-skin="serene-white"] .todo-calendar-badge-work {
+    background: var(--sw-accent);
+    color: #fff;
+}
+
 /* 非 Midnight：今日不用「今」圆标，用主题色 10% 铺底（Midnight 见 app-skin-midnight.css） */
 html:not([data-app-skin="midnight"]) .todo-calendar-badge-today {
     display: none;
@@ -3948,6 +3955,18 @@ html[data-app-skin="crystal-flow"] .todo-calendar-cell.today:not(.empty):hover {
 
 html[data-app-skin="crystal-flow"] .todo-calendar-cell.today.selected:not(.empty) {
     background: color-mix(in srgb, var(--cf-primary) 10%, #ffffff);
+}
+
+html[data-app-skin="serene-white"] .todo-calendar-cell.today:not(.empty) {
+    background: color-mix(in srgb, var(--sw-accent) 10%, #ffffff);
+}
+
+html[data-app-skin="serene-white"] .todo-calendar-cell.today:not(.empty):hover {
+    background: color-mix(in srgb, var(--sw-accent) 14%, var(--sw-page));
+}
+
+html[data-app-skin="serene-white"] .todo-calendar-cell.today.selected:not(.empty) {
+    background: color-mix(in srgb, var(--sw-accent) 10%, #ffffff);
 }
 
 .todo-calendar-meta {
@@ -5158,6 +5177,11 @@ html.planner-fold-long-enabled .todo-item.no-meta .todo-title-text.is-user-text-
     border-radius: 2px;
     border: 1px solid rgba(45, 41, 38, 0.04);
     background: var(--warm-gray-100);
+}
+
+/* 今日格：边框略深于默认沟槽色，便于辨认且不过重 */
+.heat-cell.heat-cell-today {
+    border-color: rgba(45, 41, 38, 0.16);
 }
 
 /* 非本月：无数据格略淡；深红/红/黄/绿见下方为原色约 10% 透明度 */
