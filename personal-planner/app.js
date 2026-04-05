@@ -739,6 +739,63 @@ ${barHtml}
     marker.style.setProperty('--today-offset', `${todayOffset}%`);
 }
 
+/** 复盘按钮橙色背景提醒：已点击确认则不再显示（按账号隔离存储） */
+const OKR_REVIEW_NUDGE_DISMISSED_KEY = '__planner_okr_review_nudge_dismissed';
+/** 临期：剩余天数 ≤ 此值且仍有效（含今日截止） */
+const OKR_REVIEW_NUDGE_URGENT_DAYS = 7;
+
+function getOkrReviewNudgeDismissedMap() {
+    const raw = Storage.get(OKR_REVIEW_NUDGE_DISMISSED_KEY);
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+}
+
+function dismissOkrReviewNudge(okrId) {
+    const map = getOkrReviewNudgeDismissedMap();
+    map[String(okrId)] = true;
+    Storage.set(OKR_REVIEW_NUDGE_DISMISSED_KEY, map);
+    const safeDom = String(okrId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const btn = document.getElementById(`okr-review-btn-${safeDom}`);
+    if (btn) {
+        btn.classList.remove('okr-colorbar-segment--review-nudge');
+        btn.removeAttribute('data-okr-review-nudge');
+    }
+}
+
+/**
+ * @returns {null|'half'|'urgent'|'both'}
+ */
+function computeOkrReviewNudgeReason(okr, dismissedMap) {
+    if (!okr || dismissedMap[String(okr.id)]) return null;
+    const endRaw = okr.endDate;
+    if (!endRaw) return null;
+    const msPerDay = 86400000;
+    const today = new Date();
+    const today0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endD = new Date(`${endRaw}T00:00:00`);
+    if (!Number.isFinite(endD.getTime())) return null;
+    const diffEnd = Math.floor((endD.getTime() - today0.getTime()) / msPerDay);
+
+    let urgent = diffEnd >= 0 && diffEnd <= OKR_REVIEW_NUDGE_URGENT_DAYS;
+    let half = false;
+    const startRaw = okr.startDate;
+    if (startRaw) {
+        const startD = new Date(`${startRaw}T00:00:00`);
+        if (Number.isFinite(startD.getTime())) {
+            const totalDays = Math.floor((endD.getTime() - startD.getTime()) / msPerDay);
+            if (totalDays > 0) {
+                const elapsedDays = Math.floor((today0.getTime() - startD.getTime()) / msPerDay);
+                const ratio = elapsedDays / totalDays;
+                half = ratio >= 0.5 && diffEnd >= 0;
+            }
+        }
+    }
+
+    if (!half && !urgent) return null;
+    if (half && urgent) return 'both';
+    if (half) return 'half';
+    return 'urgent';
+}
+
 // ===== OKR 模块 =====
 function renderOKRs() {
     const grid = document.getElementById('okrGrid');
@@ -751,11 +808,15 @@ function renderOKRs() {
     }
 
     grid.classList.remove('is-empty');
+    const nudgeDismissed = getOkrReviewNudgeDismissedMap();
     grid.innerHTML = data.okrs.map(okr => {
         const okrColor = normalizeOkrColor(okr.color);
         const safeOkrId = escapePlannerJsString(okr.id);
         const okrIdDomSafe = String(okr.id).replace(/[^a-zA-Z0-9_-]/g, '_');
         const okrIdAttr = escapePlannerAttribute(String(okr.id));
+        const nudgeReason = computeOkrReviewNudgeReason(okr, nudgeDismissed);
+        const reviewNudgeClass = nudgeReason ? ' okr-colorbar-segment--review-nudge' : '';
+        const reviewNudgeAttr = nudgeReason ? ` data-okr-review-nudge="${escapePlannerAttribute(nudgeReason)}"` : '';
         const totalKrs = okr.krs.length || 1;
         const getKrWeightValue = (kr) => {
             const weight = parseInt(kr.weight, 10);
@@ -820,8 +881,8 @@ function renderOKRs() {
             : '<span class="okr-colorbar-empty">无内容</span>';
 
         return `
-            <div class="okr-card" data-okr-color="${okrColor}" data-okr-id="${okrIdAttr}" style="--okr-card-accent: var(--okr-color-${okrColor})">
-                <div class="okr-card-colorbar" style="--okr-bar: var(--okr-color-${okrColor})" title="动机 · 可行性 · 复盘">
+            <div class="okr-card" data-okr-color="${okrColor}" data-okr-id="${okrIdAttr}" style="--okr-card-accent: var(--okr-palette-${okrColor})">
+                <div class="okr-card-colorbar" style="--okr-bar: var(--okr-palette-${okrColor})" title="动机 · 可行性 · 复盘">
                     <div class="okr-colorbar-cell" data-field="motivation">
                         <button type="button" class="okr-colorbar-segment okr-colorbar-segment--btn" aria-expanded="false" aria-controls="okr-bar-mot-${okrIdDomSafe}" id="okr-bar-mot-btn-${okrIdDomSafe}"><span>动机</span></button>
                         <div class="okr-colorbar-panel" id="okr-bar-mot-${okrIdDomSafe}" role="region" aria-labelledby="okr-bar-mot-btn-${okrIdDomSafe}" aria-hidden="true">
@@ -835,7 +896,7 @@ function renderOKRs() {
                         </div>
                     </div>
                     <div class="okr-colorbar-cell okr-colorbar-cell--review">
-                        <button type="button" class="okr-colorbar-segment okr-colorbar-segment--review" onclick="openOkrReviewModal('${safeOkrId}')" aria-label="对该目标复盘"><span>复盘</span></button>
+                        <button type="button" id="okr-review-btn-${okrIdDomSafe}" class="okr-colorbar-segment okr-colorbar-segment--review${reviewNudgeClass}" onclick="openOkrReviewModal('${safeOkrId}')" aria-label="对该目标复盘"${reviewNudgeAttr}><span>复盘</span></button>
                     </div>
                 </div>
                 <div class="okr-card-body">
@@ -849,7 +910,7 @@ function renderOKRs() {
                     <div class="ring-container">
                         <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
                             <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
-                            <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-color-${okrColor});"
+                            <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-palette-${okrColor});"
                                     stroke-dasharray="${circumference}"
                                     stroke-dashoffset="${offset}"></circle>
                         </svg>
@@ -885,7 +946,6 @@ function renderOKRs() {
                             </div>
                         </div>
                     `}).join('')}
-                    <button class="add-kr-btn" onclick="addKr('${safeOkrId}')">+ 添加关键结果</button>
                 </div>
                 ${okr.memo ? `<div class="okr-memo">备注：${safeMemo}</div>` : ''}
                 </div>
@@ -1116,7 +1176,7 @@ function renderOkrReviewModalProgressRing(okr) {
         <div class="ring-container okr-review-modal-ring">
             <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
                 <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
-                <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-color-${okrColor});"
+                <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-palette-${okrColor});"
                     stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
             </svg>
             <div class="ring-text">${progress}%</div>
@@ -1171,6 +1231,7 @@ function setOkrReviewSelfScore(n) {
 }
 
 function openOkrReviewModal(okrId) {
+    dismissOkrReviewNudge(okrId);
     if (!document.getElementById('okrReviewModal')) return;
     const okr = data.okrs.find(o => String(o.id) === String(okrId));
     if (!okr) return;
@@ -1795,18 +1856,6 @@ function deleteKr(okrId, krId) {
     okr.krs = okr.krs.filter(k => k.id != krId);
     Storage.set('planner_okrs', data.okrs);
     renderOKRs();
-}
-
-function addKr(okrId) {
-    const text = prompt('输入新的关键结果:');
-    if (text && text.trim()) {
-        const okr = data.okrs.find(o => o.id == okrId);
-        if (okr) {
-            okr.krs.push({ id: generateId(), text: text.trim(), target: 1, current: 0, completed: false });
-            Storage.set('planner_okrs', data.okrs);
-            renderOKRs();
-        }
-    }
 }
 
 function adjustKrCount(okrId, krId, delta) {

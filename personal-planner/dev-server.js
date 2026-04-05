@@ -150,6 +150,69 @@ function sanitizePatchData(rawData) {
     return patch;
 }
 
+/**
+ * 复盘类存储值为 JSON 数组、元素带 id。PATCH 时按 id 并集合并，避免一端较旧整包覆盖另一端（复盘消失根因之一）。
+ */
+function isMergeablePlannerEntryArrayKey(key) {
+    if (!key || typeof key !== 'string') return false;
+    return key === 'planner_review_entries'
+        || key === 'planner_review_archive_entries'
+        || key.endsWith('_planner_review_entries')
+        || key.endsWith('_planner_review_archive_entries')
+        || key.endsWith('_planner_weekly_reviews')
+        || key.endsWith('_planner_weekly_review_archive_entries')
+        || key.endsWith('_planner_monthly_reviews');
+}
+
+function pickBetterPlannerEntry(a, b) {
+    const ta = Date.parse(a.updatedAt || a.createdAt || 0) || 0;
+    const tb = Date.parse(b.updatedAt || b.createdAt || 0) || 0;
+    if (tb !== ta) return tb > ta ? b : a;
+    const weight = (e) => (typeof e === 'object' && e ? JSON.stringify(e).length : 0);
+    return weight(b) >= weight(a) ? b : a;
+}
+
+function mergePlannerEntryArraysJson(serverRaw, clientRaw) {
+    let serverArr;
+    let clientArr;
+    try {
+        serverArr = JSON.parse(serverRaw);
+    } catch (err) {
+        return clientRaw;
+    }
+    try {
+        clientArr = JSON.parse(clientRaw);
+    } catch (err) {
+        return serverRaw;
+    }
+    if (!Array.isArray(serverArr) || !Array.isArray(clientArr)) {
+        return clientRaw;
+    }
+    const byId = new Map();
+    serverArr.forEach((entry) => {
+        if (!entry || entry.id === undefined || entry.id === null) return;
+        byId.set(String(entry.id), entry);
+    });
+    clientArr.forEach((entry) => {
+        if (!entry || entry.id === undefined || entry.id === null) return;
+        const id = String(entry.id);
+        const prev = byId.get(id);
+        if (!prev) {
+            byId.set(id, entry);
+            return;
+        }
+        byId.set(id, pickBetterPlannerEntry(prev, entry));
+    });
+    const merged = Array.from(byId.values());
+    merged.sort((a, b) => {
+        const da = String(a.date || a.weekKey || a.monthKey || '');
+        const dbKey = String(b.date || b.weekKey || b.monthKey || '');
+        if (da !== dbKey) return dbKey.localeCompare(da);
+        return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+    return JSON.stringify(merged);
+}
+
 function ensureDir(dirPath) {
     if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
@@ -335,14 +398,17 @@ function getDbUpdatedAt() {
 
 function getDbDataMap() {
     const rows = db.prepare('SELECT key, value FROM storage_kv').all();
-    const data = {};
+    const raw = {};
     rows.forEach((row) => {
         if (!row || typeof row.key !== 'string') return;
         if (!shouldSyncKey(row.key)) return;
         if (typeof row.value !== 'string') return;
-        data[row.key] = row.value;
+        raw[row.key] = row.value;
     });
-    return data;
+    if (Utf8Utils && typeof Utf8Utils.repairStorageData === 'function') {
+        return Utf8Utils.repairStorageData(raw);
+    }
+    return raw;
 }
 
 function seedDatabaseFromLegacyIfNeeded() {
@@ -565,6 +631,8 @@ function buildNextStorage(current, payload) {
         Object.keys(patch).forEach((key) => {
             if (patch[key] === null) {
                 delete nextData[key];
+            } else if (isMergeablePlannerEntryArrayKey(key) && typeof nextData[key] === 'string' && typeof patch[key] === 'string') {
+                nextData[key] = mergePlannerEntryArraysJson(nextData[key], patch[key]);
             } else {
                 nextData[key] = patch[key];
             }

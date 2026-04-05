@@ -35,15 +35,6 @@ html[data-app-skin="easyos-crystal"] {
     --primary-indigo: #3b82f6;
     --primary-teal: #0ea5e9;
 
-    --okr-color-brown: #2563eb;
-    --okr-color-apricot: #8b5cf6;
-    --okr-color-sage: #ec4899;
-    --okr-color-pink: #f472b6;
-    --okr-color-indigo: #6366f1;
-    --okr-color-teal: #06b6d4;
-    --okr-color-coral: #f43f5e;
-    --okr-color-amber: #a78bfa;
-
     --gradient-brown: linear-gradient(90deg, #2563eb 0%, #6366f1 100%);
     --gradient-sage: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
     --gradient-apricot: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);

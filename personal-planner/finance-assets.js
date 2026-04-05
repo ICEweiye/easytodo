@@ -575,6 +575,45 @@
     }
 
     /**
+     * 还款：从流动资产（cash_deposit）扣除，并减少对应短期/长期负债。
+     * @param {string} liabilityCategory 'short_term_liability' | 'long_term_liability'
+     * @param {*} amountRaw
+     * @returns {{ ok: boolean, paid?: number, error?: string }}
+     */
+    function applyRepayment(liabilityCategory, amountRaw) {
+        if (liabilityCategory !== 'short_term_liability' && liabilityCategory !== 'long_term_liability') {
+            return { ok: false, error: 'invalid_type' };
+        }
+        if (!getFinanceDataVisible()) {
+            return { ok: false, error: 'hidden' };
+        }
+        var amount = roundFinanceAmount(Number(amountRaw));
+        if (!Number.isFinite(amount) || amount <= 0) {
+            return { ok: false, error: 'invalid_amount' };
+        }
+        var assets = getTotalAssetsCategories();
+        var liabs = getTotalLiabilitiesCategories();
+        var liquid = roundFinanceAmount(Number(assets.cash_deposit) || 0);
+        var owed = roundFinanceAmount(Number(liabs[liabilityCategory]) || 0);
+        if (owed <= 0) {
+            return { ok: false, error: 'no_debt' };
+        }
+        if (amount > liquid) {
+            return { ok: false, error: 'insufficient_liquid' };
+        }
+        if (amount > owed) {
+            return { ok: false, error: 'exceeds_liability' };
+        }
+        assets.cash_deposit = roundFinanceAmount(liquid - amount);
+        liabs[liabilityCategory] = roundFinanceAmount(owed - amount);
+        setTotalAssetsCategories(assets);
+        setTotalLiabilitiesCategories(liabs);
+        notifyLiquidAssetsChanged();
+        notifyLiabilitiesChanged();
+        return { ok: true, paid: amount };
+    }
+
+    /**
      * @param {Object} ids - shortDisplay?, longDisplay?, totalDisplay?, shortInput?, longInput?
      */
     function renderLiabilityCard(ids) {
@@ -717,6 +756,7 @@
         renderLiabilityCard: renderLiabilityCard,
         initLiabilityEditors: initLiabilityEditors,
         saveLiabilityCategoryFromInput: saveLiabilityCategoryFromInput,
-        notifyLiabilitiesChanged: notifyLiabilitiesChanged
+        notifyLiabilitiesChanged: notifyLiabilitiesChanged,
+        applyRepayment: applyRepayment
     };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -35,15 +35,6 @@ html[data-app-skin="serene-white"] {
     --primary-indigo: var(--sw-accent);
     --primary-teal: #6b7d6a;
 
-    --okr-color-brown: #7d8471;
-    --okr-color-apricot: #8f9789;
-    --okr-color-sage: #6b7d6a;
-    --okr-color-pink: #a08f86;
-    --okr-color-indigo: #7d8471;
-    --okr-color-teal: #5f6d5e;
-    --okr-color-coral: #8b7d76;
-    --okr-color-amber: #9a9078;
-
     --gradient-brown: linear-gradient(90deg, #6f7666 0%, var(--sw-accent) 100%);
     --gradient-sage: linear-gradient(90deg, #6b7260 0%, #8f9789 100%);
     --gradient-apricot: linear-gradient(90deg, #8f9789 0%, #a3aa96 100%);

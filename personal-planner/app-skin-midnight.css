@@ -276,6 +276,11 @@ html[data-app-skin="midnight"] .todo-calendar-today-badge {
     font-weight: 700;
 }
 
+/* 与其它主题一致：不显示「今」圆标（今日格仍靠 .todo-calendar-cell.today 区分） */
+html[data-app-skin="midnight"] .todo-calendar-badge-today {
+    display: none !important;
+}
+
 html[data-app-skin="midnight"] .todo-calendar-lunar {
     color: rgba(255, 255, 255, 0.42);
 }

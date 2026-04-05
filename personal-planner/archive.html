@@ -1673,8 +1673,8 @@
 
                 return `
                 <div class="archive-detail-preview">
-                    <div class="okr-card archive-detail-okr-card okr-card--archive-readonly" data-okr-color="${okrColor}" style="--okr-card-accent: var(--okr-color-${okrColor})">
-                        <div class="okr-card-colorbar" style="--okr-bar: var(--okr-color-${okrColor})" aria-hidden="true">
+                    <div class="okr-card archive-detail-okr-card okr-card--archive-readonly" data-okr-color="${okrColor}" style="--okr-card-accent: var(--okr-palette-${okrColor})">
+                        <div class="okr-card-colorbar" style="--okr-bar: var(--okr-palette-${okrColor})" aria-hidden="true">
                             <div class="okr-colorbar-cell" data-field="motivation">
                                 <div class="okr-colorbar-segment"><span>动机</span></div>
                             </div>
@@ -1695,7 +1695,7 @@
                                 <div class="ring-container">
                                     <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
                                         <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
-                                        <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-color-${okrColor});"
+                                        <circle class="ring-progress" cx="40" cy="40" r="35" style="stroke: var(--okr-palette-${okrColor});"
                                             stroke-dasharray="${circumference}"
                                             stroke-dashoffset="${offset}"></circle>
                                     </svg>
@@ -2591,7 +2591,7 @@
             margin: 0 0 10px 0;
             padding: 8px 10px;
             border-radius: var(--radius-sm);
-            background: color-mix(in srgb, var(--okr-card-accent, var(--okr-color-brown)) 8%, #ffffff);
+            background: color-mix(in srgb, var(--okr-card-accent, var(--okr-palette-brown)) 8%, #ffffff);
             border: 1px solid var(--warm-gray-200);
             font-size: 12px;
             line-height: 1.45;

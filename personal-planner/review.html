@@ -569,7 +569,7 @@
                     </div>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="weeklyReviewProgressSection">
                     <label class="form-label">本周进程</label>
                     <div class="weekly-review-okr-reference" id="weeklyReviewOkrReference"></div>
                     <div class="weekly-review-adjust-goal-row">
@@ -2237,6 +2237,16 @@
             closeReviewTodoModal();
         }
 
+        function hasReplacementChars(str) {
+            if (typeof str !== 'string') return false;
+            return str.indexOf('\uFFFD') !== -1;
+        }
+
+        function stripReplacementChars(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/\uFFFD+/g, '');
+        }
+
         function normalizeEntry(entry) {
             if (window.Utf8Utils && typeof window.Utf8Utils.ensureValidUtf8 === 'function' && entry && typeof entry === 'object') {
                 entry = window.Utf8Utils.ensureValidUtf8(entry);
@@ -2246,9 +2256,19 @@
             const startTodoIds = normalizeIdList(entry.startTodoIds || entry.linkedTodoIds || []);
             const fallbackMood = String(entry.mood || '平静').trim() || '平静';
             const fallbackIntensity = normalizeEmotionIntensity(entry.emotionIntensity || entry.energy) || '中';
+
+            const rawEmotionTags = Array.isArray(entry.emotionTags) ? entry.emotionTags : [];
+            const cleanedEmotionTags = rawEmotionTags.map(tag => {
+                if (!tag || typeof tag !== 'object') return tag;
+                if (hasReplacementChars(tag.mood)) {
+                    return { ...tag, mood: stripReplacementChars(tag.mood) || '平静' };
+                }
+                return tag;
+            });
+
             const emotionTags = normalizeEmotionTags(
-                entry.emotionTags,
-                fallbackMood,
+                cleanedEmotionTags.length > 0 ? cleanedEmotionTags : entry.emotionTags,
+                hasReplacementChars(fallbackMood) ? stripReplacementChars(fallbackMood) || '平静' : fallbackMood,
                 entry.emotionArousal || entry.arousal,
                 entry.emotionValence || entry.valence,
                 fallbackIntensity
@@ -2261,6 +2281,10 @@
             };
             const primaryIntensity = normalizeEmotionIntensity(primaryTag.intensity) || fallbackIntensity;
             const reviewKind = entry.reviewKind === 'event' ? 'event' : 'daily';
+            const computedMood = emotionTags.map(tag => tag.mood).join('、');
+            const safeMood = hasReplacementChars(computedMood)
+                ? stripReplacementChars(computedMood) || fallbackMood || '平静'
+                : computedMood;
             return {
                 id: entry.id || generateId(),
                 date: toDateKey(entry.date || entry.createdAt),
@@ -2268,7 +2292,7 @@
                 category: normalizeReviewCategory(entry.category),
                 reviewKind,
                 tasks: String(entry.tasks || '').trim(),
-                mood: emotionTags.map(tag => tag.mood).join('、'),
+                mood: safeMood,
                 energy: primaryIntensity,
                 emotionIntensity: primaryIntensity,
                 emotionTags,
@@ -3072,6 +3096,20 @@
                 .filter(Boolean);
         }
 
+        /** 所选「周次」与系统当前自然周一致时才展示「本周进程」（与 input[type=week]、getWeekKey 格式一致） */
+        function isWeeklyReviewModalWeekThisWeek() {
+            const weekInput = document.getElementById('weeklyReviewWeek');
+            const selected = weekInput ? weekInput.value.trim() : '';
+            const thisWeek = getWeekKey(new Date());
+            return Boolean(selected && thisWeek && selected === thisWeek);
+        }
+
+        function syncWeeklyReviewProgressSectionVisibility() {
+            const section = document.getElementById('weeklyReviewProgressSection');
+            if (!section) return;
+            section.hidden = !isWeeklyReviewModalWeekThisWeek();
+        }
+
         function renderWeeklyReviewOkrReference() {
             const container = document.getElementById('weeklyReviewOkrReference');
             if (!container) return;
@@ -3210,6 +3248,7 @@
             }
 
             renderWeeklyReviewOkrReference();
+            syncWeeklyReviewProgressSectionVisibility();
             document.getElementById('weeklyReviewModal').classList.add('active');
         }
 
@@ -4466,6 +4505,7 @@
                     if (scoreDisplay) scoreDisplay.textContent = (typeof avg === 'number' ? avg.toFixed(1) : avg) + ' 分';
                     if (scoreInput) scoreInput.value = String(avg);
                     renderWeeklyReviewOkrReference();
+                    syncWeeklyReviewProgressSectionVisibility();
                 });
             }
 
@@ -4488,6 +4528,7 @@
                 const obs = new MutationObserver(() => {
                     if (!okrModalEl.classList.contains('active') && document.getElementById('weeklyReviewModal')?.classList.contains('active')) {
                         renderWeeklyReviewOkrReference();
+                        syncWeeklyReviewProgressSectionVisibility();
                     }
                 });
                 obs.observe(okrModalEl, { attributes: true, attributeFilter: ['class'] });

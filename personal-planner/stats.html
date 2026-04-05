@@ -184,7 +184,7 @@
                                 <div class="finance-summary-main">
                                     <div class="finance-summary-label-row">
                                         <div class="finance-summary-label">总负债</div>
-                                        <button type="button" class="finance-liability-repay-btn" onclick="navigateToProfileFinanceRepay()" title="前往安全隐私页修改负债">还</button>
+                                        <button type="button" class="finance-liability-repay-btn" onclick="openFinanceRepayModal()" title="从流动资产还款并减少负债">还</button>
                                     </div>
                                     <div class="finance-balance-main-value liabilities" id="totalLiabilitiesDisplay">¥0</div>
                                 </div>
@@ -615,9 +615,15 @@
         function syncFinanceProfileNavButtons() {
             const hidden = !getFinanceDataVisible();
             const el = document.getElementById('financeNavProfileBtn');
-            if (!el) return;
-            el.disabled = hidden;
-            el.title = hidden ? '请先点击右上角眼睛图标显示财务数据' : '前往安全隐私 · 财务信息';
+            if (el) {
+                el.disabled = hidden;
+                el.title = hidden ? '请先点击右上角眼睛图标显示财务数据' : '前往安全隐私 · 财务信息';
+            }
+            const repayBtn = document.querySelector('#totalLiabilitiesCard .finance-liability-repay-btn');
+            if (repayBtn) {
+                repayBtn.disabled = hidden;
+                repayBtn.title = hidden ? '请先显示财务数据后再还款' : '从流动资产还款并减少负债';
+            }
         }
         function syncFinanceEyeButton() {
             const btn = document.getElementById('financeEyeBtn');
@@ -951,6 +957,7 @@
         window.addEventListener('planner-liquid-assets-updated', function (ev) {
             const mk = ev && ev.detail && ev.detail.monthKey;
             syncMonthlyReconcilePanelFromLiquid(mk);
+            renderTotalAssets();
         });
 
         window.addEventListener('planner-liabilities-updated', function () {
@@ -1120,15 +1127,89 @@
             window.location.href = 'profile.html#privacySecuritySection';
         }
 
-        /** 总负债旁「还」：直达财务信息并聚焦短期负债，便于还款后更新金额 */
-        function navigateToProfileFinanceRepay() {
-            if (!getFinanceDataVisible()) return;
-            try {
-                sessionStorage.setItem('profileFinanceFocusCategory', 'short_term_liability');
-            } catch (err) {
-                /* ignore */
+        function setFinanceRepayModalError(msg) {
+            const el = document.getElementById('financeRepayModalError');
+            if (el) {
+                el.textContent = msg || '';
+                el.style.display = msg ? 'block' : 'none';
             }
-            window.location.href = 'profile.html#privacySecuritySection';
+        }
+
+        function updateFinanceRepayHint() {
+            const hintEl = document.getElementById('financeRepayHint');
+            const typeEl = document.getElementById('financeRepayType');
+            if (!hintEl || !typeEl || !window.FinanceAssets) return;
+            const liq = FinanceAssets.getLiquidAssets();
+            const cats = FinanceAssets.getTotalLiabilitiesCategories();
+            const key = typeEl.value;
+            const owed = key === 'long_term_liability'
+                ? (Number(cats.long_term_liability) || 0)
+                : (Number(cats.short_term_liability) || 0);
+            const liqStr = FinanceAssets.formatCurrency(liq);
+            const owedStr = FinanceAssets.formatCurrency(owed);
+            hintEl.textContent = `当前流动资产 ${liqStr}，所选类型负债 ${owedStr}。`;
+        }
+
+        function openFinanceRepayModal() {
+            if (!getFinanceDataVisible()) {
+                window.alert('请先点击「眼睛」图标开启数据可见后再还款。');
+                return;
+            }
+            setFinanceRepayModalError('');
+            const amt = document.getElementById('financeRepayAmount');
+            if (amt) amt.value = '';
+            const typeEl = document.getElementById('financeRepayType');
+            if (typeEl) typeEl.value = 'short_term_liability';
+            updateFinanceRepayHint();
+            const m = document.getElementById('financeRepayModal');
+            if (m) {
+                m.classList.add('active');
+                m.setAttribute('aria-hidden', 'false');
+            }
+            setTimeout(() => {
+                const input = document.getElementById('financeRepayAmount');
+                if (input) input.focus();
+            }, 50);
+        }
+
+        function closeFinanceRepayModal() {
+            const m = document.getElementById('financeRepayModal');
+            if (m) {
+                m.classList.remove('active');
+                m.setAttribute('aria-hidden', 'true');
+            }
+            setFinanceRepayModalError('');
+        }
+
+        function mapRepaymentError(code) {
+            const map = {
+                invalid_type: '还款类型无效。',
+                hidden: '数据已隐藏，无法操作。',
+                invalid_amount: '请输入大于 0 的有效金额。',
+                no_debt: '该还款类型下当前负债为 0。',
+                insufficient_liquid: '流动资产不足，无法支付该还款金额。',
+                exceeds_liability: '还款金额不能大于该类型负债余额。'
+            };
+            return map[code] || '还款失败，请重试。';
+        }
+
+        function confirmFinanceRepay() {
+            if (!window.FinanceAssets || typeof FinanceAssets.applyRepayment !== 'function') return;
+            const typeEl = document.getElementById('financeRepayType');
+            const raw = document.getElementById('financeRepayAmount') && document.getElementById('financeRepayAmount').value;
+            const category = typeEl ? typeEl.value : '';
+            const parsed = FinanceAssets.parseFinancialAmount(raw, { allowNegative: false, allowBlank: false });
+            if (!parsed.ok || parsed.empty) {
+                setFinanceRepayModalError('请输入有效的还款金额。');
+                return;
+            }
+            const r = FinanceAssets.applyRepayment(category, parsed.value);
+            if (!r.ok) {
+                setFinanceRepayModalError(mapRepaymentError(r.error));
+                updateFinanceRepayHint();
+                return;
+            }
+            closeFinanceRepayModal();
         }
 
         function getFinanceStatsViewDate() {
@@ -2473,6 +2554,11 @@
             renderExpenseStats();
             document.addEventListener('keydown', event => {
                 if (event.key !== 'Escape') return;
+                const repayModal = document.getElementById('financeRepayModal');
+                if (repayModal && repayModal.classList.contains('active')) {
+                    closeFinanceRepayModal();
+                    return;
+                }
                 const historyModalEl = document.getElementById('financeHistoryModal');
                 if (historyModalEl && !historyModalEl.hidden) {
                     closeFinanceHistoryModal();
@@ -2482,6 +2568,19 @@
                 if (!modalEl || modalEl.hidden) return;
                 closeFinanceReportModal();
             });
+
+            const repayModalEl = document.getElementById('financeRepayModal');
+            if (repayModalEl) {
+                repayModalEl.addEventListener('click', (e) => {
+                    if (e.target === repayModalEl) closeFinanceRepayModal();
+                });
+            }
+            const repayCancel = document.getElementById('financeRepayModalCancel');
+            const repayConfirm = document.getElementById('financeRepayModalConfirm');
+            const repayType = document.getElementById('financeRepayType');
+            if (repayCancel) repayCancel.addEventListener('click', closeFinanceRepayModal);
+            if (repayConfirm) repayConfirm.addEventListener('click', confirmFinanceRepay);
+            if (repayType) repayType.addEventListener('change', updateFinanceRepayHint);
         });
 
         window.addEventListener('planner-storage-synced', () => {
@@ -3782,9 +3881,44 @@
             border-color: var(--warm-gray-400);
         }
 
+        .finance-liability-repay-btn {
+            pointer-events: auto;
+        }
+
         .finance-liability-repay-btn:focus-visible {
             outline: 2px solid var(--primary-500, #228be6);
             outline-offset: 2px;
+        }
+
+        .finance-liability-repay-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .finance-repay-modal {
+            max-width: 400px;
+            width: calc(100vw - 32px);
+        }
+
+        .finance-repay-modal-desc {
+            margin: 0 0 8px;
+            font-size: 13px;
+            color: var(--warm-gray-600);
+            line-height: 1.45;
+        }
+
+        .finance-repay-modal-hint {
+            margin: 0 0 12px;
+            font-size: 12px;
+            color: var(--warm-gray-500);
+            line-height: 1.4;
+        }
+
+        .finance-repay-modal-error {
+            margin: 0 0 8px;
+            min-height: 18px;
+            font-size: 12px;
+            color: #b03737;
         }
 
         .finance-summary-label {
@@ -4302,6 +4436,31 @@
             }
         }
     </style>
+
+    <div class="modal-overlay" id="financeRepayModal" aria-hidden="true">
+        <div class="modal finance-repay-modal" role="dialog" aria-modal="true" aria-labelledby="financeRepayModalTitle">
+            <h3 class="modal-title" id="financeRepayModalTitle">还款</h3>
+            <p class="finance-repay-modal-desc">从流动资产中划出资金，并等额减少所选负债类型余额。</p>
+            <p class="finance-repay-modal-hint" id="financeRepayHint" aria-live="polite"></p>
+            <div class="form-group">
+                <label class="form-label" for="financeRepayType">还款类型</label>
+                <select class="form-input" id="financeRepayType">
+                    <option value="short_term_liability">短期负债</option>
+                    <option value="long_term_liability">长期负债</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="financeRepayAmount">还款金额</label>
+                <input type="text" inputmode="decimal" class="form-input" id="financeRepayAmount" placeholder="0.00" autocomplete="off">
+            </div>
+            <p class="finance-repay-modal-error" id="financeRepayModalError" role="alert" aria-live="polite"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="financeRepayModalCancel">取消</button>
+                <button type="button" class="btn btn-primary" id="financeRepayModalConfirm">确定还款</button>
+            </div>
+        </div>
+    </div>
+
     <script src="no-multiline.js"></script>
 </body>
 </html>

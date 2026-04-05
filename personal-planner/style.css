@@ -26,15 +26,25 @@
     --primary-coral: #cf7567;
     --primary-amber: #c4983a;
 
-    /* OKR 纯色色板 */
-    --okr-color-brown: #a08070;
-    --okr-color-apricot: #d8a57f;
-    --okr-color-sage: #7fa588;
-    --okr-color-pink: #c78c97;
-    --okr-color-indigo: #6f7db8;
-    --okr-color-teal: #4f9b95;
-    --okr-color-coral: #cf7567;
-    --okr-color-amber: #c4983a;
+    /* OKR 所选目标色（卡片/圆环/色条）：固定色板，不在各皮肤中覆盖 */
+    --okr-palette-brown: #a08070;
+    --okr-palette-apricot: #d8a57f;
+    --okr-palette-sage: #7fa588;
+    --okr-palette-pink: #c78c97;
+    --okr-palette-indigo: #6f7db8;
+    --okr-palette-teal: #4f9b95;
+    --okr-palette-coral: #cf7567;
+    --okr-palette-amber: #c4983a;
+
+    /* 兼容旧名：与色板同步，供非 OKR 数据 UI 使用 */
+    --okr-color-brown: var(--okr-palette-brown);
+    --okr-color-apricot: var(--okr-palette-apricot);
+    --okr-color-sage: var(--okr-palette-sage);
+    --okr-color-pink: var(--okr-palette-pink);
+    --okr-color-indigo: var(--okr-palette-indigo);
+    --okr-color-teal: var(--okr-palette-teal);
+    --okr-color-coral: var(--okr-palette-coral);
+    --okr-color-amber: var(--okr-palette-amber);
 
     /* 进度条渐变色 */
     --gradient-brown: linear-gradient(90deg, #8b6f5c 0%, #a08070 100%);
@@ -1802,7 +1812,7 @@ body:has(.todo-date-modal-overlay.active) {
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    --okr-bar: var(--okr-color-brown);
+    --okr-bar: var(--okr-palette-brown);
     user-select: none;
     position: relative;
     z-index: 2;
@@ -1834,6 +1844,18 @@ button.okr-colorbar-segment--review {
 }
 
 button.okr-colorbar-segment--review:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.95);
+    outline-offset: -2px;
+}
+
+/* 时间过半或临期时复盘按钮背景为橙色、字保持白色；点击复盘后由脚本移除 */
+button.okr-colorbar-segment--review.okr-colorbar-segment--review-nudge {
+    background: #ea580c;
+    color: rgba(255, 255, 255, 0.96);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
+}
+
+button.okr-colorbar-segment--review.okr-colorbar-segment--review-nudge:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.95);
     outline-offset: -2px;
 }
@@ -1912,7 +1934,7 @@ button.okr-colorbar-segment--btn:focus-visible {
     padding: 8px 10px;
     box-sizing: border-box;
     /* 该 OKR 主题色以 10% 与白色混合（等价于 10% 不透明叠在白底上） */
-    background: color-mix(in srgb, var(--okr-card-accent, var(--okr-color-brown)) 10%, #ffffff);
+    background: color-mix(in srgb, var(--okr-card-accent, var(--okr-palette-brown)) 10%, #ffffff);
     border: 1px solid var(--warm-gray-200);
     border-left: none;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
@@ -2078,14 +2100,14 @@ button.okr-colorbar-segment--btn:focus-visible {
     transition: stroke-dashoffset 0.5s ease;
 }
 
-.ring-brown { stroke: var(--okr-color-brown); }
-.ring-apricot { stroke: var(--okr-color-apricot); }
-.ring-sage { stroke: var(--okr-color-sage); }
-.ring-pink { stroke: var(--okr-color-pink); }
-.ring-indigo { stroke: var(--okr-color-indigo); }
-.ring-teal { stroke: var(--okr-color-teal); }
-.ring-coral { stroke: var(--okr-color-coral); }
-.ring-amber { stroke: var(--okr-color-amber); }
+.ring-brown { stroke: var(--okr-palette-brown); }
+.ring-apricot { stroke: var(--okr-palette-apricot); }
+.ring-sage { stroke: var(--okr-palette-sage); }
+.ring-pink { stroke: var(--okr-palette-pink); }
+.ring-indigo { stroke: var(--okr-palette-indigo); }
+.ring-teal { stroke: var(--okr-palette-teal); }
+.ring-coral { stroke: var(--okr-palette-coral); }
+.ring-amber { stroke: var(--okr-palette-amber); }
 
 .ring-text {
     position: absolute;
@@ -2520,24 +2542,6 @@ html.planner-sidebar-retracted .main-content {
     word-break: break-word;
 }
 
-.add-kr-btn {
-    background: none;
-    border: none;
-    color: var(--warm-gray-500);
-    font-size: 11px;
-    cursor: pointer;
-    padding: 4px 0;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: color 0.2s ease;
-}
-
-.add-kr-btn:hover {
-    color: var(--primary-brown);
-}
-
 /* ===== 阅读清单 ===== */
 .reading-list {
     display: flex;
@@ -2695,19 +2699,39 @@ html.planner-sidebar-retracted .main-content {
 }
 
 /* ===== 编辑弹窗 ===== */
+/* 纵向 column + 子项 margin:auto：矮弹窗仍大致居中；超出视口时上下 margin 为 0，弹窗顶对齐可视区顶部，可滚回顶部 */
 .modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(45, 41, 38, 0.3);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
     z-index: 100;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease;
+}
+
+.modal-overlay > .modal {
+    margin: auto;
+    flex-shrink: 0;
+}
+
+.modal-overlay::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .modal-overlay.active {
@@ -2916,9 +2940,18 @@ html.planner-sidebar-retracted .main-content {
     box-shadow: 0 10px 40px rgba(45, 41, 38, 0.15);
     transform: scale(0.95);
     transition: transform 0.2s ease;
-    max-height: none;
-    overflow: visible;
-    margin: 0 auto;
+    /* 内容超出视口时在白框内滚动；滚动条隐藏（触控板/滚轮/触摸仍可用） */
+    max-height: min(92vh, calc(100dvh - 32px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin: 0;
+}
+
+.modal::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .modal.modal-large {
@@ -3168,14 +3201,29 @@ html.planner-sidebar-retracted .main-content {
     box-shadow: 0 0 0 2px white, 0 0 0 4px var(--warm-gray-700);
 }
 
-.color-brown { background: var(--okr-color-brown); }
-.color-apricot { background: var(--okr-color-apricot); }
-.color-sage { background: var(--okr-color-sage); }
-.color-pink { background: var(--okr-color-pink); }
-.color-indigo { background: var(--okr-color-indigo); }
-.color-teal { background: var(--okr-color-teal); }
-.color-coral { background: var(--okr-color-coral); }
-.color-amber { background: var(--okr-color-amber); }
+.color-brown { background: var(--okr-palette-brown); }
+.color-apricot { background: var(--okr-palette-apricot); }
+.color-sage { background: var(--okr-palette-sage); }
+.color-pink { background: var(--okr-palette-pink); }
+.color-indigo { background: var(--okr-palette-indigo); }
+.color-teal { background: var(--okr-palette-teal); }
+.color-coral { background: var(--okr-palette-coral); }
+.color-amber { background: var(--okr-palette-amber); }
+
+/* OKR 添加/编辑弹窗：色块与选中描边与固定色板一致（防御皮肤误覆盖 --okr-color-*） */
+#okrModal .color-brown { background: var(--okr-palette-brown); }
+#okrModal .color-apricot { background: var(--okr-palette-apricot); }
+#okrModal .color-sage { background: var(--okr-palette-sage); }
+#okrModal .color-pink { background: var(--okr-palette-pink); }
+#okrModal .color-indigo { background: var(--okr-palette-indigo); }
+#okrModal .color-teal { background: var(--okr-palette-teal); }
+#okrModal .color-coral { background: var(--okr-palette-coral); }
+#okrModal .color-amber { background: var(--okr-palette-amber); }
+
+#okrModal .color-btn.selected {
+    border-color: #3d3834 !important;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #5c5651 !important;
+}
 
 /* 多行文本框（弹窗内由脚本随内容增高，避免内部滚动条） */
 .form-textarea {
@@ -4006,14 +4054,33 @@ html[data-app-skin="serene-white"] .todo-calendar-cell.today.selected:not(.empty
     inset: 0;
     background: rgba(45, 41, 38, 0.3);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
     z-index: 120;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease;
+}
+
+.todo-date-modal-overlay > .modal {
+    margin: auto;
+    flex-shrink: 0;
+}
+
+.todo-date-modal-overlay::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .todo-date-modal-overlay.active {
@@ -4050,6 +4117,14 @@ html[data-app-skin="serene-white"] .todo-calendar-cell.today.selected:not(.empty
     gap: 6px;
     max-height: 420px;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.todo-date-modal-list::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .todo-date-modal-empty {
@@ -4057,11 +4132,6 @@ html[data-app-skin="serene-white"] .todo-calendar-cell.today.selected:not(.empty
     font-size: 12px;
     color: var(--warm-gray-400);
     padding: 20px 8px;
-}
-
-#krSubTaskModal.modal-overlay {
-    align-items: center;
-    justify-content: center;
 }
 
 .kr-subtask-modal {
@@ -4096,6 +4166,14 @@ html[data-app-skin="serene-white"] .todo-calendar-cell.today.selected:not(.empty
     gap: 6px;
     max-height: 280px;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.kr-subtask-modal-list::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .kr-subtask-modal-add-wrap {
@@ -5724,6 +5802,14 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     overflow-x: hidden;
     padding-right: 6px;
     margin-right: -4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+#reviewModal.review-modal--event .review-modal-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 #reviewModal.review-modal--event .modal-actions {
@@ -6422,6 +6508,14 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     overflow-y: auto;
     padding-right: 4px;
     margin-right: -4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+#reviewEmotionModal .review-emotion-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 #reviewEmotionModal .review-emotion-group-list {
@@ -6485,9 +6579,11 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
 }
 
 /* ===== 周 / 月复盘弹窗（共用 weekly-review-* 类名） ===== */
+/* 周/月复盘：标签下拉需溢出白框，不设 max-height，由 .modal-overlay 承担滚动（已隐藏滚动条） */
 #weeklyReviewModal .modal.weekly-review-modal,
 #monthlyReviewModal .modal.weekly-review-modal {
     max-width: 720px;
+    max-height: none;
     overflow: visible;
 }
 
@@ -6937,21 +7033,21 @@ html.planner-fold-long-enabled .review-today-task-text.is-user-text-overlong {
     border-color: rgba(212, 206, 199, 0.5);
 }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-brown { border-color: rgba(160, 128, 112, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-brown.is-selected { border-color: var(--okr-color-brown); box-shadow: 0 0 0 1px var(--okr-color-brown); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-brown.is-selected { border-color: var(--okr-palette-brown); box-shadow: 0 0 0 1px var(--okr-palette-brown); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-apricot { border-color: rgba(216, 165, 127, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-apricot.is-selected { border-color: var(--okr-color-apricot); box-shadow: 0 0 0 1px var(--okr-color-apricot); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-apricot.is-selected { border-color: var(--okr-palette-apricot); box-shadow: 0 0 0 1px var(--okr-palette-apricot); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-sage { border-color: rgba(127, 165, 136, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-sage.is-selected { border-color: var(--okr-color-sage); box-shadow: 0 0 0 1px var(--okr-color-sage); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-sage.is-selected { border-color: var(--okr-palette-sage); box-shadow: 0 0 0 1px var(--okr-palette-sage); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-pink { border-color: rgba(199, 140, 151, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-pink.is-selected { border-color: var(--okr-color-pink); box-shadow: 0 0 0 1px var(--okr-color-pink); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-pink.is-selected { border-color: var(--okr-palette-pink); box-shadow: 0 0 0 1px var(--okr-palette-pink); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-indigo { border-color: rgba(111, 125, 184, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-indigo.is-selected { border-color: var(--okr-color-indigo); box-shadow: 0 0 0 1px var(--okr-color-indigo); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-indigo.is-selected { border-color: var(--okr-palette-indigo); box-shadow: 0 0 0 1px var(--okr-palette-indigo); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-teal { border-color: rgba(79, 155, 149, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-teal.is-selected { border-color: var(--okr-color-teal); box-shadow: 0 0 0 1px var(--okr-color-teal); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-teal.is-selected { border-color: var(--okr-palette-teal); box-shadow: 0 0 0 1px var(--okr-palette-teal); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-coral { border-color: rgba(207, 117, 103, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-coral.is-selected { border-color: var(--okr-color-coral); box-shadow: 0 0 0 1px var(--okr-color-coral); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-coral.is-selected { border-color: var(--okr-palette-coral); box-shadow: 0 0 0 1px var(--okr-palette-coral); }
 #weeklyReviewModal .weekly-review-okr-card.weekly-okr-amber { border-color: rgba(196, 152, 58, 0.3); }
-#weeklyReviewModal .weekly-review-okr-card.weekly-okr-amber.is-selected { border-color: var(--okr-color-amber); box-shadow: 0 0 0 1px var(--okr-color-amber); }
+#weeklyReviewModal .weekly-review-okr-card.weekly-okr-amber.is-selected { border-color: var(--okr-palette-amber); box-shadow: 0 0 0 1px var(--okr-palette-amber); }
 #weeklyReviewModal .weekly-review-okr-card-main {
     flex: 1;
     min-width: 0;

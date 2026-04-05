@@ -205,12 +205,75 @@
         tryNext();
     }
 
+    function isMergeablePlannerEntryArrayKey(key) {
+        if (!key || typeof key !== 'string') return false;
+        return key === 'planner_review_entries'
+            || key === 'planner_review_archive_entries'
+            || key.endsWith('_planner_review_entries')
+            || key.endsWith('_planner_review_archive_entries')
+            || key.endsWith('_planner_weekly_reviews')
+            || key.endsWith('_planner_weekly_review_archive_entries')
+            || key.endsWith('_planner_monthly_reviews');
+    }
+
+    function pickBetterPlannerEntry(a, b) {
+        const ta = Date.parse(a.updatedAt || a.createdAt || 0) || 0;
+        const tb = Date.parse(b.updatedAt || b.createdAt || 0) || 0;
+        if (tb !== ta) return tb > ta ? b : a;
+        const weight = (e) => (typeof e === 'object' && e ? JSON.stringify(e).length : 0);
+        return weight(b) >= weight(a) ? b : a;
+    }
+
+    /** 与 dev-server PATCH 合并规则一致：本地与远端按 id 并集，避免整包覆盖丢条目 */
+    function mergePlannerEntryArraysJson(localRaw, remoteRaw) {
+        let localArr;
+        let remoteArr;
+        try {
+            localArr = JSON.parse(localRaw);
+        } catch (err) {
+            return remoteRaw;
+        }
+        try {
+            remoteArr = JSON.parse(remoteRaw);
+        } catch (err) {
+            return localRaw;
+        }
+        if (!Array.isArray(localArr) || !Array.isArray(remoteArr)) {
+            return remoteRaw;
+        }
+        const byId = new Map();
+        localArr.forEach((entry) => {
+            if (!entry || entry.id === undefined || entry.id === null) return;
+            byId.set(String(entry.id), entry);
+        });
+        remoteArr.forEach((entry) => {
+            if (!entry || entry.id === undefined || entry.id === null) return;
+            const id = String(entry.id);
+            const prev = byId.get(id);
+            if (!prev) {
+                byId.set(id, entry);
+                return;
+            }
+            byId.set(id, pickBetterPlannerEntry(prev, entry));
+        });
+        const merged = Array.from(byId.values());
+        merged.sort((a, b) => {
+            const da = String(a.date || a.weekKey || a.monthKey || '');
+            const dbKey = String(b.date || b.weekKey || b.monthKey || '');
+            if (da !== dbKey) return dbKey.localeCompare(da);
+            return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+        });
+        return JSON.stringify(merged);
+    }
+
     function applyRemoteData(remote, options) {
         if (!remote) return false;
 
         const opts = options || {};
         let changed = false;
         let remoteData = remote.data || {};
+
+        const remoteKeyCount = Object.keys(remoteData).length;
 
         applyingRemoteData = true;
         try {
@@ -220,17 +283,29 @@
                 if (shouldSyncKey(key)) syncedKeys.push(key);
             }
 
-            syncedKeys.forEach((key) => {
-                if (!(key in remoteData)) {
-                    rawRemoveItem.call(storage, key);
-                    changed = true;
-                }
-            });
+            const localKeyCount = syncedKeys.length;
+            const deletionSafe = remoteKeyCount === 0
+                || remoteKeyCount >= Math.floor(localKeyCount * 0.5)
+                || localKeyCount <= 3;
+
+            if (deletionSafe) {
+                syncedKeys.forEach((key) => {
+                    if (!(key in remoteData)) {
+                        rawRemoveItem.call(storage, key);
+                        changed = true;
+                    }
+                });
+            }
 
             Object.keys(remoteData).forEach((key) => {
                 const current = rawGetItem.call(storage, key);
-                if (current !== remoteData[key]) {
-                    rawSetItem.call(storage, key, remoteData[key]);
+                const incoming = remoteData[key];
+                let nextVal = incoming;
+                if (isMergeablePlannerEntryArrayKey(key) && typeof current === 'string' && typeof incoming === 'string') {
+                    nextVal = mergePlannerEntryArraysJson(current, incoming);
+                }
+                if (current !== nextVal) {
+                    rawSetItem.call(storage, key, nextVal);
                     changed = true;
                 }
             });
@@ -351,9 +426,7 @@
                 }
                 return;
             }
-            if ((remote.updatedAt || 0) >= getLocalTimestamp()) {
-                applyRemoteData(remote, { allowReload: false });
-            }
+            setLocalTimestamp(remote.updatedAt || payload.updatedAt);
             if (hasPendingPatch()) {
                 schedulePush();
             }
